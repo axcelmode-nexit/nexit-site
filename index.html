@@ -17,7 +17,48 @@
       --red: #d71920;
       --soft: rgba(255,255,255,.06);
     }
+.vision-image {
+  margin: 0 0 70px;
+  border: 1px solid var(--line);
+  overflow: hidden;
+  box-shadow: 0 25px 70px rgba(0,0,0,.45);
+}
 
+.vision-image img {
+  width: 100%;
+  display: block;
+}
+
+.recruit {
+  background: #050505;
+}
+
+.recruit-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 60px;
+  align-items: center;
+}
+
+.recruit-image img {
+  width: 100%;
+  display: block;
+  border: 1px solid rgba(255,255,255,.12);
+  box-shadow: 0 25px 70px rgba(0,0,0,.45);
+}
+
+.recruit p {
+  font-size: 18px;
+  line-height: 2;
+  font-weight: 700;
+  margin-bottom: 34px;
+  color: rgba(255,255,255,.92);
+  max-width: 520px;
+}
+
+.recruit::after {
+  display: none;
+}
     * { box-sizing: border-box; }
     html { scroll-behavior: smooth; }
     body {
@@ -343,7 +384,10 @@
         <div class="scroll">SCROLL</div>
       </section>
 
-      <section id="vision">
+      <section id="vision"><div class="vision-image">
+  <img src="vision.jpg" alt="挑戦を、確かな前進に。">
+</div>
+        
         <div class="two-col">
           <div class="section-title"><div class="bar"></div><h2>VISION</h2><p>目指す姿</p></div>
           <div>
