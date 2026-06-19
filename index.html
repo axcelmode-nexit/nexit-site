@@ -5,16 +5,17 @@
   <link rel="icon" type="image/png" href="favicon.png">
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Axcel-Mode Nexit | 株式会社アクセル・モード・ネクスト</title>
-  <meta name="description" content="株式会社アクセル・モード・ネクストは、上越を拠点にソフトウェア開発・保守運用・IT活用支援を行うIT企業です。" />
+  <title>AXCEL MODE NEXIT | 株式会社アクセル・モード・ネクスト</title>
+  <meta name="description" content="株式会社アクセル・モード・ネクストは、上越を拠点にソフトウェア開発、保守・運用、IT活用支援、人材育成に取り組む会社です。" />
   <style>
     :root {
       --bg: #050505;
-      --bg2: #0b0b0b;
+      --panel: #0b0b0b;
       --text: #ffffff;
       --muted: #b8b8b8;
-      --line: rgba(255,255,255,.16);
+      --line: rgba(255,255,255,.14);
       --red: #d71920;
+      --soft: rgba(255,255,255,.06);
     }
 
     * { box-sizing: border-box; }
@@ -26,14 +27,12 @@
       font-family: "Noto Sans JP", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
       letter-spacing: .04em;
     }
-
     a { color: inherit; text-decoration: none; }
+    img { max-width: 100%; }
 
     .site {
       overflow: hidden;
-      background:
-        radial-gradient(circle at 70% 20%, rgba(255,255,255,.08), transparent 28%),
-        linear-gradient(180deg, #030303 0%, #0b0b0b 100%);
+      background: linear-gradient(180deg, #030303, #0a0a0a);
     }
 
     .header {
@@ -46,112 +45,79 @@
       align-items: center;
       justify-content: space-between;
       padding: 26px 7vw;
-      background: linear-gradient(180deg, rgba(0,0,0,.82), rgba(0,0,0,0));
+      background: linear-gradient(180deg, rgba(0,0,0,.92), rgba(0,0,0,0));
+      backdrop-filter: blur(2px);
     }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      font-weight: 700;
-      letter-spacing: .08em;
-    }
-
-    .brand-mark {
-      width: 200px;
-      height: auto;
-      filter: brightness(1.4) contrast(1.1);
-    }
-
+    .brand img { width: 200px; height: auto; display: block; }
     .nav {
       display: flex;
       align-items: center;
-      gap: 34px;
+      gap: 24px;
       font-size: 12px;
-      font-weight: 700;
+      font-weight: 800;
       letter-spacing: .18em;
     }
-
     .nav a { opacity: .9; }
     .nav a:hover { opacity: .55; }
-    .nav .contact {
-      border: 1px solid rgba(255,255,255,.55);
-      padding: 12px 22px;
-    }
 
     .hero {
       position: relative;
       min-height: 100vh;
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr;
       align-items: center;
-      padding: 160px 7vw 80px; /* 上余白増やしてヘッダーと被り防止 */
+      padding: 170px 7vw 96px;
       border-bottom: 1px solid var(--line);
+      background:
+        linear-gradient(90deg, rgba(0,0,0,.94) 0%, rgba(0,0,0,.82) 36%, rgba(0,0,0,.50) 66%, rgba(0,0,0,.30) 100%),
+        linear-gradient(180deg, rgba(0,0,0,.10) 0%, rgba(0,0,0,.70) 100%),
+        url('mountain.jpg') right center / cover no-repeat;
     }
-
     .hero::before {
-      content: "N";
+      content: "";
       position: absolute;
-      right: -3vw;
-      top: 3vh;
-      font-size: min(70vw, 820px);
-      line-height: .8;
-      font-weight: 900;
-      color: rgba(255,255,255,.055);
-      transform: skewX(-8deg);
+      left: 0;
+      right: 0;
+      bottom: 9vh;
+      height: 22vh;
+      opacity: .20;
       pointer-events: none;
+      background:
+        linear-gradient(135deg, transparent 0 18%, rgba(255,255,255,.25) 18.2% 18.6%, transparent 18.8% 100%),
+        linear-gradient(28deg, transparent 0 47%, rgba(255,255,255,.18) 47.2% 47.55%, transparent 47.8% 100%),
+        linear-gradient(151deg, transparent 0 66%, rgba(255,255,255,.14) 66.2% 66.5%, transparent 66.8% 100%);
+      transform: translateY(20px);
     }
-
     .hero::after,
     .recruit::after {
       content: "";
       position: absolute;
       width: 1px;
-      height: 95vh;
+      height: 94vh;
       background: linear-gradient(180deg, transparent, var(--red), transparent);
       transform: rotate(33deg);
-      opacity: .9;
+      opacity: .85;
       box-shadow: 0 0 18px rgba(215,25,32,.65);
     }
+    .hero::after { right: 18vw; top: 10vh; }
+.recruit::after {
 
-    .hero::after { right: 17vw; top: 10vh; }
-    .recruit::after { left: 56vw; top: -18vh; }
+  display:none;
 
-    .hero-content {
-      position: relative;
-      z-index: 2;
-      max-width: 640px;
-    }
+}
 
+    .hero-content { position: relative; z-index: 2; max-width: 760px; }
     .catch {
-      font-size: clamp(42px, 6vw, 78px);
-      line-height: 1.35;
-      margin: 40px 0 28px; /* 上に余白追加 */
+      font-size: clamp(42px, 6vw, 84px);
+      line-height: 1.28;
+      margin: 40px 0 28px;
       font-weight: 900;
       letter-spacing: .02em;
+      text-shadow: 0 10px 32px rgba(0,0,0,.75);
     }
-
-    .red-line {
-      width: 42px;
-      height: 2px;
-      background: var(--red);
-      margin: 0 0 20px;
-    }
-
-    .hero-logo {
-      max-width: min(700px, 95vw);
-      margin: 0 0 20px;
-      display: block;
-      filter: brightness(1.25) contrast(1.05);
-    }
-
-    .lead {
-      font-size: clamp(17px, 2vw, 24px);
-      line-height: 1.9;
-      margin: 0 0 36px;
-      font-weight: 700;
-    }
-
+    .red-line { width: 48px; height: 2px; background: var(--red); margin: 0 0 24px; }
+    .hero-logo { max-width: min(700px, 95vw); margin: 0 0 20px; display: block; filter: brightness(1.25) contrast(1.05); }
+    .lead { font-size: clamp(17px, 2vw, 24px); line-height: 1.9; margin: 0 0 36px; font-weight: 800; }
     .btn {
       display: inline-flex;
       align-items: center;
@@ -160,12 +126,12 @@
       border: 1px solid rgba(255,255,255,.58);
       padding: 18px 28px;
       font-size: 14px;
-      font-weight: 700;
+      font-weight: 800;
       letter-spacing: .12em;
-      transition: .2s ease;
+      transition: .2s;
     }
     .btn:hover { background: #fff; color: #000; }
-
+    .btn.disabled { opacity: .7; cursor: not-allowed; }
     .scroll {
       position: absolute;
       left: 3.8vw;
@@ -176,142 +142,174 @@
       color: var(--muted);
     }
 
-    section {
-      position: relative;
-      padding: 96px 7vw;
-      border-bottom: 1px solid var(--line);
-    }
+    section { position: relative; padding: 140px 7vw; border-bottom: 1px solid var(--line); }
+    .two-col { display: grid; grid-template-columns: 250px 1fr; gap: 8vw; align-items: start; }
+    .section-title .bar { width: 38px; height: 2px; background: var(--red); margin-bottom: 18px; }
+    .section-title h2 { margin: 0; font-size: 30px; letter-spacing: .16em; }
+    .section-title p { margin: 12px 0 0; color: var(--muted); font-size: 14px; }
+    .big-copy { font-size: clamp(24px, 3.3vw, 46px); line-height: 1.55; font-weight: 900; margin: 0 0 28px; }
+    .body-copy { font-size: 16px; line-height: 2.2; color: #e7e7e7; margin: 0; }
+    .about-small { margin-top: 28px; color: #e8e8e8; line-height: 2; font-weight: 700; }
 
-    .two-col {
+    .vision-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 44px; }
+    .vision-card {
+      padding: 34px 30px;
+      background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.025));
+      border: 1px solid var(--line);
+      min-height: 210px;
+    }
+    .vision-card .num { color: var(--red); font-size: 12px; font-weight: 900; letter-spacing: .22em; }
+    .vision-card h3 { font-size: 23px; margin: 26px 0 14px; }
+    .vision-card p { color: #d7d7d7; line-height: 1.9; margin: 0; font-size: 14px; }
+
+    .service-head { text-align: center; margin-bottom: 72px; }
+    .service-head h2 { margin: 0; font-size: 34px; letter-spacing: .18em; }
+    .service-head p { color: var(--red); font-size: 13px; font-weight: 800; }
+    .business-lead { max-width: 760px; margin: 0 auto 58px; text-align: center; color: #e7e7e7; line-height: 2; font-weight: 700; }
+    .business-grid {
       display: grid;
-      grid-template-columns: 240px 1fr;
-      gap: 8vw;
-      align-items: start;
-    }
-
-    .section-title .bar {
-      width: 38px;
-      height: 2px;
-      background: var(--red);
-      margin-bottom: 18px;
-    }
-    .section-title h2 {
-      margin: 0;
-      font-size: 30px;
-      letter-spacing: .16em;
-    }
-    .section-title p {
-      margin: 12px 0 0;
-      color: var(--muted);
-      font-size: 14px;
-    }
-
-    .about-text {
-      font-size: clamp(18px, 2.4vw, 28px);
-      line-height: 1.9;
-      font-weight: 800;
-      margin: 0;
-    }
-    .about-small {
-      margin-top: 28px;
-      color: #e8e8e8;
-      line-height: 2;
-      font-weight: 600;
-    }
-
-    .service-head { text-align: center; margin-bottom: 58px; }
-    .service-head h2 { margin: 0; font-size: 32px; letter-spacing: .17em; }
-    .service-head p { color: var(--red); font-size: 13px; font-weight: 700; }
-
-    .service-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(4, 1fr);
       gap: 0;
+      border-top: 1px solid var(--line);
       border-left: 1px solid var(--line);
     }
-
-    .service-card {
-      min-height: 230px;
-      padding: 12px 42px 0;
-      text-align: center;
-      border-right: 1px solid var(--line);
-    }
-
-    .icon {
-      font-size: 42px;
-      line-height: 1;
-      margin-bottom: 24px;
-      color: #fff;
-    }
-    .service-card h3 { margin: 0 0 12px; font-size: 21px; letter-spacing: .02em; }
-    .service-card .jp { color: var(--red); font-weight: 800; margin: 0 0 22px; }
-    .service-card p { color: #d8d8d8; line-height: 1.9; font-size: 14px; margin: 0; }
-
-    .company-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 15px;
-    }
-    .company-table th,
-    .company-table td {
-      padding: 18px 0;
-      border-bottom: 1px solid var(--line);
+    .business-card {
+      position: relative;
+      min-height: 380px;
+      padding: 42px 30px 36px;
       text-align: left;
-      vertical-align: top;
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.012));
+      overflow: hidden;
     }
-    .company-table th { width: 170px; color: #d7d7d7; font-weight: 700; }
-    .company-table td { font-weight: 600; line-height: 1.7; }
-
-    .recruit {
-      min-height: 330px;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      align-items: center;
-      background:
-        linear-gradient(90deg, rgba(0,0,0,.96) 0%, rgba(0,0,0,.78) 45%, rgba(0,0,0,.4) 100%),
-        url('mountain.jpg') right center / cover no-repeat;
-    }
-    .recruit::after {
-      content: "";
+    .business-card::after {
+      content: attr(data-word);
       position: absolute;
-      width: 1px;
-      height: 95vh;
-      background: linear-gradient(180deg, transparent, var(--red), transparent);
-      transform: rotate(33deg);
-      opacity: .9;
-      box-shadow: 0 0 18px rgba(215,25,32,.65);
-      left: 56vw; top: -18vh;
+      right: -10px;
+      bottom: 12px;
+      font-size: 58px;
+      font-weight: 900;
+      letter-spacing: .06em;
+      color: rgba(255,255,255,.025);
+      line-height: 1;
+      white-space: nowrap;
+      pointer-events: none;
     }
+    .business-no {
+      font-size: clamp(76px, 7vw, 112px);
+      font-weight: 900;
+      letter-spacing: -.05em;
+      line-height: .85;
+      color: rgba(255,255,255,.16);
+      margin-bottom: 32px;
+    }
+    .business-line { width: 52px; height: 2px; background: var(--red); margin: 0 0 30px; }
+    .business-card h3 { position: relative; z-index: 1; margin: 0 0 20px; font-size: 21px; line-height: 1.35; letter-spacing: .02em; }
+    .business-card .jp { position: relative; z-index: 1; color: var(--red); font-weight: 900; margin: 0 0 22px; }
+    .business-card p { position: relative; z-index: 1; color: #d8d8d8; line-height: 1.9; font-size: 14px; margin: 0; }
+
+    .message { background: linear-gradient(90deg, #050505 0%, #0b0b0b 52%, #111 100%); }
+    .message-box { max-width: 920px; }
+    .message .name { margin-top: 34px; color: #fff; font-weight: 900; line-height: 1.9; }
+
+    .office { display:block; max-width:900px; }
+    .office-photo {
+      min-height: 460px;
+      background: linear-gradient(90deg, rgba(0,0,0,.42), rgba(0,0,0,.10)), url('mountain.jpg') center / cover no-repeat;
+      border: 1px solid var(--line);
+      box-shadow: 0 25px 70px rgba(0,0,0,.55);
+    }
+    .office-list { display: grid; gap: 14px; margin-top: 30px; }
+    .office-list div { border-left: 2px solid var(--red); padding-left: 16px; color: #e6e6e6; line-height: 1.8; }
+    .photo-grid { display: grid; grid-template-columns: 1.25fr .85fr .85fr; gap: 18px; margin-top: 56px; }
+    .photo-card { position: relative; min-height: 280px; border: 1px solid var(--line); overflow: hidden; background: #111; }
+    .photo-card::before { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,0), rgba(0,0,0,.75)); z-index: 1; }
+    .photo-card.mountain { background: url('mountain.jpg') center / cover no-repeat; }
+    .photo-card.office-img { background: url('office.jpg') center / cover no-repeat; }
+    .photo-card.fullsat { background: linear-gradient(135deg, #141414, #252525); }
+    .photo-card span { position: absolute; z-index: 2; left: 22px; bottom: 20px; font-weight: 900; letter-spacing: .12em; color: #fff; }
+
+    .company-table { width: 100%; border-collapse: collapse; font-size: 15px; }
+    .company-table th,
+    .company-table td { padding: 18px 0; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    .company-table th { width: 170px; color: #d7d7d7; font-weight: 800; }
+    .company-table td { font-weight: 700; line-height: 1.7; }
+
+    .news-list { border-top: 1px solid var(--line); }
+    .news-item { display: grid; grid-template-columns: 160px 1fr; gap: 30px; padding: 24px 0; border-bottom: 1px solid var(--line); }
+    .news-item time { color: var(--red); font-weight: 900; }
+    .news-item p { margin: 0; font-weight: 700; }
+
+.recruit {
+  background: #050505;
+}
+
+.recruit-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 60px;
+  align-items: center;
+}
+
+.recruit-image img {
+  width: 100%;
+  display: block;
+  border: 1px solid rgba(255,255,255,.12);
+  box-shadow: 0 25px 70px rgba(0,0,0,.45);
+}
+
+.recruit h2 {
+  font-size: clamp(32px,4vw,48px);
+  margin: 10px 0 24px;
+}
+
+.recruit p {
+  font-size: 18px;
+  line-height: 2;
+  color: rgba(255,255,255,.92);
+  margin-bottom: 36px;
+}
+
+.recruit .label {
+  color: var(--red);
+  font-weight: 900;
+  letter-spacing: .15em;
+}
+
+.recruit::after {
+  display: none;
+}
     .recruit h2 { font-size: clamp(32px, 4vw, 48px); margin: 10px 0 18px; }
     .recruit .label { color: var(--red); font-weight: 900; letter-spacing: .15em; }
-    .recruit p { font-size: 20px; font-weight: 700; margin-bottom: 34px; }
+    .recruit p { font-size: 20px; font-weight: 800; margin-bottom: 34px; }
 
-    .footer {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 34px 7vw;
-      color: #cfcfcf;
-      font-size: 12px;
-      background: #030303;
-    }
-    .footer img { width: 145px; filter: brightness(1.25); }
+    .footer { display: flex; align-items: center; justify-content: space-between; padding: 34px 7vw; color: #cfcfcf; font-size: 12px; background: #030303; }
+    .footer img { width: 190px; }
     .footer-links { display: flex; gap: 18px; letter-spacing: .12em; }
 
-    @media (max-width: 900px) {
+    @media (max-width: 1180px) {
+      .business-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 980px) {
+.recruit-content {
+  grid-template-columns: 1fr;
+}
       .header { padding: 20px 5vw; }
-      .brand-mark { width: 120px; }
+      .brand img { width: 150px; }
       .nav { display: none; }
-      .hero { grid-template-columns: 1fr; padding: 110px 6vw 72px; min-height: 92vh; }
-      .hero::before { right: -25vw; top: 15vh; font-size: 110vw; }
-      .hero-logo { max-width: 310px; }
+      .hero { padding: 140px 6vw 72px; min-height: 92vh; background-position: center; }
+      .hero::before { opacity: .14; bottom: 12vh; }
+      .hero-logo { max-width: 360px; }
       .scroll { display: none; }
-      section { padding: 72px 6vw; }
-      .two-col { grid-template-columns: 1fr; gap: 36px; }
-      .service-grid { grid-template-columns: 1fr; border-left: none; }
-      .service-card { border-right: none; border-bottom: 1px solid var(--line); padding: 38px 0; }
-      .company-table th { width: 100px; }
-      .recruit { grid-template-columns: 1fr; }
+      section { padding: 84px 6vw; }
+      .two-col, .office, .recruit { grid-template-columns: 1fr; gap: 36px; }
+      .vision-steps, .business-grid, .photo-grid { grid-template-columns: 1fr; }
+      .business-grid { border-left: none; }
+      .business-card { border-right: none; border-bottom: 1px solid var(--line); padding: 38px 28px; min-height: 320px; }
+      .company-table th { width: 105px; }
+      .news-item { grid-template-columns: 1fr; gap: 8px; }
       .footer { flex-direction: column; gap: 22px; align-items: flex-start; }
       .footer-links { flex-wrap: wrap; }
     }
@@ -320,16 +318,16 @@
 <body>
   <div class="site">
     <header class="header">
-      <a class="brand" href="#top" aria-label="Axcel-Mode Nexit トップへ">
-        <img class="brand-mark" src="logo.png" alt="Axcel-Mode Nexit" />
-      </a>
-      <nav class="nav" aria-label="グローバルナビゲーション">
+      <a class="brand" href="#top"><img src="logo.png" alt="AXCEL MODE NEXIT"></a>
+      <nav class="nav">
         <a href="#top">TOP</a>
+        <a href="#vision">VISION</a>
         <a href="#about">ABOUT</a>
-        <a href="#service">SERVICE</a>
+        <a href="#business">BUSINESS</a>
+        <a href="#message">MESSAGE</a>
+        <a href="#office">OFFICE</a>
         <a href="#company">COMPANY</a>
         <a href="#recruit">RECRUIT</a>
-        <a class="contact" href="mailto:info@example.com">CONTACT</a>
       </nav>
     </header>
 
@@ -338,91 +336,128 @@
         <div class="hero-content">
           <h1 class="catch">挑戦を、<br>確かな前進に。</h1>
           <div class="red-line"></div>
-          <img class="hero-logo" src="logo.png" alt="Axcel-Mode Nexit" />
+          <img class="hero-logo" src="logo.png" alt="AXCEL MODE NEXIT">
           <p class="lead">上越から、未来へ。</p>
-          <a class="btn" href="#recruit">採用を見る <span>→</span></a>
+          <a class="btn" href="#vision">VISIONを見る <span>→</span></a>
         </div>
         <div class="scroll">SCROLL</div>
       </section>
 
+      <section id="vision">
+        <div class="two-col">
+          <div class="section-title"><div class="bar"></div><h2>VISION</h2><p>目指す姿</p></div>
+          <div>
+            <p class="big-copy">挑戦を、<br>確かな前進に。</p>
+            <p class="body-copy">挑戦には、不確実さが伴います。<br>新しい技術への挑戦。新しい環境への挑戦。新しい価値を生み出す挑戦。<br><br>私たちは、挑戦そのものを目的にはしません。<br>技術を磨くこと。仲間と成長すること。お客様へ価値を届けること。<br><br>その積み重ねが、確かな前進につながると信じています。</p>
+            <div class="vision-steps">
+              <div class="vision-card"><div class="num">01</div><h3>技術を磨く</h3><p>日々の開発を通じて、確かな技術力を積み重ねます。</p></div>
+              <div class="vision-card"><div class="num">02</div><h3>仲間と成長する</h3><p>一人ではなく、チームで挑戦し続ける組織をつくります。</p></div>
+              <div class="vision-card"><div class="num">03</div><h3>価値を届ける</h3><p>お客様の事業に貢献する成果を、着実に届けます。</p></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section id="about">
         <div class="two-col">
-          <div class="section-title">
-            <div class="bar"></div>
-            <h2>ABOUT</h2>
-            <p>私たちの想い</p>
-          </div>
+          <div class="section-title"><div class="bar"></div><h2>ABOUT</h2><p>NEXITについて</p></div>
           <div>
-            <p class="about-text">私たちは、上越を拠点に<br>持続可能なエンジニア組織をつくります。</p>
+            <p class="big-copy">上越を拠点とする、<br>ソフトウェア開発会社です。</p>
+            <p class="body-copy">株式会社アクセル・モード・ネクストは、上越を拠点とするソフトウェア開発会社です。<br><br>システム開発、保守・運用、IT活用支援を通じて、お客様の事業成長を支えています。<br><br>私たちは、技術と人の成長を大切にしながら、持続的に価値を生み出せる組織を目指しています。</p>
             <p class="about-small">派手さより、継続。<br>偶然より、実力。<br>挑戦を、確かな前進に。</p>
           </div>
         </div>
       </section>
 
-      <section id="service">
-        <div class="service-head">
-          <h2>SERVICE</h2>
-          <p>事業内容</p>
+      <section id="business">
+        <div class="service-head"><h2>BUSINESS</h2><p>事業内容</p></div>
+        <p class="business-lead">私たちは、技術を通じて価値を提供します。</p>
+        <div class="business-grid">
+          <div class="business-card" data-word="SOFTWARE"><div class="business-no">01</div><div class="business-line"></div><h3>Software Development</h3><p class="jp">ソフトウェア開発</p><p>業務システムやWebシステムの設計・開発を行います。お客様の課題に向き合い、要件定義から設計・開発・運用まで一貫して支援します。</p></div>
+          <div class="business-card" data-word="OPERATION"><div class="business-no">02</div><div class="business-line"></div><h3>Maintenance &amp; Operation</h3><p class="jp">保守・運用</p><p>システムの安定稼働を支える保守・運用サービスを提供します。継続的な改善と安定運用により、事業の成長を支えます。</p></div>
+          <div class="business-card" data-word="SUPPORT"><div class="business-no">03</div><div class="business-line"></div><h3>IT Support</h3><p class="jp">IT活用支援</p><p>IT導入や活用支援を通じて、お客様の業務改善を支援します。技術だけでなく、実際の業務に寄り添った提案を行います。</p></div>
+          <div class="business-card" data-word="DEVELOP"><div class="business-no">04</div><div class="business-line"></div><h3>Human Resource Development</h3><p class="jp">人材育成</p><p>次世代を担うエンジニアの育成に取り組みます。技術力だけでなく、自ら考え挑戦できる人材を育てます。</p></div>
         </div>
-        <div class="service-grid">
-          <div class="service-card">
-            <div class="icon">&lt;/&gt;</div>
-            <h3>Software Development</h3>
-            <p class="jp">ソフトウェア開発</p>
-            <p>業務系・Web系システムの設計・開発まで、お客様の課題解決を支援します。</p>
-          </div>
-          <div class="service-card">
-            <div class="icon">☁</div>
-            <h3>Maintenance &amp; Operation</h3>
-            <p class="jp">保守・運用</p>
-            <p>システムの安定稼働を支える保守・運用業務で、ビジネスの継続性を支えます。</p>
-          </div>
-          <div class="service-card">
-            <div class="icon">♙</div>
-            <h3>IT Support</h3>
-            <p class="jp">IT活用支援</p>
-            <p>ITの力を最大限に活かすための導入支援・活用支援を行います。</p>
+      </section>
+
+      <section class="message" id="message">
+        <div class="two-col">
+          <div class="section-title"><div class="bar"></div><h2>MESSAGE</h2><p>代表メッセージ</p></div>
+          <div class="message-box">
+            <p class="big-copy">技術は、人がつくります。</p>
+            <p class="body-copy">だからこそ私たちは、技術力だけでなく、挑戦する姿勢と成長し続ける意志を大切にしています。<br><br>一人ひとりの前進が、チームの前進となり、お客様への価値につながる。<br><br>その積み重ねを大切にしながら、挑戦を、確かな前進へと変えていきます。</p>
+            <p class="name">株式会社アクセル・モード・ネクスト<br>代表取締役　吉田 臣男</p>
           </div>
         </div>
+      </section>
+
+      <section id="office">
+        <div class="office">
+          <div>
+            <div class="section-title"><div class="bar"></div><h2>OFFICE</h2><p>拠点</p></div>
+            <p class="big-copy" style="margin-top:34px">2026 Summer Opening</p>
+            <p class="body-copy">上越妙高駅西口 フルサットにてオフィス開設準備中。<br><br>技術と挑戦が生まれる場所として、現在準備を進めています。</p>
+            
+          </div>
+          
+        </div>
+        
       </section>
 
       <section id="company">
         <div class="two-col">
-          <div class="section-title">
-            <div class="bar"></div>
-            <h2>COMPANY</h2>
-            <p>会社情報</p>
-          </div>
+          <div class="section-title"><div class="bar"></div><h2>COMPANY</h2><p>会社概要</p></div>
           <table class="company-table">
             <tr><th>会社名</th><td>株式会社アクセル・モード・ネクスト</td></tr>
             <tr><th>英語表記</th><td>Axcel-Mode Nexit Inc.</td></tr>
-            <tr><th>所在地</th><td>新潟県上越市大和5丁目1-5<br>（上越妙高駅 西口 フルサット敷地内）</td></tr>
-            <tr><th>設立</th><td>2026年</td></tr>
+            <tr><th>代表取締役</th><td>吉田 臣男</td></tr>
+            <tr><th>設立</th><td>2026年4月23日</td></tr>
             <tr><th>資本金</th><td>400万円</td></tr>
+            <tr><th>所在地</th><td>〒943-0861<br>新潟県上越市大和五丁目1-5<br>フルサット内</td></tr>
+            <tr><th>事業内容</th><td>ソフトウェア開発 / 保守・運用 / IT活用支援 / 人材育成</td></tr>
           </table>
         </div>
       </section>
 
-      <section class="recruit" id="recruit">
-        <div>
-          <div class="label">RECRUIT</div>
-          <h2>創業メンバー募集</h2>
-          <p>上越で、本気のチームをつくる。</p>
-          <a class="btn" href="#" onclick="return false;" style="opacity:.7; cursor:not-allowed;">Coming Soon <span>→</span></a>
+      <section id="news">
+        <div class="two-col">
+          <div class="section-title"><div class="bar"></div><h2>NEWS</h2><p>お知らせ</p></div>
+          <div class="news-list">
+            <div class="news-item"><time>2026.05.12</time><p>コーポレートサイトを公開しました。</p></div>
+            <div class="news-item"><time>2026.04.23</time><p>株式会社アクセル・モード・ネクストを設立しました。</p></div>
+          </div>
         </div>
       </section>
+
+<section class="recruit" id="recruit">
+  <div class="recruit-content">
+    <div>
+      <div class="label">RECRUIT</div>
+
+      <h2>挑戦を、<br>ともに。</h2>
+
+      <p>
+        上越から全国へ。<br>
+        技術を磨き、仲間と成長する。<br>
+        新しい挑戦をともにできる仲間との出会いを楽しみにしています。
+      </p>
+
+      <a class="btn disabled" href="#" onclick="return false;">
+        Coming Soon <span>→</span>
+      </a>
+    </div>
+
+    <div class="recruit-image">
+      <img src="train.jpg" alt="上越妙高と列車">
+    </div>
+  </div>
+</section>
     </main>
 
     <footer class="footer">
-      <img src="logo.png" alt="Axcel-Mode Nexit" />
+      <img src="logo.png" alt="AXCEL MODE NEXIT">
       <p>© 2026 Axcel-Mode Nexit Inc.</p>
-      <div class="footer-links">
-        <a href="#top">TOP</a>
-        <a href="#about">ABOUT</a>
-        <a href="#service">SERVICE</a>
-        <a href="#company">COMPANY</a>
-        <a href="#recruit">RECRUIT</a>
-      </div>
+      <div class="footer-links"><a href="#top">TOP</a><a href="#vision">VISION</a><a href="#about">ABOUT</a><a href="#business">BUSINESS</a><a href="#company">COMPANY</a></div>
     </footer>
   </div>
 </body>
