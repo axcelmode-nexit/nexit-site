@@ -17,48 +17,6 @@
       --red: #d71920;
       --soft: rgba(255,255,255,.06);
     }
-.vision-image {
-  margin: 0 0 70px;
-  border: 1px solid var(--line);
-  overflow: hidden;
-  box-shadow: 0 25px 70px rgba(0,0,0,.45);
-}
-
-.vision-image img {
-  width: 100%;
-  display: block;
-}
-
-.recruit {
-  background: #050505;
-}
-
-.recruit-content {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 60px;
-  align-items: center;
-}
-
-.recruit-image img {
-  width: 100%;
-  display: block;
-  border: 1px solid rgba(255,255,255,.12);
-  box-shadow: 0 25px 70px rgba(0,0,0,.45);
-}
-
-.recruit p {
-  font-size: 18px;
-  line-height: 2;
-  font-weight: 700;
-  margin-bottom: 34px;
-  color: rgba(255,255,255,.92);
-  max-width: 520px;
-}
-
-.recruit::after {
-  display: none;
-}
     * { box-sizing: border-box; }
     html { scroll-behavior: smooth; }
     body {
@@ -141,11 +99,6 @@
       box-shadow: 0 0 18px rgba(215,25,32,.65);
     }
     .hero::after { right: 18vw; top: 10vh; }
-.recruit::after {
-
-  display:none;
-
-}
 
     .hero-content { position: relative; z-index: 2; max-width: 760px; }
     .catch {
@@ -282,48 +235,55 @@
     .news-item time { color: var(--red); font-weight: 900; }
     .news-item p { margin: 0; font-weight: 700; }
 
-.recruit {
-  background: #050505;
-}
+    .vision-image {
+      margin: 0 0 70px;
+      border: 1px solid var(--line);
+      overflow: hidden;
+      box-shadow: 0 25px 70px rgba(0,0,0,.45);
+      background: #111;
+    }
+    .vision-image img {
+      width: 100%;
+      display: block;
+    }
 
-.recruit-content {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 60px;
-  align-items: center;
-}
+    .recruit {
+      background: #050505;
+      min-height: auto;
+    }
+    .recruit-content {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr);
+      gap: 64px;
+      align-items: center;
+    }
+    .recruit-image img {
+      width: 100%;
+      display: block;
+      border: 1px solid rgba(255,255,255,.12);
+      box-shadow: 0 25px 70px rgba(0,0,0,.45);
+    }
+    .recruit h2 {
+      font-size: clamp(32px, 4vw, 48px);
+      margin: 10px 0 24px;
+    }
+    .recruit p {
+      font-size: 18px;
+      line-height: 2;
+      font-weight: 700;
+      margin-bottom: 36px;
+      color: rgba(255,255,255,.92);
+      max-width: 560px;
+    }
+    .recruit .label {
+      color: var(--red);
+      font-weight: 900;
+      letter-spacing: .15em;
+    }
+    .recruit::after {
+      display: none;
+    }
 
-.recruit-image img {
-  width: 100%;
-  display: block;
-  border: 1px solid rgba(255,255,255,.12);
-  box-shadow: 0 25px 70px rgba(0,0,0,.45);
-}
-
-.recruit h2 {
-  font-size: clamp(32px,4vw,48px);
-  margin: 10px 0 24px;
-}
-
-.recruit p {
-  font-size: 18px;
-  line-height: 2;
-  color: rgba(255,255,255,.92);
-  margin-bottom: 36px;
-}
-
-.recruit .label {
-  color: var(--red);
-  font-weight: 900;
-  letter-spacing: .15em;
-}
-
-.recruit::after {
-  display: none;
-}
-    .recruit h2 { font-size: clamp(32px, 4vw, 48px); margin: 10px 0 18px; }
-    .recruit .label { color: var(--red); font-weight: 900; letter-spacing: .15em; }
-    .recruit p { font-size: 20px; font-weight: 800; margin-bottom: 34px; }
 
     .footer { display: flex; align-items: center; justify-content: space-between; padding: 34px 7vw; color: #cfcfcf; font-size: 12px; background: #030303; }
     .footer img { width: 190px; }
@@ -334,9 +294,6 @@
     }
 
     @media (max-width: 980px) {
-.recruit-content {
-  grid-template-columns: 1fr;
-}
       .header { padding: 20px 5vw; }
       .brand img { width: 150px; }
       .nav { display: none; }
@@ -345,7 +302,8 @@
       .hero-logo { max-width: 360px; }
       .scroll { display: none; }
       section { padding: 84px 6vw; }
-      .two-col, .office, .recruit { grid-template-columns: 1fr; gap: 36px; }
+      .two-col, .office { grid-template-columns: 1fr; gap: 36px; }
+      .recruit-content { grid-template-columns: 1fr; gap: 36px; }
       .vision-steps, .business-grid, .photo-grid { grid-template-columns: 1fr; }
       .business-grid { border-left: none; }
       .business-card { border-right: none; border-bottom: 1px solid var(--line); padding: 38px 28px; min-height: 320px; }
@@ -384,10 +342,11 @@
         <div class="scroll">SCROLL</div>
       </section>
 
-      <section id="vision"><div class="vision-image">
-  <img src="vision.jpg" alt="挑戦を、確かな前進に。">
-</div>
-        
+      <section id="vision">
+        <div class="vision-image">
+          <img src="vision.jpg" alt="挑戦を、確かな前進に。">
+        </div>
+
         <div class="two-col">
           <div class="section-title"><div class="bar"></div><h2>VISION</h2><p>目指す姿</p></div>
           <div>
