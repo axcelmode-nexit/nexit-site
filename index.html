@@ -223,12 +223,8 @@
     .message .name { margin-top: 34px; color: #fff; font-weight: 900; line-height: 1.9; }
 
     .office { display:block; max-width:900px; }
-    .office-photo {
-      min-height: 460px;
-      background: linear-gradient(90deg, rgba(0,0,0,.42), rgba(0,0,0,.10)), url('mountain.jpg') center / cover no-repeat;
-      border: 1px solid var(--line);
-      box-shadow: 0 25px 70px rgba(0,0,0,.55);
-    }
+    .office-photo { margin-top: 32px;  border-radius: 16px; overflow: hidden  border: 1px solid var(--line);}
+    .office-photo img {  width: 100%;  display: block;}
 
     .office-list { display: grid; gap: 14px; margin-top: 30px; }
     .office-list div { border-left: 2px solid var(--red); padding-left: 16px; color: #e6e6e6; line-height: 1.8; }
@@ -592,6 +588,7 @@
             <div class="section-title"><div class="bar"></div><h2>OFFICE</h2><p>拠点</p></div>
             <p class="big-copy" style="margin-top:34px">2026 Summer Opening</p>
             <p class="body-copy">上越妙高駅西口 フルサットにてオフィス開設準備中。<br><br>技術と挑戦が生まれる場所として、現在準備を進めています。</p>
+            <div class="office-photo"><img src="station.jpg" alt="上越妙高駅"></div>
           </div>
         </div>
       </section>
