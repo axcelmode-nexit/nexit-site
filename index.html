@@ -159,15 +159,26 @@
     .body-copy { font-size: 16px; line-height: 2.2; color: #e7e7e7; margin: 0; }
     .about-small { margin-top: 28px; color: #e8e8e8; line-height: 2; font-weight: 700; }
 
-    .vision-steps {display: grid;grid-template-columns: repeat(4, 1fr);gap: 18px;margin-top: 44px;}
+    .vision-steps {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 18px;
+      margin-top: 44px;
+    }
     .vision-card {
       padding: 34px 30px;
       background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.025));
       border: 1px solid var(--line);
       min-height: 210px;
     }
-    .vision-card .num {color: rgba(215,25,32,.85);font-size: 42px;font-weight: 900;line-height: 1;letter-spacing: -.03em;
-     margin-bottom: 18px;}
+    .vision-card .num {
+      color: rgba(215,25,32,.85);
+      font-size: 42px;
+      font-weight: 900;
+      line-height: 1;
+      letter-spacing: -.03em;
+      margin-bottom: 18px;
+    }
     .vision-card h3 { font-size: 23px; margin: 26px 0 14px; }
     .vision-card p { color: #d7d7d7; line-height: 1.9; margin: 0; font-size: 14px; }
 
@@ -218,14 +229,26 @@
     .business-card .jp { position: relative; z-index: 1; color: var(--red); font-weight: 900; margin: 0 0 22px; }
     .business-card p { position: relative; z-index: 1; color: #d8d8d8; line-height: 1.9; font-size: 14px; margin: 0; }
 
-    .message {background:linear-gradient(rgba(0,0,0,.85),rgba(0,0,0,.90) ),
-     url('sea.jpg') center center / cover fixed no-repeat;}
+    .message {
+      background:
+        linear-gradient(rgba(0,0,0,.85), rgba(0,0,0,.90)),
+        url('sea.jpg') center center / cover fixed no-repeat;
+    }
     .message-box { max-width: 920px; }
     .message .name { margin-top: 34px; color: #fff; font-weight: 900; line-height: 1.9; }
 
-    .office { display:block; max-width:760px; }
-    .office-photo { margin-top: 32px;  border-radius: 16px; overflow: hidden  border: 1px solid var(--line);}
-    .office-photo img {  width: 100%;  display: block;opacity: .88;}
+    .office { display: block; max-width: 760px; }
+    .office-photo {
+      margin-top: 32px;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+    }
+    .office-photo img {
+      width: 100%;
+      display: block;
+      opacity: .88;
+    }
 
     .office-list { display: grid; gap: 14px; margin-top: 30px; }
     .office-list div { border-left: 2px solid var(--red); padding-left: 16px; color: #e6e6e6; line-height: 1.8; }
@@ -305,18 +328,57 @@
     @media (max-width: 1180px) {
       .business-grid { grid-template-columns: repeat(2, 1fr); }
     }
-    .hero-side { position: absolute; right: 7vw; bottom: 12vh;  z-index: 2;  text-align: right;  pointer-events: none;  color: rgba(255,255,255,.10);}
-    .hero-side .coord {  font-size: clamp(18px, 1.6vw, 28px);  font-weight: 800;  letter-spacing: .25em;  line-height: 1.8;}
+    .hero-side {
+      position: absolute;
+      right: 7vw;
+      bottom: 12vh;
+      z-index: 2;
+      text-align: right;
+      pointer-events: none;
+      color: rgba(255,255,255,.10);
+    }
 
-    .coord-label {  margin-top: 12px;  font-size: 12px;  letter-spacing: .4em;  color: rgba(255,255,255,.35);}
-    .menu-toggle {display: none;background:none;border: 0;color: #fff;font-size: 28px;cursor: pointer;}
+    .hero-side .coord {
+      font-size: clamp(18px, 1.6vw, 28px);
+      font-weight: 800;
+      letter-spacing: .25em;
+      line-height: 1.8;
+    }
+
+    .coord-label {
+      margin-top: 12px;
+      font-size: 12px;
+      letter-spacing: .4em;
+      color: rgba(255,255,255,.35);
+    }
+
+    .menu-toggle {
+      display: none;
+      background: none;
+      border: 0;
+      color: #fff;
+      font-size: 28px;
+      cursor: pointer;
+    }
     @media (max-width: 980px) {
       .message-image img { height: auto; max-height: 240px; object-fit: contain;  }
       .header { padding: 20px 5vw; }
       .brand img { width: 150px; }
-      .menu-toggle {display: block;}
-.nav {display: none;position: absolute;top:70px;right: 5vw;flex-direction:column;gap: 16px;padding: 20px;background: rgba(0,0,0,.95);border:1px solid var(--line);}
-.nav.open {display: flex;}
+      .menu-toggle { display: block; }
+
+      .nav {
+        display: none;
+        position: absolute;
+        top: 70px;
+        right: 5vw;
+        flex-direction: column;
+        gap: 16px;
+        padding: 20px;
+        background: rgba(0,0,0,.95);
+        border: 1px solid var(--line);
+      }
+
+      .nav.open { display: flex; }
       .hero { padding: 140px 6vw 72px; min-height: 92vh; background-position: center; }
       .hero::before { opacity: .14; bottom: 12vh; }
       .hero-logo { max-width: 360px; }
@@ -328,13 +390,20 @@
       .business-grid { border-left: none; }
       .business-card { border-right: none; border-bottom: 1px solid var(--line); padding: 38px 28px; min-height: 320px; }
       .company-table { font-size: 14px; }
-      .company-table th { width: 90px;　}
-      .company-table td { font-size: 14px; line-height: 1.8;}
+      .company-table th { width: 90px; }
+      .company-table td { font-size: 14px; line-height: 1.8; }
       .news-item { grid-template-columns: 1fr; gap: 8px; }
       .footer { flex-direction: column; gap: 22px; align-items: flex-start; }
-      .footer-links { display: grid;grid-template-columns: repeat(3, max-content);gap: 20px 32px;
-       justify-content: start; width: 100%; font-size: 12px;letter-spacing: .12em;}
-      .hero-side {  display: none;}
+      .footer-links {
+        display: grid;
+        grid-template-columns: repeat(3, max-content);
+        gap: 20px 32px;
+        justify-content: start;
+        width: 100%;
+        font-size: 12px;
+        letter-spacing: .12em;
+      }
+      .hero-side { display: none; }
     }
   </style>
 </head>
@@ -364,9 +433,13 @@
           <p class="lead">── 一歩外へ。次の未来へ。</p>
           <a class="btn" href="#recruit">RECRUITを見る <span>→</span></a>
         </div>
-        <div class="hero-side"><div class="coord">37°06'N<br>138°15'E</div>
-        <div class="coord-label">  JOETSU  </div>
-      </div>
+                <div class="hero-side">
+          <div class="coord">
+            37°06'N<br>
+            138°15'E
+          </div>
+          <div class="coord-label">JOETSU</div>
+        </div>
         <div class="scroll">SCROLL</div>
       </section>
 
@@ -558,57 +631,57 @@
         </div>
       </section>
 
-<section class="recruit" id="recruit">
-  <div class="recruit-content">
-    <div>
-      <div class="label">RECRUIT</div>
+      <section class="recruit" id="recruit">
+        <div class="recruit-content">
+          <div>
+            <div class="label">RECRUIT</div>
 
-      <h2>挑戦を、<br>ともに。</h2>
+            <h2>挑戦を、<br>ともに。</h2>
 
-      <p>
-        上越から全国へ。<br>
-        技術を磨き、仲間と成長する。<br>
-        新しい挑戦をともにできる仲間との出会いを楽しみにしています。
-      </p>
+            <p>
+              上越から全国へ。<br>
+              技術を磨き、仲間と成長する。<br>
+              新しい挑戦をともにできる仲間との出会いを楽しみにしています。
+            </p>
 
-<a class="btn recruit-btn"
-   href="mailto:info@axcelmode-nexit.jp?subject=採用についてのお問い合わせ">
- ✉ 挑戦について話してみる <span>→</span>
-</a>
-      <p class="recruit-note">
-  地元に戻るだけじゃない。
-  ここから始めるUIJターンを歓迎します。
-</p>
-    </div>
+            <a class="btn recruit-btn"
+               href="mailto:info@axcelmode-nexit.jp?subject=採用についてのお問い合わせ">
+              ✉ 挑戦について話してみる <span>→</span>
+            </a>
 
-    <div class="recruit-image">
-      <img src="train.jpg" alt="上越妙高と列車">
-    </div>
-  </div>
-</section>
+            <p class="recruit-note">
+              地元に戻るだけじゃない。<br>
+              ここから始めるUIJターンを歓迎します。
+            </p>
+          </div>
+
+          <div class="recruit-image">
+            <img src="train.jpg" alt="上越妙高と列車">
+          </div>
+        </div>
+      </section>
     </main>
 
     <footer class="footer">
       <img src="logo.png" alt="AXCEL MODE NEXIT">
       <p>© 2026 Axcel-Mode Nexit Inc.</p>
       <div class="footer-links">
-      <a href="#top">TOP</a>
-      <a href="#vision">VISION</a>
-      <a href="#business">BUSINESS</a>
-      <a href="#message">MESSAGE</a>
-      <a href="#office">OFFICE</a>
-      <a href="#recruit">RECRUIT</a>
-      <a href="#company">COMPANY</a>
+        <a href="#top">TOP</a>
+        <a href="#vision">VISION</a>
+        <a href="#business">BUSINESS</a>
+        <a href="#message">MESSAGE</a>
+        <a href="#office">OFFICE</a>
+        <a href="#recruit">RECRUIT</a>
+        <a href="#company">COMPANY</a>
       </div>
-
     </footer>
   </div>
   <script>
-document.querySelector('.menu-toggle')
-  .addEventListener('click', () => {
-    document.querySelector('.nav')
-      .classList.toggle('open');
-  });
+  document.querySelector('.menu-toggle')
+    .addEventListener('click', () => {
+      document.querySelector('.nav')
+        .classList.toggle('open');
+    });
 </script>
 </body>
 </html>
