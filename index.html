@@ -304,47 +304,10 @@
     @media (max-width: 1180px) {
       .business-grid { grid-template-columns: repeat(2, 1fr); }
     }
-.hero-side {
+    .hero-side { position: absolute; right: 7vw; bottom: 12vh;  z-index: 2;  text-align: right;  pointer-events: none;  color: rgba(255,255,255,.10);}
+    .hero-side .coord {  font-size: clamp(18px, 1.6vw, 28px);  font-weight: 800;  letter-spacing: .25em;  line-height: 1.8;}
 
-  position: absolute;
-
-  right: 7vw;
-
-  bottom: 12vh;
-
-  z-index: 2;
-
-  text-align: right;
-
-  pointer-events: none;
-
-  color: rgba(255,255,255,.10);
-
-}
-
-.hero-side .coord {
-
-  font-size: clamp(18px, 1.6vw, 28px);
-
-  font-weight: 800;
-
-  letter-spacing: .25em;
-
-  line-height: 1.8;
-
-}
-
-.coord-label {
-
-  margin-top: 12px;
-
-  font-size: 12px;
-
-  letter-spacing: .4em;
-
-  color: rgba(255,255,255,.35);
-
-}
+    .coord-label {  margin-top: 12px;  font-size: 12px;  letter-spacing: .4em;  color: rgba(255,255,255,.35);}
     @media (max-width: 980px) {
       .header { padding: 20px 5vw; }
       .brand img { width: 150px; }
@@ -394,23 +357,9 @@
           <p class="lead">── 一歩外へ。次の未来へ。</p>
           <a class="btn" href="#recruit">RECRUITを見る <span>→</span></a>
         </div>
-<div class="hero-side">
-
-  <div class="coord">
-
-    37°06'N<br>
-
-    138°15'E
-
-  </div>
-
-  <div class="coord-label">
-
-    JOETSU
-
-  </div>
-
-</div>
+        <div class="hero-side"><div class="coord">37°06'N<br>138°15'E</div>
+        <div class="coord-label">  JOETSU  </div>
+      </div>
         <div class="scroll">SCROLL</div>
       </section>
 
@@ -433,28 +382,16 @@
     <strong>AXCEL MODE NEXIT</strong> は、挑戦する人のそばで、
     その一歩を確かな前進へと変え続けます。<br><strong>
     一歩外へ。<br>その先の未来へ。</strong>
+    </p>
+      <div class="vision-steps"><div class="vision-card">  <div class="num">01</div>
+      <h3>実装する</h3>
+      <p>構想で終わらせない。技術の力で価値をかたちにする。</p>
+      </div>
 
-</p>
-            <div class="vision-steps">
-<div class="vision-card">
-
-  <div class="num">01</div>
-
-  <h3>実装する</h3>
-
-  <p>構想で終わらせない。技術の力で価値をかたちにする。</p>
-
-</div>
-
-<div class="vision-card">
-
-  <div class="num">02</div>
-
-  <h3>積み重ねる</h3>
-
-  <p>小さな前進を止めない。日々の積み重ねが未来をつくる。</p>
-
-</div>
+      <div class="vision-card">  <div class="num">02</div>
+      <h3>積み重ねる</h3>
+      <p>小さな前進を止めない。日々の積み重ねが未来をつくる。</p>
+      </div>
 
 <div class="vision-card">
 
