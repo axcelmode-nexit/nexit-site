@@ -307,7 +307,47 @@
     @media (max-width: 1180px) {
       .business-grid { grid-template-columns: repeat(2, 1fr); }
     }
+.hero-side {
 
+  position: absolute;
+
+  right: 7vw;
+
+  bottom: 12vh;
+
+  z-index: 2;
+
+  text-align: right;
+
+  pointer-events: none;
+
+  color: rgba(255,255,255,.10);
+
+}
+
+.hero-side .coord {
+
+  font-size: clamp(18px, 1.6vw, 28px);
+
+  font-weight: 800;
+
+  letter-spacing: .25em;
+
+  line-height: 1.8;
+
+}
+
+.coord-label {
+
+  margin-top: 12px;
+
+  font-size: 12px;
+
+  letter-spacing: .4em;
+
+  color: rgba(255,255,255,.35);
+
+}
     @media (max-width: 980px) {
       .header { padding: 20px 5vw; }
       .brand img { width: 150px; }
@@ -328,6 +368,7 @@
       .news-item { grid-template-columns: 1fr; gap: 8px; }
       .footer { flex-direction: column; gap: 22px; align-items: flex-start; }
       .footer-links { flex-wrap: wrap; }
+      .hero-side {  display: none;}
     }
   </style>
 </head>
@@ -356,6 +397,23 @@
           <p class="lead">── 一歩外へ。次の未来へ。</p>
           <a class="btn" href="#recruit">挑戦を、ともに。 <span>→</span></a>
         </div>
+<div class="hero-side">
+
+  <div class="coord">
+
+    37°06'N<br>
+
+    138°15'E
+
+  </div>
+
+  <div class="coord-label">
+
+    JOETSU
+
+  </div>
+
+</div>
         <div class="scroll">SCROLL</div>
       </section>
 
