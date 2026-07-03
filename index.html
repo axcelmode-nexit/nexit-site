@@ -331,9 +331,145 @@
     }
 
 
+    .recruit-lead {
+      font-size: clamp(28px, 3.8vw, 48px);
+      line-height: 1.45;
+      font-weight: 900;
+      margin: 12px 0 18px;
+      letter-spacing: .04em;
+    }
+    .recruit-copy {
+      font-size: 17px;
+      line-height: 2.05;
+      color: rgba(255,255,255,.82);
+      font-weight: 700;
+      max-width: 620px;
+      margin-bottom: 34px;
+    }
+    .recruit-cta-link {
+      position: relative;
+      display: block;
+      max-width: 520px;
+      padding: 24px 0;
+      border-top: 1px solid rgba(255,255,255,.28);
+      border-bottom: 1px solid rgba(255,255,255,.28);
+      overflow: hidden;
+      transition: transform .28s ease, border-color .28s ease;
+    }
+    .recruit-cta-link::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      bottom: -1px;
+      width: 0;
+      height: 2px;
+      background: var(--red);
+      transition: width .34s ease;
+    }
+    .recruit-cta-main {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      font-size: clamp(18px, 2.1vw, 26px);
+      font-weight: 900;
+      letter-spacing: .08em;
+    }
+    .recruit-cta-sub {
+      display: block;
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .18em;
+    }
+    .recruit-arrow {
+      display: inline-block;
+      color: var(--red);
+      font-size: 28px;
+      line-height: 1;
+      transition: transform .28s ease;
+    }
+    .recruit-cta-link:hover {
+      transform: translateY(-3px);
+      border-color: rgba(255,255,255,.55);
+    }
+    .recruit-cta-link:hover::before { width: 100%; }
+    .recruit-cta-link:hover .recruit-arrow { transform: translateX(10px); }
+    .recruit-note-small {
+      margin-top: 22px !important;
+      color: var(--muted) !important;
+      font-size: 13px !important;
+      line-height: 1.9 !important;
+      font-weight: 700 !important;
+    }
+
+
     .footer { display: flex; align-items: center; justify-content: space-between; padding: 34px 7vw; color: #cfcfcf; font-size: 12px; background: #030303; }
     .footer img { width: 190px; }
     .footer-links { display: flex; gap: 18px; letter-spacing: .12em; }
+
+
+    /* TOP scroll motion - same rule as Recruit page */
+    .motion-ready .hero-content > *,
+    .motion-ready .hero-side,
+    .motion-ready .scroll {
+      opacity: 0;
+      transform: translateY(34px);
+      animation: topFadeUp .9s cubic-bezier(.2,.8,.2,1) forwards;
+      will-change: opacity, transform;
+    }
+    .motion-ready .hero-content .catch { animation-delay: .08s; }
+    .motion-ready .hero-content .red-line { animation-delay: .20s; }
+    .motion-ready .hero-content .hero-logo { animation-delay: .32s; }
+    .motion-ready .hero-content .lead { animation-delay: .44s; }
+    .motion-ready .hero-content .btn { animation-delay: .56s; }
+    .motion-ready .hero-side { animation-delay: .66s; }
+    .motion-ready .scroll { animation-delay: .78s; }
+
+    @keyframes topFadeUp {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .reveal {
+      opacity: 0;
+      transform: translateY(42px);
+      transition: opacity .85s cubic-bezier(.2,.8,.2,1), transform .85s cubic-bezier(.2,.8,.2,1);
+      will-change: opacity, transform;
+    }
+    .reveal.is-visible { opacity: 1; transform: translateY(0); }
+    .reveal-delay-1 { transition-delay: .12s; }
+    .reveal-delay-2 { transition-delay: .24s; }
+    .reveal-delay-3 { transition-delay: .36s; }
+    .reveal-delay-4 { transition-delay: .48s; }
+    .section-title.reveal { transform: translateY(28px); }
+    .vision-card.reveal,
+    .business-card.reveal,
+    .work-card.reveal,
+    .news-item.reveal,
+    .btn.reveal,
+    .recruit-cta-link.reveal { transform: translateY(32px); }
+    .office-photo.reveal img,
+    .recruit-image.reveal img {
+      transform: scale(1.045);
+      transition: transform 1.25s cubic-bezier(.2,.8,.2,1);
+    }
+    .office-photo.reveal.is-visible img,
+    .recruit-image.reveal.is-visible img { transform: scale(1); }
+
+    @media (prefers-reduced-motion: reduce) {
+      .motion-ready .hero-content > *,
+      .motion-ready .hero-side,
+      .motion-ready .scroll,
+      .reveal {
+        animation: none !important;
+        transition: none !important;
+        opacity: 1 !important;
+        transform: none !important;
+      }
+      .office-photo.reveal img,
+      .recruit-image.reveal img { transform: none !important; }
+    }
 
     @media (max-width: 1180px) {
       .business-grid { grid-template-columns: repeat(2, 1fr); }
@@ -417,7 +553,7 @@
     }
   </style>
 </head>
-<body>
+<body class="motion-ready">
   <div class="site">
     <header class="header">
       <a class="brand" href="#top"><img src="logo.png" alt="AXCEL MODE NEXIT"></a>
@@ -430,7 +566,7 @@
         <a href="#message">MESSAGE</a>
         <a href="#office">OFFICE</a>
         <a href="#company">COMPANY</a>
-        <a href="#recruit">RECRUIT</a>
+        <a href="recruit.html">RECRUIT</a>
       </nav>
     </header>
 
@@ -441,7 +577,7 @@
           <div class="red-line"></div>
           <img class="hero-logo" src="logo.png" alt="AXCEL MODE NEXIT">
           <p class="lead">── 一歩外へ。次の未来へ。</p>
-          <a class="btn" href="#recruit">RECRUITを見る <span>→</span></a>
+          <a class="btn" href="recruit.html">RECRUIT <span>→</span></a>
         </div>
                 <div class="hero-side">
           <div class="coord">
@@ -585,23 +721,18 @@
         <div class="recruit-content">
           <div>
             <div class="label">RECRUIT</div>
-
-            <h2>挑戦を、<br>ともに。</h2>
-
-            <p>
-              戻る、移る、挑む。<br>上越から始まる新しい働き方。<br>
-              技術を磨き、仲間と成長する。<br>
-              新しい挑戦をともにできる仲間との出会いを楽しみにしています。
+            <h2 class="recruit-lead">AXCEL MODE NEXITで働く。</h2>
+            <p class="recruit-copy">
+              上越から、未来をつくる仲間を募集しています。<br>
+              技術を磨き、仲間と成長し、地方から全国へ価値を届ける。<br>
+              私たちは、そんな挑戦をともにできる仲間との出会いを楽しみにしています。
             </p>
-
-            <a class="btn recruit-btn"
-               href="mailto:info@axcelmode-nexit.jp?subject=採用についてのお問い合わせ">
-              ✉ 挑戦について話してみる <span>→</span>
+            <a class="recruit-cta-link" href="recruit.html" aria-label="採用ページを見る">
+              <span class="recruit-cta-main">Explore Recruit <span class="recruit-arrow">→</span></span>
+              <span class="recruit-cta-sub">AXCEL MODE NEXITで働く</span>
             </a>
-
-            <p class="recruit-note">
-              UIJターン歓迎 ／ エンジニア募集<br>
-              まずはお気軽にご連絡ください
+            <p class="recruit-note-small">
+              UIJターン歓迎 ／ エンジニア募集 ／ まずはお気軽にご覧ください
             </p>
           </div>
 
@@ -623,10 +754,59 @@
         <a href="#message">MESSAGE</a>
         <a href="#office">OFFICE</a>
         <a href="#company">COMPANY</a>
-        <a href="#recruit">RECRUIT</a>
+        <a href="recruit.html">RECRUIT</a>
       </div>
     </footer>
   </div>
+
+  <script>
+    const motionGroups = [
+      ['section:not(.hero) .section-title', 0],
+      ['section:not(.hero) .big-copy', 1],
+      ['section:not(.hero) .body-copy', 2],
+      ['section:not(.hero) .about-small', 2],
+      ['.vision-card', 3],
+      ['.service-head', 0],
+      ['.business-lead', 1],
+      ['.business-card', 2],
+      ['.work-card', 2],
+      ['.message-box', 1],
+      ['.office-photo', 3],
+      ['.company-table', 1],
+      ['.news-item', 1],
+      ['.recruit .label', 0],
+      ['.recruit-lead', 1],
+      ['.recruit-copy', 2],
+      ['.recruit-cta-link', 3],
+      ['.recruit-note-small', 4],
+      ['.recruit-image', 2],
+      ['footer.footer', 0]
+    ];
+
+    motionGroups.forEach(([selector, delay]) => {
+      document.querySelectorAll(selector).forEach((el, index) => {
+        if (!el.classList.contains('reveal')) el.classList.add('reveal');
+        const stagger = Math.min(delay + (index % 4), 4);
+        if (stagger > 0) el.classList.add(`reveal-delay-${stagger}`);
+      });
+    });
+
+    const revealTargets = document.querySelectorAll('.reveal');
+    if ('IntersectionObserver' in window) {
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible');
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.14, rootMargin: '0px 0px -6% 0px' });
+      revealTargets.forEach((target) => observer.observe(target));
+    } else {
+      revealTargets.forEach((target) => target.classList.add('is-visible'));
+    }
+  </script>
+
   <script>
   document.querySelector('.menu-toggle')
     .addEventListener('click', () => {
