@@ -76,7 +76,7 @@
       display: grid;
       grid-template-columns: 1fr;
       align-items: center;
-      padding: 145px 7vw 70px;
+      padding: 170px 7vw 96px;
       border-bottom: 1px solid var(--line);
       background:
         linear-gradient(90deg, rgba(0,0,0,.94) 0%, rgba(0,0,0,.82) 36%, rgba(0,0,0,.50) 66%, rgba(0,0,0,.30) 100%),
@@ -457,11 +457,13 @@
     }
     .office-photo.reveal.is-visible img,
     .recruit-image.reveal.is-visible img { transform: scale(1); }
+
+
+
     /* Version 1.1: refined brand motion */
-    .hero {
-      overflow: hidden;
+    .hero { overflow: hidden; }
+      to { background-size: 100% auto; }
     }
-    
     .motion-ready .hero-content > * {
       opacity: 0;
       transform: translateY(46px);
@@ -639,7 +641,33 @@
         letter-spacing: .12em;
       }
       .hero-side { display: none; }
-    }</style>
+    }
+
+
+    /* TOP hero viewport fit - match recruit behavior */
+    @media (min-width: 981px) {
+      .hero {
+        height: 100vh !important;
+        min-height: 100vh !important;
+        padding: 140px 7vw 72px !important;
+        align-items: center !important;
+        background:
+          linear-gradient(90deg, rgba(0,0,0,.94) 0%, rgba(0,0,0,.82) 36%, rgba(0,0,0,.50) 66%, rgba(0,0,0,.30) 100%),
+          linear-gradient(180deg, rgba(0,0,0,.10) 0%, rgba(0,0,0,.70) 100%),
+          url('mountain.jpg') right center / cover no-repeat !important;
+      }
+
+      .catch {
+        margin-top: 16px !important;
+        margin-bottom: 24px !important;
+      }
+
+      .scroll {
+        bottom: 56px !important;
+      }
+    }
+
+  </style>
 </head>
 <body class="motion-ready">
   <div class="site">
