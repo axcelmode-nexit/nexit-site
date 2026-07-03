@@ -460,15 +460,11 @@
 
 
 
-    /* Version 1.1: refined brand motion */
+    /* Hero background fix */
     .hero {
       overflow: hidden;
+      background-position: right center;
       background-size: cover;
-      animation: heroBreath 18s ease-out both;
-    }
-    @keyframes heroBreath {
-      from { background-size: 106% auto; }
-      to { background-size: 100% auto; }
     }
     .motion-ready .hero-content > * {
       opacity: 0;
@@ -622,7 +618,12 @@
       }
 
       .nav.open { display: flex; }
-      .hero { padding: 140px 6vw 72px; min-height: 92vh; background-position: center; }
+      .hero {
+        padding: 120px 6vw 72px;
+        min-height: 100svh;
+        background-position: 65% center;
+        background-size: cover;
+      }
       .hero::before { opacity: .14; bottom: 12vh; }
       .hero-logo { max-width: 360px; }
       .scroll { display: none; }
@@ -647,6 +648,14 @@
         letter-spacing: .12em;
       }
       .hero-side { display: none; }
+    }
+
+
+    @media (max-width: 560px) {
+      .hero {
+        background-position: 68% center;
+        background-size: cover;
+      }
     }
   </style>
 </head>
