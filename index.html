@@ -82,6 +82,7 @@
         linear-gradient(90deg, rgba(0,0,0,.94) 0%, rgba(0,0,0,.82) 36%, rgba(0,0,0,.50) 66%, rgba(0,0,0,.30) 100%),
         linear-gradient(180deg, rgba(0,0,0,.10) 0%, rgba(0,0,0,.70) 100%),
         url('mountain.jpg') right center / cover no-repeat;
+      transition: background-position .45s ease-out;
     }
     .hero::before {
       content: "";
@@ -929,6 +930,30 @@
       document.querySelector('.nav')
         .classList.toggle('open');
     });
+</script>
+  <script>
+const hero = document.querySelector(".hero");
+
+hero.addEventListener("mousemove", (e) => {
+
+  const rect = hero.getBoundingClientRect();
+
+  const x = (e.clientX - rect.left) / rect.width;
+  const y = (e.clientY - rect.top) / rect.height;
+
+  const moveX = (x - 0.5) * 16;
+  const moveY = (y - 0.5) * 10;
+
+  hero.style.backgroundPosition =
+    `calc(100% + ${moveX}px) calc(50% + ${moveY}px)`;
+
+});
+
+hero.addEventListener("mouseleave", () => {
+
+  hero.style.backgroundPosition = "right center";
+
+});
 </script>
 </body>
 </html>
