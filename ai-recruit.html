@@ -30,59 +30,59 @@
       <p class="note">※AIの回答は採用ページの情報をもとにした案内です。正式な条件は面談時にご確認ください。</p></div>
     <div class="chat"><div class="chat-head"><div><div class="chat-title">NEXIT AI</div><div class="chat-sub">Recruit Assistant</div></div><div class="status"><span class="dot"></span> ONLINE</div></div><div class="messages" id="messages"><div class="msg ai">こんにちは。NEXIT AI採用アシスタントです。働き方、募集内容、上越勤務、AI活用など、気になることを聞いてください。</div></div><form class="chat-form" id="chatForm"><textarea id="question" placeholder="例：リモートワークはできますか？" required></textarea><button class="send" id="sendBtn" type="submit">SEND</button></form></div>
   </section></main>
-<script>
-const messages=document.getElementById("messages"),
-      form=document.getElementById("chatForm"),
-      question=document.getElementById("question"),
-      sendBtn=document.getElementById("sendBtn");
+  <script>
+const messages = document.getElementById("messages");
+const form = document.getElementById("chatForm");
+const question = document.getElementById("question");
+const sendBtn = document.getElementById("sendBtn");
 
-function addMessage(role,text){
-  const div=document.createElement("div");
-  div.className="msg "+role;
-  div.textContent=text;
+function addMessage(role, text) {
+  const div = document.createElement("div");
+  div.className = "msg " + role;
+  div.textContent = text;
   messages.appendChild(div);
-  messages.scrollTop=messages.scrollHeight;
+  messages.scrollTop = messages.scrollHeight;
   return div;
 }
 
-async function askAI(text){
-  addMessage("user",text);
-  const pending=addMessage("ai","回答を作成しています...");
-  sendBtn.disabled=true;
+async function askAI(text) {
+  addMessage("user", text);
+  const pending = addMessage("ai", "回答を作成しています...");
+  sendBtn.disabled = true;
 
-  try{
-    const res=await fetch("/api/recruit-chat",{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({message:text})
+  try {
+    const res = await fetch("/api/recruit-chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: text })
     });
 
-    const data=await res.json();
+    const data = await res.json();
 
-    if(!res.ok){
+    if (!res.ok) {
       throw new Error(data.error || "AI error");
     }
 
-    pending.textContent=data.answer;
-  }catch(e){
-    pending.textContent="すみません。現在AIが応答できません。時間をおいて再度お試しください。";
-    console.error(e);
-  }finally{
-    sendBtn.disabled=false;
+    pending.textContent = data.answer;
+  } catch (err) {
+    pending.textContent = "すみません。現在AIが応答できません。時間をおいて再度お試しください。";
+    console.error(err);
+  } finally {
+    sendBtn.disabled = false;
   }
 }
 
-form.addEventListener("submit",async e=>{
+form.addEventListener("submit", async (e) => {
   e.preventDefault();
-  const text=question.value.trim();
-  if(!text)return;
-  question.value="";
+  const text = question.value.trim();
+  if (!text) return;
+  question.value = "";
   await askAI(text);
 });
 
-document.querySelectorAll("[data-q]").forEach(btn=>
-  btn.addEventListener("click",()=>askAI(btn.dataset.q))
-);
+document.querySelectorAll("[data-q]").forEach((btn) => {
+  btn.addEventListener("click", () => askAI(btn.dataset.q));
+});
 </script>
 </body>
 </html>
