@@ -33,8 +33,7 @@
   <script>
     const messages=document.getElementById("messages"),form=document.getElementById("chatForm"),question=document.getElementById("question"),sendBtn=document.getElementById("sendBtn");
     function addMessage(role,text){const div=document.createElement("div");div.className="msg "+role;div.textContent=text;messages.appendChild(div);messages.scrollTop=messages.scrollHeight;return div}
-    async function askAI(text){addMessage("user",text);const pending=addMessage("ai","回答を作成しています...");sendBtn.disabled=true;try{const res=await fetch("/api/recruit-chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:text})});const data=await res.json();if(!res.ok)throw new Error(data.error||"AI error");pending.textContent=data.answer}catch(e){pending.textContent="すみません。現在AIが応答できません。時間をおいて再度お試しください。エラー内容：\\n" +
-
+    async function askAI(text){addMessage("user",text);const pending=addMessage("ai","回答を作成しています...");sendBtn.disabled=true;try{const res=await fetch("/api/recruit-chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:text})});const data=await res.json();if(!res.ok)throw new Error(data.error||"AI error");pending.textContent=data.answer}catch(e){pending.textContent="エラー内容：\\n" +
     (e.message || "不明なエラーです";console.error(e)}finally{sendBtn.disabled=false}}
     form.addEventListener("submit",async e=>{e.preventDefault();const text=question.value.trim();if(!text)return;question.value="";await askAI(text)});
     document.querySelectorAll("[data-q]").forEach(btn=>btn.addEventListener("click",()=>askAI(btn.dataset.q)));
