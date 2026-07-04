@@ -43,9 +43,10 @@ ${message}
     const response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
     const data = await response.json();
     if (!response.ok) {
-      console.error("Gemini error:", data);
-      return json({ error: "Gemini API error." }, 500);
-    }
+  return json({
+    error: "Gemini API error",
+    status: response.status,
+    detail: data}, 500);}
 
     const answer = data?.candidates?.[0]?.content?.parts?.map(p => p.text).join("") || "すみません。回答を生成できませんでした。";
     return json({ answer });
