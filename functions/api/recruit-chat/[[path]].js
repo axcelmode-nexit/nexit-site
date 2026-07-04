@@ -1,4 +1,4 @@
-export async function onRequestPost(context) {
+export async function onRequest(context) {
   try {
     const { request, env } = context;
     if (!env.GEMINI_API_KEY) return json({ error: "GEMINI_API_KEY is not configured." }, 500);
