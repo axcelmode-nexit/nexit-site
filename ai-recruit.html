@@ -31,12 +31,29 @@
     <div class="chat"><div class="chat-head"><div><div class="chat-title">NEXIT AI</div><div class="chat-sub">Recruit Assistant</div></div><div class="status"><span class="dot"></span> ONLINE</div></div><div class="messages" id="messages"><div class="msg ai">こんにちは。NEXIT AI採用アシスタントです。働き方、募集内容、上越勤務、AI活用など、気になることを聞いてください。</div></div><form class="chat-form" id="chatForm"><textarea id="question" placeholder="例：リモートワークはできますか？" required></textarea><button class="send" id="sendBtn" type="submit">SEND</button></form></div>
   </section></main>
   <script>
-    const messages=document.getElementById("messages"),form=document.getElementById("chatForm"),question=document.getElementById("question"),sendBtn=document.getElementById("sendBtn");
-    function addMessage(role,text){const div=document.createElement("div");div.className="msg "+role;div.textContent=text;messages.appendChild(div);messages.scrollTop=messages.scrollHeight;return div}
-    async function askAI(text){addMessage("user",text);const pending=addMessage("ai","回答を作成しています...");sendBtn.disabled=true;try{const res=await fetch("/api/recruit-chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:text})});const data=await res.json();if(!res.ok)throw new Error(JSON.stringify(data, null, 2));pending.textContent=data.answer}catch(e){pending.textContent="エラー内容：\\n" +
-    (e.message || "不明なエラーです";console.error(e)}finally{sendBtn.disabled=false}}
-    form.addEventListener("submit",async e=>{e.preventDefault();const text=question.value.trim();if(!text)return;question.value="";await askAI(text)});
-    document.querySelectorAll("[data-q]").forEach(btn=>btn.addEventListener("click",()=>askAI(btn.dataset.q)));
-  </script>
+const messages=document.getElementById("messages");
+const form=document.getElementById("chatForm");
+const question=document.getElementById("question");
+const sendBtn=document.getElementById("sendBtn");
+function addMessage(role,text){const d=document.createElement("div");d.className="msg "+role;d.textContent=text;messages.appendChild(d);messages.scrollTop=messages.scrollHeight;return d;}
+async function askAI(text){
+ addMessage("user",text);
+ const pending=addMessage("ai","回答を作成しています...");
+ sendBtn.disabled=true;
+ try{
+  const res=await fetch("/api/recruit-chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:text})});
+  const raw=await res.text();
+  let data;
+  try{data=JSON.parse(raw);}catch{throw new Error("APIからJSONではない応答:\n"+raw);}
+  if(!res.ok) throw new Error(JSON.stringify(data,null,2));
+  pending.textContent=data.answer||"回答が返されませんでした。";
+ }catch(err){
+  pending.textContent="エラー内容:\n"+(err.message||"不明なエラー");
+  console.error(err);
+ }finally{sendBtn.disabled=false;}
+}
+form.addEventListener("submit",async(e)=>{e.preventDefault();const t=question.value.trim();if(!t)return;question.value="";await askAI(t);});
+document.querySelectorAll("[data-q]").forEach(b=>b.addEventListener("click",()=>askAI(b.dataset.q)));
+</script>
 </body>
 </html>
