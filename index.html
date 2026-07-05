@@ -1118,8 +1118,8 @@ aiChatForm.addEventListener("submit",async(e)=>{
   try{
     const res=await fetch("https://axcelmode-nexit-ai.pages.dev/api/recruit-chat",{
       method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({message:text})
+      headers:{"Content-Type":"text/plain;charset=UTF-8"},
+      body:text
     });
 
     const data=await res.json();
