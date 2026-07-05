@@ -849,6 +849,20 @@
     box-shadow:0 0 18px rgba(215,25,32,.72);
   }
 }
+    .hero{
+  animation: heroBgMove 28s ease-in-out infinite alternate;
+}
+
+@keyframes heroBgMove{
+  0%{
+    background-size: 100%;
+    background-position: center center;
+  }
+  100%{
+    background-size: 108%;
+    background-position: center 48%;
+  }
+}
   </style>
 </head>
 <body class="motion-ready">
