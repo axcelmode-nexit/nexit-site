@@ -10,8 +10,7 @@ export async function onRequest(context) {
   }
 
   try {
-    const body = await request.json().catch(() => ({}));
-    const message = String(body.message || "").trim();
+    const message = (await request.text()).trim();
 
     if (!message) {
       return json({ error: "message is required" }, 400);
