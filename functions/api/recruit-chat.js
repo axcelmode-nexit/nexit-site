@@ -6,8 +6,12 @@ export async function onRequest(context) {
   }
 
   try {
-    const { message } = await request.json();
-    if (!message) return json({ error: "message is required" }, 400);
+    const body = await request.json().catch(() => ({}));
+    const message = String(body.message || "").trim();
+
+    if (!message) {
+      return json({ error: "message is required" }, 400);
+    }
 
     const prompt = `
 あなたは AXCEL MODE NEXIT の採用AIアシスタントです。
@@ -29,16 +33,20 @@ ${message}
 
     const result = await env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
       messages: [
-        { role: "system", content: "あなたは採用担当AIです。" },
+        { role: "system", content: "あなたはAXCEL MODE NEXITの採用担当AIです。" },
         { role: "user", content: prompt }
       ]
     });
 
-    return json({ answer: result.response });
+    return json({
+      answer: result.response || "すみません。回答を生成できませんでした。"
+    });
   } catch (e) {
     console.error(e);
-    catch (e) { console.error(e); return json({error: String(e),stack: e?.stack}, 500);
-}
+    return json({
+      error: "AI error",
+      detail: String(e)
+    }, 500);
   }
 }
 
