@@ -873,6 +873,53 @@
     animation: none;
   }
 }
+    .scroll-indicator{
+  position:absolute;
+  left:40px;
+  bottom:40px;
+
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:12px;
+
+  z-index:10;
+}
+
+.scroll-indicator span{
+  writing-mode:vertical-rl;
+  letter-spacing:.35em;
+  font-size:11px;
+  font-weight:700;
+  color:#fff;
+  opacity:.8;
+}
+
+.scroll-arrow{
+  font-size:22px;
+  color:#d71920;
+
+  animation:scrollArrow 1.8s ease-in-out infinite;
+}
+
+@keyframes scrollArrow{
+
+  0%{
+    transform:translateY(0);
+    opacity:.2;
+  }
+
+  50%{
+    transform:translateY(12px);
+    opacity:1;
+  }
+
+  100%{
+    transform:translateY(0);
+    opacity:.2;
+  }
+
+}
   </style>
 </head>
 <body class="motion-ready">
@@ -913,7 +960,12 @@
           </div>
           <div class="coord-label">JOETSU</div>
         </div>
-        <div class="scroll">SCROLL</div>
+        <div class="scroll-indicator">
+  <span>SCROLL</span>
+  <div class="scroll-arrow">
+    ↓
+  </div>
+</div>
       </section>
       <section style="padding:50px 7vw;border-bottom:1px solid rgba(255,255,255,.14);background:#070707;">
   <a class="recruit-cta-link"
