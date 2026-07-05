@@ -1130,8 +1130,8 @@ aiChatForm.addEventListener("submit",async(e)=>{
 
     pending.textContent=data.answer||"すみません。回答を生成できませんでした。";
   }catch(err){
-    pending.textContent="すみません。現在AIが応答できません。時間をおいて再度お試しください。";
-    console.error(err);
+  pending.textContent = "エラー: " + String(err.message || err);
+  console.error(err);
   }finally{
     aiChatSend.disabled=false;
   }
