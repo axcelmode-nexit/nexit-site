@@ -1,5 +1,9 @@
 export async function onRequest(context) {
   const { request, env } = context;
+  
+  if (request.method === "OPTIONS") {
+  return json({}, 204);
+}
 
   if (request.method !== "POST") {
     return json({ error: "Method not allowed" }, 405);
@@ -77,7 +81,10 @@ function json(data, status = 200) {
     status,
     headers: {
       "Content-Type": "application/json; charset=utf-8",
-      "Cache-Control": "no-store"
+      "Cache-Control": "no-store",
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type"
     }
   });
 }
