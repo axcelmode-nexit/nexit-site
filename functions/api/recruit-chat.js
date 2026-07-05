@@ -35,22 +35,24 @@ export async function onRequest(context) {
 ${message}
 `;
 
-    const result = await env.AI.run(
-      "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+const result = await env.AI.run(
+  "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+  {
+    messages: [
       {
-        messages: [
-          {
-            role: "system",
-            content:
-              "あなたは株式会社アクセル・モード・ネクストの採用AIアシスタントです。日本語で分かりやすく回答してください。"
-          },
-          {
-            role: "user",
-            content: prompt
-          }
-        ]
+        role: "system",
+        content:
+          "あなたは株式会社アクセル・モード・ネクストの採用AIアシスタントです。"
+      },
+      {
+        role: "user",
+        content: prompt
       }
-    );
+    ],
+    max_tokens: 700,
+    temperature: 0.4
+  }
+);
 
     return json({
       answer:
