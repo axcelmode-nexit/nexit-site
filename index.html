@@ -667,7 +667,91 @@
         bottom: 56px !important;
       }
     }
+.ai-chat-button{
+  position:fixed;
+  right:24px;
+  bottom:24px;
+  width:70px;
+  height:70px;
+  border-radius:50%;
+  background:#d71920;
+  color:#fff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:34px;
+  border:1px solid rgba(255,255,255,.22);
+  cursor:pointer;
+  z-index:9999;
+  box-shadow:0 14px 36px rgba(0,0,0,.42);
+}
 
+.ai-chat-panel{
+  position:fixed;
+  right:24px;
+  bottom:108px;
+  width:390px;
+  max-width:calc(100vw - 32px);
+  height:560px;
+  max-height:calc(100vh - 140px);
+  background:rgba(5,5,5,.96);
+  border:1px solid rgba(255,255,255,.16);
+  z-index:9998;
+  display:none;
+  flex-direction:column;
+  box-shadow:0 28px 80px rgba(0,0,0,.55);
+}
+
+.ai-chat-panel.open{display:flex;}
+
+.ai-chat-head{
+  padding:18px 20px;
+  border-bottom:1px solid rgba(255,255,255,.12);
+  display:flex;
+  justify-content:space-between;
+}
+
+.ai-chat-messages{
+  flex:1;
+  padding:18px;
+  overflow:auto;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+
+.ai-msg{
+  padding:12px 14px;
+  border:1px solid rgba(255,255,255,.12);
+  line-height:1.8;
+  font-size:13px;
+  white-space:pre-wrap;
+}
+
+.ai-msg.bot{align-self:flex-start;background:rgba(255,255,255,.045);}
+.ai-msg.user{align-self:flex-end;background:rgba(215,25,32,.16);}
+
+.ai-chat-form{
+  display:flex;
+  gap:10px;
+  padding:14px;
+  border-top:1px solid rgba(255,255,255,.12);
+}
+
+.ai-chat-form textarea{
+  flex:1;
+  background:#050505;
+  color:#fff;
+  border:1px solid rgba(255,255,255,.18);
+  padding:12px;
+}
+
+.ai-chat-form button{
+  width:76px;
+  background:transparent;
+  color:#fff;
+  border:1px solid rgba(255,255,255,.5);
+}
   </style>
 </head>
 <body class="motion-ready">
@@ -969,6 +1053,88 @@ hero.addEventListener("mouseleave", () => {
 
   hero.style.backgroundPosition = "right center";
 
+});
+</script>
+  <div class="ai-chat-panel" id="aiChatPanel">
+  <div class="ai-chat-head">
+    <div>
+      <strong>NEXIT AI</strong><br>
+      <small>Recruit Assistant</small>
+    </div>
+    <button id="aiChatClose" type="button">×</button>
+  </div>
+
+  <div class="ai-chat-messages" id="aiChatMessages">
+    <div class="ai-msg bot">
+      こんにちは。NEXIT AI採用アシスタントです。働き方、募集内容、東京案件、AI活用など、気になることを聞いてください。
+    </div>
+  </div>
+
+  <form class="ai-chat-form" id="aiChatForm">
+    <textarea id="aiChatInput" placeholder="例：東京案件中心とは？"></textarea>
+    <button id="aiChatSend" type="submit">SEND</button>
+  </form>
+</div>
+
+<button class="ai-chat-button" id="aiChatButton" type="button">🤖</button>
+<script>
+const aiChatPanel=document.getElementById("aiChatPanel");
+const aiChatButton=document.getElementById("aiChatButton");
+const aiChatClose=document.getElementById("aiChatClose");
+const aiChatMessages=document.getElementById("aiChatMessages");
+const aiChatForm=document.getElementById("aiChatForm");
+const aiChatInput=document.getElementById("aiChatInput");
+const aiChatSend=document.getElementById("aiChatSend");
+
+function addAiMessage(role,text){
+  const div=document.createElement("div");
+  div.className="ai-msg "+role;
+  div.textContent=text;
+  aiChatMessages.appendChild(div);
+  aiChatMessages.scrollTop=aiChatMessages.scrollHeight;
+  return div;
+}
+
+aiChatButton.addEventListener("click",()=>{
+  aiChatPanel.classList.toggle("open");
+});
+
+aiChatClose.addEventListener("click",()=>{
+  aiChatPanel.classList.remove("open");
+});
+
+aiChatForm.addEventListener("submit",async(e)=>{
+  e.preventDefault();
+
+  const text=aiChatInput.value.trim();
+  if(!text)return;
+
+  addAiMessage("user",text);
+  aiChatInput.value="";
+
+  const pending=addAiMessage("bot","回答を作成しています...");
+  aiChatSend.disabled=true;
+
+  try{
+    const res=await fetch("https://axcelmode-nexit-ai.pages.dev/api/recruit-chat",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({message:text})
+    });
+
+    const data=await res.json();
+
+    if(!res.ok){
+      throw new Error(data.error||"AI error");
+    }
+
+    pending.textContent=data.answer||"すみません。回答を生成できませんでした。";
+  }catch(err){
+    pending.textContent="すみません。現在AIが応答できません。時間をおいて再度お試しください。";
+    console.error(err);
+  }finally{
+    aiChatSend.disabled=false;
+  }
 });
 </script>
 </body>
