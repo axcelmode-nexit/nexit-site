@@ -37,14 +37,7 @@ ${message}
     return json({ answer: result.response });
   } catch (e) {
     console.error(e);
-
-    catch (e) {
-  console.error(e);
-
-  return json({
-    error: String(e),
-    stack: e?.stack
-  }, 500);
+    catch (e) { console.error(e); return json({error: String(e),stack: e?.stack}, 500);
 }
   }
 }
@@ -58,4 +51,3 @@ function json(data, status = 200) {
     }
   });
 }
- 
