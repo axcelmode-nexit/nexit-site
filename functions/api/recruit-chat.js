@@ -1,9 +1,9 @@
 export async function onRequest(context) {
   const { request, env } = context;
-  
+
   if (request.method === "OPTIONS") {
-  return json({}, 204);
-　}
+    return json({}, 204);
+  }
 
   if (request.method !== "POST") {
     return json({ error: "Method not allowed" }, 405);
