@@ -1,9 +1,9 @@
 export async function onRequest(context) {
   const { request, env } = context;
 
-  if (request.method !== "POST") {
-    return json({ error: "Method not allowed" }, 405);
-  }
+if (request.method !== "POST") {
+  return json({ ok: true, message: "Function is alive" }, 200);
+}
 
   try {
     const body = await request.json().catch(() => ({}));
