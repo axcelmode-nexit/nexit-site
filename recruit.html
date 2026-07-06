@@ -44,6 +44,113 @@ background:rgba(255,255,255,.03);transition:.25s}
     .hero-logo img{ width:70%; max-width:360px;}  
     .hero-ai{display:inline-flex;align-items:center;gap:8px;margin-top:24px;color:#d8d8d8;font-size:14px;font-weight:700;transition:.25s;}
     .hero-ai:hover{color:#fff;transform:translateX(4px);}
+  
+/* Floating AI chat widget for Recruit */
+.ai-chat-button{
+  position:fixed;
+  right:24px;
+  bottom:24px;
+  width:70px;
+  height:70px;
+  border-radius:50%;
+  background:#d71920;
+  color:#fff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:34px;
+  border:1px solid rgba(255,255,255,.22);
+  cursor:pointer;
+  z-index:9999;
+  box-shadow:0 14px 36px rgba(0,0,0,.42);
+  transition:transform .25s ease, box-shadow .25s ease;
+  animation:aiFloat 3.2s ease-in-out infinite;
+}
+.ai-chat-button:hover{transform:scale(1.08);box-shadow:0 18px 46px rgba(215,25,32,.38);}
+@keyframes aiFloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-7px);}}
+.ai-chat-panel{
+  position:fixed;
+  right:24px;
+  bottom:108px;
+  width:390px;
+  max-width:calc(100vw - 32px);
+  height:560px;
+  max-height:calc(100vh - 140px);
+  background:rgba(5,5,5,.96);
+  border:1px solid rgba(255,255,255,.16);
+  z-index:9998;
+  display:none;
+  flex-direction:column;
+  box-shadow:0 28px 80px rgba(0,0,0,.55);
+  overflow:hidden;
+}
+.ai-chat-panel.open{display:flex;}
+.ai-chat-head{
+  padding:18px 20px;
+  border-bottom:1px solid rgba(255,255,255,.12);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+.ai-chat-head strong{font-size:14px;letter-spacing:.12em;}
+.ai-chat-head small{color:#b8b8b8;font-size:11px;letter-spacing:.08em;}
+.ai-chat-close{border:0;background:transparent;color:#fff;font-size:24px;cursor:pointer;opacity:.8;}
+.ai-chat-close:hover{opacity:1;}
+.ai-chat-messages{
+  flex:1;
+  padding:18px;
+  overflow:auto;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+.ai-msg{
+  max-width:88%;
+  padding:12px 14px;
+  border:1px solid rgba(255,255,255,.12);
+  line-height:1.8;
+  font-size:13px;
+  white-space:pre-wrap;
+}
+.ai-msg.bot{align-self:flex-start;background:rgba(255,255,255,.045);}
+.ai-msg.user{align-self:flex-end;background:rgba(215,25,32,.16);border-color:rgba(215,25,32,.42);}
+.ai-chat-form{
+  display:flex;
+  gap:10px;
+  padding:14px;
+  border-top:1px solid rgba(255,255,255,.12);
+  background:rgba(0,0,0,.34);
+}
+.ai-chat-form textarea{
+  flex:1;
+  min-height:46px;
+  max-height:110px;
+  resize:vertical;
+  background:#050505;
+  color:#fff;
+  border:1px solid rgba(255,255,255,.18);
+  padding:12px;
+  font:inherit;
+  font-size:13px;
+  line-height:1.55;
+  outline:none;
+}
+.ai-chat-form button{
+  width:76px;
+  background:transparent;
+  color:#fff;
+  border:1px solid rgba(255,255,255,.5);
+  font-weight:900;
+  cursor:pointer;
+  letter-spacing:.08em;
+}
+.ai-chat-form button:hover{background:#fff;color:#000;}
+.ai-chat-form button:disabled{opacity:.45;cursor:not-allowed;}
+@media(max-width:700px){
+  .ai-chat-button{width:62px;height:62px;right:18px;bottom:18px;font-size:30px;}
+  .ai-chat-panel{right:12px;left:12px;bottom:92px;width:auto;height:min(560px, calc(100vh - 118px));}
+}
+
   </style>
 </head>
 <body>
@@ -58,7 +165,7 @@ background:rgba(255,255,255,.03);transition:.25s}
           <!-- Recruit hero logo removed -->
           <p class="lead reveal reveal-delay-2">上越から、未来をつくる仲間を募集しています。<br>首都圏品質のソフトウェア開発を、上越から。</p>
           <div class="hero-actions reveal reveal-delay-3"><a class="btn" href="#entry">ENTRY <span>→</span></a><a class="btn" href="#about">ABOUT <span>→</span></a></div>
-          <a class="hero-ai" href="https://axcelmode-nexit-ai.pages.dev/ai-recruit/" target="_blank"> 🤖 分からないことはAIに聞けます</a>
+          <a class="hero-ai" href="https://axcelmode-nexit-ai.pages.dev/ai-recruit.html" target="_blank"> 🤖 分からないことはAIに聞けます</a>
         </div>
       </section>
       <section id="about"><div class="two-col"><div class="section-title reveal"><div class="bar"></div><h2>ABOUT</h2><p>AXCEL MODE NEXITとは</p></div><div><p class="big-copy reveal reveal-delay-1">ソフトウェアの力で、<br>企業の課題を解決する会社です。</p><p class="body-copy reveal reveal-delay-2">AXCEL MODE NEXITは、新潟県上越市を拠点とするソフトウェア開発会社です。企業向けシステム開発、保守・運用、AI活用支援、ITコンサルティングを通じて、お客様の事業成長を支えています。<br><br>首都圏で培った技術力を活かし、地方から全国へ高品質なソフトウェアを届ける。そんな新しい開発拠点を、上越につくっていきます。</p><div class="cards reveal reveal-delay-3"><div class="card"><div class="num">01</div><h3>System Development</h3><p>Webシステム、業務システム、API連携などの設計・開発。</p></div><div class="card"><div class="num">02</div><h3>AI Support</h3><p>AIを業務や開発プロセスに取り入れ、課題解決へつなげる支援。</p></div><div class="card"><div class="num">03</div><h3>Operation</h3><p>リリース後の保守・運用、改善提案、安定稼働の支援。</p></div><div class="card"><div class="num">04</div><h3>Consulting</h3><p>要件整理、IT活用、PM/PMOなどプロジェクト推進の支援。</p></div></div></div></div></section>
@@ -135,5 +242,110 @@ background:rgba(255,255,255,.03);transition:.25s}
       revealTargets.forEach((target) => target.classList.add('is-visible'));
     }
   </script>
+
+<div class="ai-chat-panel" id="aiChatPanel">
+  <div class="ai-chat-head">
+    <div>
+      <strong>NEXIT AI</strong><br>
+      <small>Recruit Assistant</small>
+    </div>
+    <button class="ai-chat-close" id="aiChatClose" type="button" aria-label="閉じる">×</button>
+  </div>
+
+  <div class="ai-chat-messages" id="aiChatMessages">
+    <div class="ai-msg bot">
+      採用ページをご覧いただきありがとうございます。給与・働き方・東京案件・AI活用・UIJターンなど、気になることは何でも聞いてください。
+    </div>
+  </div>
+
+  <form class="ai-chat-form" id="aiChatForm">
+    <textarea id="aiChatInput" placeholder="例：東京案件中心とは？"></textarea>
+    <button id="aiChatSend" type="submit">SEND</button>
+  </form>
+</div>
+
+<button class="ai-chat-button" id="aiChatButton" type="button" aria-label="AI採用アシスタントを開く">🤖</button>
+
+<script>
+const aiChatPanel=document.getElementById("aiChatPanel");
+const aiChatButton=document.getElementById("aiChatButton");
+const aiChatClose=document.getElementById("aiChatClose");
+const aiChatMessages=document.getElementById("aiChatMessages");
+const aiChatForm=document.getElementById("aiChatForm");
+const aiChatInput=document.getElementById("aiChatInput");
+const aiChatSend=document.getElementById("aiChatSend");
+
+function addAiMessage(role,text){
+  const div=document.createElement("div");
+  div.className="ai-msg "+role;
+  div.textContent=text;
+  aiChatMessages.appendChild(div);
+  aiChatMessages.scrollTop=aiChatMessages.scrollHeight;
+  return div;
+}
+
+function typeText(element,text,speed=18){
+  element.textContent="";
+  let i=0;
+  const timer=setInterval(()=>{
+    element.textContent+=text.charAt(i);
+    aiChatMessages.scrollTop=aiChatMessages.scrollHeight;
+    i++;
+    if(i>=text.length)clearInterval(timer);
+  },speed);
+}
+
+aiChatButton.addEventListener("click",()=>{
+  aiChatPanel.classList.toggle("open");
+  if(aiChatPanel.classList.contains("open")){
+    setTimeout(()=>aiChatInput.focus(),120);
+  }
+});
+
+aiChatClose.addEventListener("click",()=>{
+  aiChatPanel.classList.remove("open");
+});
+
+aiChatInput.addEventListener("keydown",(e)=>{
+  if(e.key==="Enter" && !e.shiftKey){
+    e.preventDefault();
+    aiChatForm.requestSubmit();
+  }
+});
+
+aiChatForm.addEventListener("submit",async(e)=>{
+  e.preventDefault();
+  const text=aiChatInput.value.trim();
+  if(!text)return;
+
+  addAiMessage("user",text);
+  aiChatInput.value="";
+
+  const pending=addAiMessage("bot","考えています...");
+  aiChatSend.disabled=true;
+
+  try{
+    const res=await fetch("https://axcelmode-nexit-ai.pages.dev/api/recruit-chat",{
+      method:"POST",
+      headers:{"Content-Type":"text/plain;charset=UTF-8"},
+      body:text
+    });
+
+    const data=await res.json();
+
+    if(!res.ok){
+      throw new Error(data.error||"AI error");
+    }
+
+    typeText(pending,data.answer||"すみません。回答を生成できませんでした。");
+  }catch(err){
+    pending.textContent="すみません。現在AIが応答できません。時間をおいて再度お試しください。";
+    console.error(err);
+  }finally{
+    aiChatSend.disabled=false;
+  }
+});
+</script>
+
 </body>
 </html>
