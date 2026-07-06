@@ -306,8 +306,10 @@ aiChatClose.addEventListener("click",()=>{
   aiChatPanel.classList.remove("open");
 });
 
-aiChatInput.addEventListener("keydown",(e)=>{
-  if(e.key==="Enter" && !e.shiftKey){
+aiChatInput.addEventListener("keydown", (e) => {
+  if (e.isComposing || e.keyCode === 229) return;
+
+  if (e.key === "Enter" && !e.shiftKey) {
     e.preventDefault();
     aiChatForm.requestSubmit();
   }
