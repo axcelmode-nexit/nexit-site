@@ -5,7 +5,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>AXCEL MODE NEXIT | 株式会社アクセル・モード・ネクスト</title>
-  <!-- version: 1.2 day cycle hero background -->
+  <!-- version: 2.2 NEXIT Signature Animation F1 feint italic N wave -->
   <meta property="og:type" content="website">
   <meta property="og:title" content="AXCEL MODE NEXIT">
   <meta property="og:description"content="上越を拠点にソフトウェア開発・ITソリューションを提供。UIJターン歓迎。">
@@ -1033,12 +1033,942 @@
   }
 }
 
-  </style>
+  
+/* ==========================
+   NEXIT Signature Animation v1.0
+   wave trails -> absorb -> N appears -> AXCEL MODE rises -> EXIT docks
+========================== */
+
+.signature-stage{
+  position:relative;
+  width:min(700px,95vw);
+  min-height:112px;
+  margin:0 0 20px;
+  overflow:visible;
+}
+
+.signature-wave{
+  width:min(420px,78vw);
+  height:70px;
+  display:block;
+  overflow:visible;
+}
+
+.signature-path{
+  fill:none;
+  stroke:#d71920;
+  stroke-width:2.7;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+  stroke-dasharray:0 999;
+  stroke-dashoffset:0;
+  opacity:1;
+  filter:
+    drop-shadow(0 0 8px rgba(215,25,32,.9))
+    drop-shadow(0 0 24px rgba(215,25,32,.52));
+}
+
+.signature-head{
+  fill:#fff;
+  opacity:0;
+  filter:
+    drop-shadow(0 0 9px rgba(255,255,255,1))
+    drop-shadow(0 0 22px rgba(215,25,32,.9))
+    drop-shadow(0 0 46px rgba(215,25,32,.6));
+}
+
+.signature-absorb{
+  fill:#d71920;
+  opacity:0;
+  transform-box:fill-box;
+  transform-origin:center;
+  filter:
+    drop-shadow(0 0 12px rgba(215,25,32,1))
+    drop-shadow(0 0 34px rgba(215,25,32,.78))
+    drop-shadow(0 0 64px rgba(215,25,32,.46));
+}
+
+.signature-absorb.is-active{
+  animation:signatureAbsorbPulse .78s cubic-bezier(.16,1,.3,1) forwards;
+}
+
+@keyframes signatureAbsorbPulse{
+  0%{opacity:0;transform:scale(.25);}
+  24%{opacity:1;transform:scale(1.2);}
+  55%{opacity:.98;transform:scale(2.5);}
+  100%{opacity:0;transform:scale(.25);}
+}
+
+.signature-logo-build{
+  position:absolute;
+  left:0;
+  top:4px;
+  width:min(700px,95vw);
+  height:100px;
+  pointer-events:none;
+  font-weight:900;
+  letter-spacing:.12em;
+}
+
+.signature-n{
+  position:absolute;
+  left:0;
+  top:24px;
+  color:#d71920;
+  font-size:clamp(46px,6vw,72px);
+  line-height:1;
+  opacity:0;
+  transform:scale(.82);
+  text-shadow:
+    0 0 12px rgba(215,25,32,.9),
+    0 0 34px rgba(215,25,32,.54);
+}
+
+.signature-n.is-active{
+  animation:signatureNPop .72s cubic-bezier(.16,1,.3,1) forwards;
+}
+
+@keyframes signatureNPop{
+  0%{opacity:0;transform:scale(.62);filter:blur(5px);}
+  42%{opacity:1;transform:scale(1.12);filter:blur(0);}
+  100%{opacity:1;transform:scale(1);filter:blur(0);}
+}
+
+.signature-axcel{
+  position:absolute;
+  left:0;
+  top:0;
+  color:#fff;
+  font-size:clamp(15px,1.7vw,24px);
+  line-height:1;
+  opacity:0;
+  transform:translateY(18px);
+  filter:blur(8px);
+}
+
+.signature-axcel.is-active{
+  animation:signatureAxcelRise .95s cubic-bezier(.16,1,.3,1) forwards;
+}
+
+@keyframes signatureAxcelRise{
+  0%{opacity:0;transform:translateY(18px);filter:blur(8px);}
+  100%{opacity:1;transform:translateY(0);filter:blur(0);}
+}
+
+.signature-exit{
+  position:absolute;
+  left:clamp(48px,6.4vw,76px);
+  top:31px;
+  color:#fff;
+  font-size:clamp(34px,4.8vw,58px);
+  line-height:1;
+  opacity:0;
+  transform:translateX(120px);
+  filter:blur(7px);
+}
+
+.signature-exit.is-active{
+  animation:signatureExitDock .78s cubic-bezier(.16,1,.3,1) forwards;
+}
+
+@keyframes signatureExitDock{
+  0%{opacity:0;transform:translateX(120px);filter:blur(7px);}
+  72%{opacity:1;transform:translateX(-4px);filter:blur(0);}
+  100%{opacity:1;transform:translateX(0);filter:blur(0);}
+}
+
+.signature-final-logo{
+  opacity:0;
+  transform:translateY(16px) scale(.99);
+}
+
+.signature-final-logo.signature-show{
+  animation:signatureFinalLogo .9s cubic-bezier(.16,1,.3,1) forwards !important;
+}
+
+@keyframes signatureFinalLogo{
+  0%{
+    opacity:0;
+    transform:translateY(16px) scale(.99);
+    filter:brightness(1) blur(5px);
+  }
+  46%{
+    opacity:1;
+    filter:
+      brightness(1.75)
+      contrast(1.12)
+      drop-shadow(0 0 20px rgba(215,25,32,.5))
+      drop-shadow(0 0 30px rgba(255,255,255,.2));
+  }
+  100%{
+    opacity:1;
+    transform:translateY(0) scale(1);
+    filter:brightness(1.25) contrast(1.05);
+  }
+}
+
+/* Keep earlier hero text motion from overriding the signature pieces */
+.motion-ready .hero-content .signature-stage,
+.motion-ready .hero-content .signature-stage *{
+  animation-fill-mode:forwards;
+}
+
+@media(max-width:980px){
+  .signature-stage{
+    width:min(360px,88vw);
+    min-height:96px;
+    margin-bottom:18px;
+  }
+
+  .signature-wave{
+    width:min(320px,82vw);
+    height:54px;
+  }
+
+  .signature-logo-build{
+    width:min(360px,88vw);
+    height:88px;
+  }
+
+  .signature-n{
+    top:20px;
+  }
+
+  .signature-exit{
+    top:27px;
+  }
+}
+
+@media(prefers-reduced-motion:reduce){
+  .signature-wave{
+    display:none!important;
+  }
+
+  .signature-n,
+  .signature-axcel,
+  .signature-exit,
+  .signature-final-logo{
+    opacity:1!important;
+    transform:none!important;
+    filter:none!important;
+    animation:none!important;
+  }
+}
+
+
+/* Signature finish: shoot to upper-right and vanish */
+.signature-stage.shoot-away{
+  animation:signatureStageShootAway .95s cubic-bezier(.16,1,.3,1) forwards;
+  transform-origin:100% 0%;
+}
+
+@keyframes signatureStageShootAway{
+  0%{
+    transform:translate3d(0,0,0) scale(1);
+    opacity:1;
+    filter:blur(0);
+  }
+  55%{
+    transform:translate3d(90px,-58px,0) scale(1.45);
+    opacity:.72;
+    filter:
+      blur(1px)
+      drop-shadow(0 0 24px rgba(215,25,32,.72));
+  }
+  100%{
+    transform:translate3d(210px,-150px,0) scale(2.25);
+    opacity:0;
+    filter:blur(10px);
+  }
+}
+
+.signature-absorb.is-active{
+  animation:signatureAbsorbPulse .9s cubic-bezier(.16,1,.3,1) forwards;
+}
+
+@keyframes signatureAbsorbPulse{
+  0%{
+    opacity:0;
+    transform:scale(.25);
+  }
+  20%{
+    opacity:1;
+    transform:scale(1.1);
+  }
+  48%{
+    opacity:.98;
+    transform:scale(3.0);
+  }
+  100%{
+    opacity:0;
+    transform:scale(.25);
+  }
+}
+
+
+
+/* ==========================
+   NEXIT Signature Animation v3.0
+   big A-wave -> large italic N-wave -> upper-right escape -> N red/white -> A red -> XCEL MODE rise -> EXIT dock
+========================== */
+.signature-stage{
+  position:relative;
+  width:min(760px,96vw);
+  min-height:205px;
+  margin:0 0 18px;
+  overflow:visible;
+  isolation:isolate;
+}
+
+.signature-stage::before{
+  content:"";
+  position:absolute;
+  left:-10%;
+  top:-38%;
+  width:96%;
+  height:185%;
+  opacity:0;
+  pointer-events:none;
+  background:
+    radial-gradient(circle at 18% 74%, rgba(215,25,32,.36), transparent 10%),
+    radial-gradient(ellipse at 31% 48%, rgba(215,25,32,.22), transparent 34%),
+    radial-gradient(ellipse at 62% 45%, rgba(215,25,32,.16), transparent 38%),
+    radial-gradient(ellipse at 72% 28%, rgba(255,255,255,.10), transparent 25%);
+  filter:blur(22px);
+  transform:scale(.78) rotate(-4deg);
+}
+.signature-stage.energy-bloom::before{
+  animation:signatureEnergyBloom 1.3s cubic-bezier(.16,1,.3,1) forwards;
+}
+@keyframes signatureEnergyBloom{
+  0%{opacity:0;transform:scale(.68) rotate(-4deg);}
+  34%{opacity:.95;transform:scale(1.05) rotate(-2deg);}
+  100%{opacity:.23;transform:scale(1.20) rotate(0);}
+}
+
+.signature-wave{
+  position:absolute;
+  left:0;
+  top:0;
+  width:min(760px,96vw);
+  height:205px;
+  display:block;
+  overflow:visible;
+  z-index:1;
+}
+.signature-path{
+  fill:none;
+  stroke:#d71920;
+  stroke-width:5.4;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+  stroke-dasharray:0 999;
+  stroke-dashoffset:0;
+  opacity:1;
+  filter:
+    drop-shadow(0 0 10px rgba(215,25,32,.98))
+    drop-shadow(0 0 28px rgba(215,25,32,.64))
+    drop-shadow(0 0 56px rgba(215,25,32,.28));
+}
+.signature-path-glow{
+  fill:none;
+  stroke:rgba(215,25,32,.34);
+  stroke-width:19;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+  stroke-dasharray:0 999;
+  stroke-dashoffset:0;
+  opacity:.78;
+  filter:blur(5px) drop-shadow(0 0 34px rgba(215,25,32,.7));
+}
+.signature-path-ghost{
+  fill:none;
+  stroke:rgba(255,255,255,.13);
+  stroke-width:1.1;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+  stroke-dasharray:6 14;
+  opacity:.0;
+  filter:drop-shadow(0 0 12px rgba(215,25,32,.28));
+}
+.signature-stage.energy-bloom .signature-path-ghost{
+  animation:signatureGhostFade 1.1s ease forwards;
+}
+@keyframes signatureGhostFade{
+  0%{opacity:.18;}
+  100%{opacity:0;}
+}
+
+.signature-head{
+  fill:#fff;
+  opacity:0;
+  filter:
+    drop-shadow(0 0 10px rgba(255,255,255,1))
+    drop-shadow(0 0 28px rgba(215,25,32,.98))
+    drop-shadow(0 0 64px rgba(215,25,32,.72));
+}
+.signature-spark{
+  position:absolute;
+  width:4px;
+  height:4px;
+  border-radius:50%;
+  left:0;
+  top:0;
+  opacity:0;
+  background:#fff;
+  box-shadow:
+    0 0 8px rgba(255,255,255,.95),
+    0 0 18px rgba(215,25,32,.92),
+    0 0 38px rgba(215,25,32,.62);
+  pointer-events:none;
+  z-index:5;
+}
+.signature-absorb{
+  fill:#d71920;
+  opacity:0;
+  transform-box:fill-box;
+  transform-origin:center;
+  filter:
+    drop-shadow(0 0 12px rgba(215,25,32,1))
+    drop-shadow(0 0 40px rgba(215,25,32,.8))
+    drop-shadow(0 0 78px rgba(215,25,32,.5));
+}
+.signature-absorb.is-active{
+  animation:signatureAbsorbPulse .92s cubic-bezier(.16,1,.3,1) forwards;
+}
+@keyframes signatureAbsorbPulse{
+  0%{opacity:0;transform:scale(.2);}
+  18%{opacity:1;transform:scale(1.22);}
+  48%{opacity:.94;transform:scale(3.25);}
+  100%{opacity:0;transform:scale(.24);}
+}
+
+.signature-logo-build{
+  position:absolute;
+  left:0;
+  top:0;
+  width:min(760px,96vw);
+  height:205px;
+  pointer-events:none;
+  font-weight:900;
+  letter-spacing:.12em;
+  z-index:3;
+}
+.signature-word{
+  position:absolute;
+  left:0;
+  top:75px;
+  height:76px;
+  display:flex;
+  align-items:flex-start;
+  white-space:nowrap;
+  line-height:1;
+}
+.signature-n{
+  display:inline-block;
+  color:#d71920;
+  font-size:clamp(52px,6.6vw,84px);
+  line-height:1;
+  opacity:0;
+  transform:skewX(-13deg) scale(.72) translateY(6px);
+  text-shadow:
+    0 0 12px rgba(215,25,32,.96),
+    0 0 40px rgba(215,25,32,.62);
+}
+.signature-n.is-red{
+  animation:signatureNRed .58s cubic-bezier(.16,1,.3,1) forwards;
+}
+.signature-n.is-white{
+  animation:signatureNWhite .58s cubic-bezier(.16,1,.3,1) forwards;
+}
+@keyframes signatureNRed{
+  0%{opacity:0;transform:skewX(-13deg) scale(.55) translateY(10px);filter:blur(7px);color:#d71920;}
+  44%{opacity:1;transform:skewX(-13deg) scale(1.12) translateY(0);filter:blur(0);color:#ff2028;}
+  100%{opacity:1;transform:skewX(-13deg) scale(1) translateY(0);filter:blur(0);color:#d71920;}
+}
+@keyframes signatureNWhite{
+  0%{opacity:1;color:#d71920;filter:drop-shadow(0 0 18px rgba(215,25,32,.8));}
+  52%{color:#fff;filter:brightness(2.0) drop-shadow(0 0 20px rgba(255,255,255,.44)) drop-shadow(0 0 26px rgba(215,25,32,.42));}
+  100%{opacity:1;color:#fff;filter:brightness(1.18) contrast(1.04);transform:skewX(-13deg) scale(1) translateY(0);}
+}
+.signature-exit{
+  display:inline-block;
+  color:#fff;
+  font-size:clamp(40px,5.35vw,70px);
+  line-height:1;
+  opacity:0;
+  transform:translateX(220px) skewX(-12deg);
+  filter:blur(9px);
+  margin-left:.05em;
+}
+.signature-exit.is-active{
+  animation:signatureExitDock .82s cubic-bezier(.16,1,.3,1) forwards;
+}
+@keyframes signatureExitDock{
+  0%{opacity:0;transform:translateX(230px) skewX(-16deg);filter:blur(10px);}
+  58%{opacity:1;transform:translateX(-9px) skewX(-4deg);filter:blur(1px);}
+  100%{opacity:1;transform:translateX(0) skewX(0);filter:blur(0);}
+}
+.signature-subline{
+  position:absolute;
+  left:4px;
+  top:48px;
+  display:flex;
+  align-items:center;
+  gap:.32em;
+  font-size:clamp(15px,1.68vw,24px);
+  line-height:1;
+  letter-spacing:.35em;
+  white-space:nowrap;
+}
+.signature-a{
+  color:#d71920;
+  opacity:0;
+  transform:translateY(12px) scale(.72);
+  filter:blur(7px);
+  text-shadow:0 0 18px rgba(215,25,32,.75);
+}
+.signature-a.is-active{
+  animation:signatureARed .56s cubic-bezier(.16,1,.3,1) forwards;
+}
+@keyframes signatureARed{
+  0%{opacity:0;transform:translateY(12px) scale(.65);filter:blur(7px);}
+  55%{opacity:1;transform:translateY(-1px) scale(1.14);filter:blur(0);}
+  100%{opacity:1;transform:translateY(0) scale(1);filter:blur(0);}
+}
+.signature-xcelmode{
+  color:#fff;
+  opacity:0;
+  transform:translateY(16px);
+  filter:blur(8px);
+  letter-spacing:.28em;
+}
+.signature-xcelmode.is-active{
+  animation:signatureXcelModeRise .86s cubic-bezier(.16,1,.3,1) forwards;
+}
+@keyframes signatureXcelModeRise{
+  0%{opacity:0;transform:translateY(18px);filter:blur(8px);}
+  100%{opacity:1;transform:translateY(0);filter:blur(0);}
+}
+.signature-final-logo{
+  opacity:0;
+  transform:translateY(14px) scale(.99);
+}
+.signature-final-logo.signature-show{
+  animation:signatureFinalLogo .95s cubic-bezier(.16,1,.3,1) forwards !important;
+}
+@keyframes signatureFinalLogo{
+  0%{opacity:0;transform:translateY(14px) scale(.99);filter:brightness(1) blur(5px);}
+  42%{opacity:1;filter:brightness(1.85) contrast(1.12) drop-shadow(0 0 22px rgba(215,25,32,.54)) drop-shadow(0 0 32px rgba(255,255,255,.22));}
+  100%{opacity:1;transform:translateY(0) scale(1);filter:brightness(1.25) contrast(1.05);}
+}
+
+@media(max-width:980px){
+  .signature-stage{width:min(410px,92vw);min-height:132px;margin-bottom:16px;}
+  .signature-wave{width:min(410px,92vw);height:128px;top:0;}
+  .signature-path{stroke-width:4.8px;}
+  .signature-path-glow{stroke-width:15px;}
+  .signature-logo-build{width:min(410px,92vw);height:132px;}
+  .signature-word{top:55px;height:58px;}
+  .signature-subline{top:33px;font-size:12px;letter-spacing:.25em;}
+}
+@media(prefers-reduced-motion:reduce){
+  .signature-wave,.signature-spark{display:none!important;}
+  .signature-n,.signature-a,.signature-xcelmode,.signature-exit,.signature-final-logo{
+    opacity:1!important;transform:none!important;filter:none!important;animation:none!important;
+  }
+  .signature-n{color:#fff!important;}
+}
+
+/* ==========================
+   NEXIT Signature Animation v5.0
+   F1 precision line: straight A + italic N, no glowing dot
+========================== */
+.signature-stage{
+  width:min(780px,96vw) !important;
+  min-height:188px !important;
+  margin-bottom:14px !important;
+}
+.signature-wave{
+  width:min(780px,96vw) !important;
+  height:188px !important;
+  top:0 !important;
+}
+.signature-path,
+.signature-path-glow,
+.signature-path-ghost,
+.signature-path-tip{
+  fill:none;
+  stroke-linecap:butt !important;
+  stroke-linejoin:miter !important;
+  stroke-miterlimit:8 !important;
+}
+.signature-path{
+  stroke:#d71920 !important;
+  stroke-width:4.8 !important;
+  filter:
+    drop-shadow(0 0 8px rgba(215,25,32,.92))
+    drop-shadow(0 0 20px rgba(215,25,32,.42)) !important;
+}
+.signature-path-glow{
+  stroke:rgba(215,25,32,.24) !important;
+  stroke-width:13 !important;
+  filter:blur(4px) drop-shadow(0 0 24px rgba(215,25,32,.48)) !important;
+  opacity:.62 !important;
+}
+.signature-path-ghost{
+  stroke:rgba(255,255,255,.11) !important;
+  stroke-width:1 !important;
+  stroke-dasharray:18 22 !important;
+  opacity:0;
+}
+.signature-path-tip{
+  stroke:rgba(255,255,255,.94) !important;
+  stroke-width:5.2 !important;
+  opacity:.92;
+  filter:
+    drop-shadow(0 0 7px rgba(255,255,255,.70))
+    drop-shadow(0 0 18px rgba(215,25,32,.62));
+}
+.signature-head,
+.signature-spark,
+.signature-absorb{
+  display:none !important;
+}
+.signature-stage.energy-bloom::before{
+  animation:signatureEnergyBloomSharp 1.05s cubic-bezier(.16,1,.3,1) forwards !important;
+}
+@keyframes signatureEnergyBloomSharp{
+  0%{opacity:0;transform:scale(.78) skewX(-8deg);}
+  35%{opacity:.72;transform:scale(1.02) skewX(-6deg);}
+  100%{opacity:.18;transform:scale(1.18) skewX(0);}
+}
+.signature-word{
+  top:70px !important;
+}
+.signature-subline{
+  top:43px !important;
+}
+.signature-n,
+.signature-exit{
+  transform:skewX(-14deg) translateZ(0);
+}
+.signature-exit.is-active{
+  animation:signatureExitDockF1 .72s cubic-bezier(.12,.86,.18,1) forwards !important;
+}
+@keyframes signatureExitDockF1{
+  0%{opacity:0;transform:translateX(300px) skewX(-18deg);filter:blur(8px);}
+  62%{opacity:1;transform:translateX(-12px) skewX(-8deg);filter:blur(0);}
+  100%{opacity:1;transform:translateX(0) skewX(0);filter:blur(0);}
+}
+@media(max-width:980px){
+  .signature-stage{width:min(420px,92vw) !important;min-height:126px !important;}
+  .signature-wave{width:min(420px,92vw) !important;height:126px !important;}
+  .signature-path{stroke-width:4.2 !important;}
+  .signature-path-glow{stroke-width:10 !important;}
+  .signature-path-tip{stroke-width:4.5 !important;}
+  .signature-word{top:52px !important;}
+  .signature-subline{top:32px !important;}
+}
+
+
+/* ==========================
+   NEXIT Signature Animation v7.0
+   final direction: real logo parts + sharp A/N line
+========================== */
+.signature-wave{
+  height:205px !important;
+}
+.signature-path-glow,
+.signature-path-ghost{
+  display:none !important;
+}
+.signature-path-tip{
+  display:block !important;
+  fill:none !important;
+  stroke:rgba(255,255,255,.96) !important;
+  stroke-width:3.2 !important;
+  stroke-linecap:butt !important;
+  stroke-linejoin:miter !important;
+  stroke-miterlimit:10 !important;
+  opacity:0;
+  filter:
+    drop-shadow(0 0 8px rgba(255,255,255,.72))
+    drop-shadow(0 0 18px rgba(215,25,32,.52)) !important;
+}
+.signature-path{
+  stroke:#d71920 !important;
+  stroke-width:4.4 !important;
+  stroke-linecap:butt !important;
+  stroke-linejoin:miter !important;
+  stroke-miterlimit:10 !important;
+  filter:drop-shadow(0 0 7px rgba(215,25,32,.55)) !important;
+}
+.signature-stage.energy-bloom::before{
+  animation:none !important;
+  opacity:0 !important;
+}
+.signature-logo-assets{
+  position:absolute !important;
+  left:0 !important;
+  top:34px !important;
+  width:min(597px,82vw) !important;
+  height:auto !important;
+  aspect-ratio:597 / 157;
+  z-index:3;
+}
+.signature-fragment{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:auto;
+  display:block;
+  opacity:0;
+  pointer-events:none;
+  transform-origin:center;
+  will-change:opacity, transform, filter;
+}
+.signature-n-img{
+  filter:brightness(0) saturate(100%) invert(18%) sepia(97%) saturate(4212%) hue-rotate(348deg) brightness(106%) contrast(106%) drop-shadow(0 0 16px rgba(215,25,32,.55));
+  transform:translateY(10px) scale(.96);
+}
+.signature-n-img.is-red{
+  animation:signatureNAssetRed .52s cubic-bezier(.16,1,.3,1) forwards;
+}
+.signature-n-img.is-white{
+  animation:signatureNAssetWhite .58s cubic-bezier(.16,1,.3,1) forwards;
+}
+@keyframes signatureNAssetRed{
+  0%{opacity:0;transform:translateY(10px) scale(.94);filter:brightness(0) saturate(100%) invert(18%) sepia(97%) saturate(4212%) hue-rotate(348deg) brightness(106%) contrast(106%) blur(5px);}
+  55%{opacity:1;transform:translateY(0) scale(1.035);filter:brightness(0) saturate(100%) invert(18%) sepia(97%) saturate(4212%) hue-rotate(348deg) brightness(120%) contrast(112%) drop-shadow(0 0 18px rgba(215,25,32,.75));}
+  100%{opacity:1;transform:translateY(0) scale(1);filter:brightness(0) saturate(100%) invert(18%) sepia(97%) saturate(4212%) hue-rotate(348deg) brightness(106%) contrast(106%) drop-shadow(0 0 12px rgba(215,25,32,.48));}
+}
+@keyframes signatureNAssetWhite{
+  0%{opacity:1;filter:brightness(0) saturate(100%) invert(18%) sepia(97%) saturate(4212%) hue-rotate(348deg) brightness(106%) contrast(106%) drop-shadow(0 0 12px rgba(215,25,32,.48));}
+  48%{opacity:1;filter:brightness(2.2) contrast(1.1) drop-shadow(0 0 18px rgba(255,255,255,.42));}
+  100%{opacity:1;filter:brightness(1.05) contrast(1.05);transform:translateY(0) scale(1);}
+}
+.signature-a-img{
+  transform:translateX(-14px) translateY(10px) scale(.96);
+  filter:drop-shadow(0 0 16px rgba(215,25,32,.55));
+}
+.signature-a-img.is-active{
+  animation:signatureAAssetIn .54s cubic-bezier(.16,1,.3,1) forwards;
+}
+@keyframes signatureAAssetIn{
+  0%{opacity:0;transform:translateX(-18px) translateY(10px) scale(.94);filter:blur(5px) drop-shadow(0 0 18px rgba(215,25,32,.4));}
+  62%{opacity:1;transform:translateX(0) translateY(0) scale(1.03);filter:blur(0) drop-shadow(0 0 16px rgba(215,25,32,.65));}
+  100%{opacity:1;transform:translateX(0) translateY(0) scale(1);filter:drop-shadow(0 0 8px rgba(215,25,32,.35));}
+}
+.signature-xm-img{
+  transform:translateY(14px);
+  filter:blur(6px);
+}
+.signature-xm-img.is-active{
+  animation:signatureXMAssetIn .74s cubic-bezier(.16,1,.3,1) forwards;
+}
+@keyframes signatureXMAssetIn{
+  0%{opacity:0;transform:translateY(16px);filter:blur(8px);clip-path:inset(0 50% 0 50%);}
+  100%{opacity:1;transform:translateY(0);filter:blur(0);clip-path:inset(0 0 0 0);}
+}
+.signature-exit-img{
+  transform:translateX(210px);
+  filter:blur(8px);
+}
+.signature-exit-img.is-active{
+  animation:signatureExitAssetDock .72s cubic-bezier(.12,.86,.18,1) forwards;
+}
+@keyframes signatureExitAssetDock{
+  0%{opacity:0;transform:translateX(240px);filter:blur(10px);}
+  58%{opacity:1;transform:translateX(-10px);filter:blur(1px);}
+  100%{opacity:1;transform:translateX(0);filter:blur(0);}
+}
+@media(max-width:980px){
+  .signature-logo-assets{top:25px !important;width:min(390px,88vw) !important;}
+  .signature-wave{height:142px !important;}
+}
+@media(prefers-reduced-motion:reduce){
+  .signature-fragment{opacity:1!important;transform:none!important;filter:none!important;animation:none!important;clip-path:none!important;}
+}
+
+
+/* ==========================
+   NEXIT Signature final tuning v10
+   narrow A / matching N escape angle / no original logo / tagline line / logo shine
+========================== */
+.signature-logo-assets{
+  overflow:hidden;
+}
+.signature-logo-assets::after{
+  content:"";
+  position:absolute;
+  top:-18%;
+  left:-42%;
+  width:30%;
+  height:140%;
+  opacity:0;
+  pointer-events:none;
+  background:linear-gradient(105deg, transparent 0%, rgba(255,255,255,.08) 22%, rgba(255,255,255,.62) 48%, rgba(215,25,32,.34) 58%, transparent 100%);
+  transform:skewX(-18deg) translateX(0);
+  filter:blur(.4px) drop-shadow(0 0 12px rgba(255,255,255,.32)) drop-shadow(0 0 18px rgba(215,25,32,.34));
+  mix-blend-mode:screen;
+}
+.signature-logo-assets.logo-shine::after{
+  animation:signatureLogoSweep .82s cubic-bezier(.16,1,.3,1) forwards;
+}
+@keyframes signatureLogoSweep{
+  0%{opacity:0;transform:skewX(-18deg) translateX(0);}
+  18%{opacity:.95;}
+  100%{opacity:0;transform:skewX(-18deg) translateX(520%);}
+}
+.signature-logo-assets.logo-finish .signature-fragment{
+  animation:signatureLogoFinishGlow .72s cubic-bezier(.16,1,.3,1) forwards;
+}
+@keyframes signatureLogoFinishGlow{
+  0%{filter:brightness(1) contrast(1);}
+  38%{filter:brightness(1.8) contrast(1.08) drop-shadow(0 0 22px rgba(255,255,255,.18)) drop-shadow(0 0 28px rgba(215,25,32,.32));}
+  100%{filter:brightness(1.04) contrast(1.04);}
+}
+.lead.tagline{
+  display:flex;
+  align-items:center;
+  gap:18px;
+  color:rgba(255,255,255,.88);
+  letter-spacing:.13em;
+}
+.lead.tagline::before{
+  content:"";
+  display:inline-block;
+  width:72px;
+  height:1px;
+  background:linear-gradient(90deg, rgba(215,25,32,.95), rgba(255,255,255,.44));
+  box-shadow:0 0 10px rgba(215,25,32,.38);
+}
+@media(max-width:980px){
+  .lead.tagline{gap:14px;font-size:15px;letter-spacing:.08em;}
+  .lead.tagline::before{width:46px;}
+}
+
+
+
+/* ==========================
+   NEXIT Signature v11 correction
+   larger/thicker wave + logo hold
+========================== */
+.signature-stage{
+  width:min(920px,98vw) !important;
+  min-height:280px !important;
+  margin-bottom:10px !important;
+}
+.signature-wave{
+  width:min(920px,98vw) !important;
+  height:280px !important;
+  top:-20px !important;
+}
+.signature-path{
+  stroke-width:7.2 !important;
+  stroke:#d71920 !important;
+  filter:
+    drop-shadow(0 0 9px rgba(215,25,32,.96))
+    drop-shadow(0 0 22px rgba(215,25,32,.48)) !important;
+}
+.signature-path-tip{
+  stroke-width:7.8 !important;
+  filter:
+    drop-shadow(0 0 8px rgba(255,255,255,.78))
+    drop-shadow(0 0 20px rgba(215,25,32,.60)) !important;
+}
+.signature-logo-assets{
+  left:0 !important;
+  top:88px !important;
+  width:min(660px,86vw) !important;
+  overflow:visible !important;
+}
+.signature-logo-assets.logo-finish .signature-fragment{
+  opacity:1 !important;
+  animation:none !important;
+  filter:brightness(1.04) contrast(1.04);
+}
+.signature-logo-assets.logo-finish .signature-a-img,
+.signature-logo-assets.logo-finish .signature-xm-img,
+.signature-logo-assets.logo-finish .signature-n-img,
+.signature-logo-assets.logo-finish .signature-exit-img{
+  transform:translateX(0) translateY(0) scale(1) !important;
+}
+.signature-logo-assets.logo-shine::after{
+  animation:signatureLogoSweep .82s cubic-bezier(.16,1,.3,1) forwards !important;
+}
+.hero-content .lead.tagline{
+  margin-top:2px !important;
+}
+@media(max-width:980px){
+  .signature-stage{width:min(480px,94vw) !important;min-height:170px !important;}
+  .signature-wave{width:min(480px,94vw) !important;height:170px !important;top:-10px !important;}
+  .signature-path{stroke-width:5.4 !important;}
+  .signature-path-tip{stroke-width:5.8 !important;}
+  .signature-logo-assets{top:52px !important;width:min(420px,88vw) !important;}
+}
+
+
+/* ==========================
+   NEXIT Signature v12
+   wave exits off-screen naturally
+========================== */
+.signature-wave{
+  overflow:hidden !important;
+}
+
+
+/* ==========================
+   NEXIT Signature v13
+   off-screen trailing fix + N final flash + no logo.png header
+========================== */
+.brand-parts{
+  width:200px;
+  height:54px;
+  position:relative;
+  display:block;
+}
+.brand-parts img{position:absolute;inset:0;width:100%;height:auto;display:block;}
+.footer-brand-parts{
+  position:relative;
+  display:block;
+  width:190px;
+  height:50px;
+}
+.footer-brand-parts img{position:absolute;inset:0;width:100%;height:auto;display:block;}
+.signature-wave{overflow:hidden !important;}
+.signature-path,.signature-path-tip{vector-effect:non-scaling-stroke;}
+.signature-logo-assets.logo-finish{overflow:visible !important;}
+.signature-logo-assets.logo-finish .signature-fragment{
+  opacity:1 !important;
+  animation-fill-mode:forwards !important;
+}
+.signature-logo-assets.logo-finish .signature-a-img{transform:translateX(0) translateY(0) scale(1) !important;}
+.signature-logo-assets.logo-finish .signature-xm-img{transform:translateY(0) !important;}
+.signature-logo-assets.logo-finish .signature-exit-img{transform:translateX(0) !important;}
+.signature-logo-assets.logo-finish .signature-n-img{transform:translateY(0) scale(1) !important;}
+.signature-n-img.n-finale{
+  animation:signatureNFinalFlash .78s cubic-bezier(.16,1,.3,1) forwards !important;
+  z-index:5;
+}
+@keyframes signatureNFinalFlash{
+  0%{opacity:1;filter:brightness(1.05) contrast(1.05);transform:translateY(0) scale(1);}
+  18%{opacity:1;filter:brightness(3.0) contrast(1.16) drop-shadow(0 0 14px rgba(255,255,255,.95)) drop-shadow(0 0 34px rgba(255,255,255,.58)) drop-shadow(0 0 48px rgba(215,25,32,.42));transform:translateY(0) scale(1.025);}
+  42%{opacity:1;filter:brightness(1.85) contrast(1.1) drop-shadow(0 0 20px rgba(255,255,255,.50));transform:translateY(0) scale(1.01);}
+  100%{opacity:1;filter:brightness(1.08) contrast(1.05);transform:translateY(0) scale(1);}
+}
+@media(max-width:980px){
+  .brand-parts{width:150px;height:42px;}
+  .footer-brand-parts{width:160px;height:44px;}
+}
+
+</style>
 </head>
 <body class="motion-ready">
   <div class="site">
     <header class="header">
-      <a class="brand" href="#top"><img src="logo.png" alt="AXCEL MODE NEXIT"></a>
+      <a class="brand brand-parts" href="#top" aria-label="AXCEL MODE NEXIT"><img src="A.png" alt="" aria-hidden="true"><img src="N.png" alt="" aria-hidden="true"><img src="XM.png" alt="" aria-hidden="true"><img src="EXIT.png" alt="" aria-hidden="true"></a>
       <button class="menu-toggle">☰</button>
       <nav class="nav">
         <a href="#top">TOP</a>
@@ -1062,9 +1992,27 @@
   <span style="--i:1">挑</span><span style="--i:2">戦</span><span style="--i:3">を</span><span style="--i:4">、</span><br>
   <span style="--i:5">確</span><span style="--i:6">か</span><span style="--i:7">な</span><span style="--i:8">前</span><span style="--i:9">進</span><span style="--i:10">に</span><span style="--i:11">。</span>
 </h1>
-          <div class="red-line"></div>
-          <img class="hero-logo" src="logo.png" alt="AXCEL MODE NEXIT">
-          <p class="lead">── 一歩外へ。次の未来へ。</p>
+          <div class="signature-stage" aria-hidden="true">
+            <svg class="signature-wave" viewBox="0 -210 900 420" preserveAspectRatio="none">
+              <path id="signaturePathGhost" class="signature-path-ghost"
+                d="M0 170 H160 L208 56 L256 170 H430 L518 56 L590 136 L1040 -504" />
+              <path id="signaturePathGlow" class="signature-path-glow"
+                d="M0 170 H160 L208 56 L256 170 H430 L518 56 L590 136 L1040 -504" />
+              <path id="signaturePath" class="signature-path"
+                d="M0 170 H160 L208 56 L256 170 H430 L518 56 L590 136 L1040 -504" />
+              <path id="signaturePathTip" class="signature-path-tip"
+                d="M0 170 H160 L208 56 L256 170 H430 L518 56 L590 136 L1040 -504" />
+            </svg>
+
+            <div class="signature-logo-build signature-logo-assets">
+              <img class="signature-fragment signature-a-img" src="A.png" alt="" aria-hidden="true">
+              <img class="signature-fragment signature-xm-img" src="XM.png" alt="" aria-hidden="true">
+              <img class="signature-fragment signature-n-img" src="N.png" alt="" aria-hidden="true">
+              <img class="signature-fragment signature-exit-img" src="EXIT.png" alt="" aria-hidden="true">
+            </div>
+          </div>
+
+          <p class="lead tagline">一歩外へ。次の未来へ。</p>
           <a class="btn" href="recruit.html">RECRUIT <span>→</span></a>
         </div>
                 <div class="hero-side">
@@ -1254,7 +2202,7 @@
     </main>
 
     <footer class="footer">
-      <img src="logo.png" alt="AXCEL MODE NEXIT">
+      <span class="footer-brand-parts" aria-label="AXCEL MODE NEXIT"><img src="A.png" alt="" aria-hidden="true"><img src="N.png" alt="" aria-hidden="true"><img src="XM.png" alt="" aria-hidden="true"><img src="EXIT.png" alt="" aria-hidden="true"></span>
       <p>© 2026 Axcel-Mode Nexit Inc.<br> Powered by AXCEL MODE </p>
       <div class="footer-links">
         <a href="#top">TOP</a>
@@ -1371,6 +2319,16 @@ aiChatClose.addEventListener("click",()=>{
   aiChatPanel.classList.remove("open");
 });
 
+
+aiChatInput.addEventListener("keydown", (e) => {
+  if (e.isComposing || e.keyCode === 229) return;
+
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    aiChatForm.requestSubmit();
+  }
+});
+
 aiChatForm.addEventListener("submit",async(e)=>{
   e.preventDefault();
 
@@ -1379,8 +2337,6 @@ aiChatForm.addEventListener("submit",async(e)=>{
 
   addAiMessage("user",text);
   aiChatInput.value="";
-
-
 
   const pending=addAiMessage("bot","回答を作成しています...");
   aiChatSend.disabled=true;
@@ -1406,15 +2362,134 @@ aiChatForm.addEventListener("submit",async(e)=>{
     aiChatSend.disabled=false;
   }
 });
-  aiChatInput.addEventListener("keydown", (e) => {
-  if (e.isComposing || e.keyCode === 229) return;
-
-  if (e.key === "Enter" && !e.shiftKey) {
-    e.preventDefault();
-    aiChatForm.requestSubmit();
-  }
-});
 
 </script>
+
+<script>
+(function(){
+  const path = document.getElementById("signaturePath");
+  const glow = document.getElementById("signaturePathGlow");
+  const ghost = document.getElementById("signaturePathGhost");
+  const tip = document.getElementById("signaturePathTip");
+  const stage = document.querySelector(".signature-stage");
+  const n = document.querySelector(".signature-n-img");
+  const a = document.querySelector(".signature-a-img");
+  const xcelmode = document.querySelector(".signature-xm-img");
+  const exit = document.querySelector(".signature-exit-img");
+  const logoAssets = document.querySelector(".signature-logo-assets");
+
+  if(!path || !stage || !n || !a || !xcelmode || !exit || !logoAssets) return;
+
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const length = path.getTotalLength();
+  const trailLength = Math.min(length * 0.34, 320);
+  const travelLength = length + trailLength + 80;
+
+  function setLine(draw){
+    const head = draw;
+    const tail = draw - trailLength;
+    const start = Math.max(tail, 0);
+    const end = Math.min(head, length);
+    const visible = Math.max(0, end - start);
+
+    path.style.strokeDasharray = visible + " " + length;
+    path.style.strokeDashoffset = String(-start);
+    path.style.opacity = visible > 1 ? "1" : "0";
+
+    if(glow){
+      glow.style.strokeDasharray = visible + " " + length;
+      glow.style.strokeDashoffset = String(-start);
+      glow.style.opacity = visible > 1 ? ".42" : "0";
+    }
+
+    if(tip){
+      const tipLen = Math.min(54, visible);
+      const tipStart = Math.max(end - tipLen, 0);
+      tip.style.strokeDasharray = tipLen + " " + length;
+      tip.style.strokeDashoffset = String(-tipStart);
+      tip.style.opacity = visible > 3 && head <= length + 4 ? ".98" : "0";
+    }
+  }
+
+  if(reduceMotion){
+    setLine(length);
+    n.classList.add("is-red", "is-white");
+    a.classList.add("is-active");
+    xcelmode.classList.add("is-active");
+    exit.classList.add("is-active");
+    logoAssets.classList.add("logo-shine", "logo-finish");
+    [a,n,xcelmode,exit].forEach(el => { el.style.opacity = "1"; });
+    return;
+  }
+
+  setLine(0);
+  if(ghost) ghost.style.opacity = "0";
+
+  const delay = 520;
+  const duration = 3400;
+
+  function easeInOutCubic(t){
+    return t < .5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2;
+  }
+  function easeOutCubic(t){
+    return 1 - Math.pow(1 - t, 3);
+  }
+
+  function finishLine(){
+    const start = performance.now();
+    const finishDuration = 120;
+
+    function step(now){
+      const raw = Math.min((now - start) / finishDuration, 1);
+      const t = easeOutCubic(raw);
+
+      path.style.opacity = String(1 - t);
+      if(glow) glow.style.opacity = String(.42 - t * .42);
+      if(ghost) ghost.style.opacity = "0";
+      if(tip) tip.style.opacity = String(.98 - t * .98);
+
+      if(raw < 1){
+        requestAnimationFrame(step);
+      }else{
+        path.style.opacity = "0";
+        if(glow) glow.style.opacity = "0";
+        if(ghost) ghost.style.opacity = "0";
+        if(tip) tip.style.opacity = "0";
+        stage.classList.add("energy-bloom");
+
+        setTimeout(() => n.classList.add("is-red"), 70);
+        setTimeout(() => n.classList.add("is-white"), 650);
+        setTimeout(() => a.classList.add("is-active"), 1040);
+        setTimeout(() => xcelmode.classList.add("is-active"), 1320);
+        setTimeout(() => exit.classList.add("is-active"), 1810);
+        setTimeout(() => {
+          logoAssets.classList.add("logo-shine", "logo-finish");
+          [a,n,xcelmode,exit].forEach(el => { el.style.opacity = "1"; });
+        }, 2360);
+        setTimeout(() => { n.classList.add("n-finale"); }, 3180);
+      }
+    }
+    requestAnimationFrame(step);
+  }
+
+  function animateSignature(startTime){
+    const elapsed = performance.now() - startTime;
+    const raw = Math.min(Math.max(elapsed / duration, 0), 1);
+    const progress = easeInOutCubic(raw);
+    setLine(progress * travelLength);
+
+    if(raw < 1){
+      requestAnimationFrame(() => animateSignature(startTime));
+    }else{
+      finishLine();
+    }
+  }
+
+  setTimeout(() => {
+    requestAnimationFrame(() => animateSignature(performance.now()));
+  }, delay);
+})();
+</script>
+
 </body>
 </html>
