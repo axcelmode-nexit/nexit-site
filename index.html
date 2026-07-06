@@ -5,7 +5,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>AXCEL MODE NEXIT | 株式会社アクセル・モード・ネクスト</title>
-  <!-- version: 2.2 NEXIT Signature Animation F1 feint italic N wave -->
+  <!-- version: 2.3 NEXIT Signature Animation N-only final flash fixed -->
   <meta property="og:type" content="website">
   <meta property="og:title" content="AXCEL MODE NEXIT">
   <meta property="og:description"content="上越を拠点にソフトウェア開発・ITソリューションを提供。UIJターン歓迎。">
@@ -2011,6 +2011,72 @@
   100%{opacity:1;filter:brightness(1.08) contrast(1.05);transform:translateY(0) scale(1);}
 }
 
+
+/* ==========================
+   NEXIT Signature v15.1
+   N-only final flash: overlay N.png only, no fixed-position flare
+========================== */
+.signature-logo-assets.n-final-flare::before,
+.signature-logo-assets.n-final-flare::after{
+  display:none !important;
+  content:none !important;
+  animation:none !important;
+}
+.signature-n-flash-overlay{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:auto;
+  display:block;
+  opacity:0;
+  z-index:12 !important;
+  pointer-events:none;
+  transform:none !important;
+  filter:
+    brightness(1)
+    drop-shadow(0 0 0 rgba(255,255,255,0));
+  mix-blend-mode:screen;
+}
+.signature-n-flash-overlay.is-active{
+  animation:nexitNOnlyFlash .86s cubic-bezier(.16,1,.3,1) forwards !important;
+}
+@keyframes nexitNOnlyFlash{
+  0%{
+    opacity:0;
+    filter:brightness(1) contrast(1);
+  }
+  10%{
+    opacity:1;
+    filter:
+      brightness(5.2)
+      contrast(1.22)
+      drop-shadow(0 0 10px rgba(255,255,255,1))
+      drop-shadow(0 0 24px rgba(255,255,255,.92))
+      drop-shadow(0 0 48px rgba(215,25,32,.55));
+  }
+  26%{
+    opacity:.96;
+    filter:
+      brightness(3.0)
+      contrast(1.14)
+      drop-shadow(0 0 14px rgba(255,255,255,.78))
+      drop-shadow(0 0 34px rgba(215,25,32,.38));
+  }
+  100%{
+    opacity:0;
+    filter:brightness(1) contrast(1);
+  }
+}
+.signature-n-img.n-finale{
+  animation:nexitNBasePulse .72s cubic-bezier(.16,1,.3,1) forwards !important;
+  z-index:9 !important;
+}
+@keyframes nexitNBasePulse{
+  0%{filter:brightness(1.05) contrast(1.05);}
+  16%{filter:brightness(1.7) contrast(1.10) drop-shadow(0 0 18px rgba(255,255,255,.42));}
+  100%{filter:brightness(1.08) contrast(1.05);}
+}
+
 </style>
 </head>
 <body class="motion-ready">
@@ -2056,6 +2122,7 @@
               <img class="signature-fragment signature-a-img" src="A.png" alt="" aria-hidden="true">
               <img class="signature-fragment signature-xm-img" src="XM.png" alt="" aria-hidden="true">
               <img class="signature-fragment signature-n-img" src="N.png" alt="" aria-hidden="true">
+              <img class="signature-fragment signature-n-flash-overlay" src="N.png" alt="" aria-hidden="true">
               <img class="signature-fragment signature-exit-img" src="EXIT.png" alt="" aria-hidden="true">
             </div>
           </div>
@@ -2421,6 +2488,7 @@ aiChatForm.addEventListener("submit",async(e)=>{
   const tip = document.getElementById("signaturePathTip");
   const stage = document.querySelector(".signature-stage");
   const n = document.querySelector(".signature-n-img");
+  const nFlashOverlay = document.querySelector(".signature-n-flash-overlay");
   const a = document.querySelector(".signature-a-img");
   const xcelmode = document.querySelector(".signature-xm-img");
   const exit = document.querySelector(".signature-exit-img");
@@ -2515,9 +2583,12 @@ aiChatForm.addEventListener("submit",async(e)=>{
           [a,n,xcelmode,exit].forEach(el => { el.style.opacity = "1"; });
         }, 2360);
         setTimeout(() => {
-          logoAssets.classList.add("n-final-flare");
           n.classList.add("n-finale");
-          setTimeout(() => logoAssets.classList.remove("n-final-flare"), 920);
+          if(nFlashOverlay){
+            nFlashOverlay.classList.remove("is-active");
+            void nFlashOverlay.offsetWidth;
+            nFlashOverlay.classList.add("is-active");
+          }
         }, 3180);
       }
     }
