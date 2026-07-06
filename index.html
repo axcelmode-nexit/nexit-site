@@ -5,7 +5,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>AXCEL MODE NEXIT | 株式会社アクセル・モード・ネクスト</title>
-  <!-- version: 1.1 refined motion -->
+  <!-- version: 1.2 day cycle hero background -->
   <meta property="og:type" content="website">
   <meta property="og:title" content="AXCEL MODE NEXIT">
   <meta property="og:description"content="上越を拠点にソフトウェア開発・ITソリューションを提供。UIJターン歓迎。">
@@ -948,6 +948,84 @@
   }
 
 }
+  
+/* Hero background day-cycle layer */
+.hero{
+  background:#050505 !important;
+  overflow:hidden;
+}
+
+.hero-bg{
+  position:absolute;
+  inset:0;
+  z-index:0;
+  pointer-events:none;
+  background:
+    linear-gradient(90deg, rgba(0,0,0,.94) 0%, rgba(0,0,0,.82) 36%, rgba(0,0,0,.50) 66%, rgba(0,0,0,.30) 100%),
+    linear-gradient(180deg, rgba(0,0,0,.10) 0%, rgba(0,0,0,.70) 100%),
+    url('mountain.jpg') right center / cover no-repeat;
+  transform:scale(1.10);
+  animation:
+    heroBgBreath 38s ease-in-out infinite alternate,
+    heroDayCycle 60s ease-in-out infinite;
+  will-change:transform, filter;
+}
+
+@keyframes heroBgBreath{
+  0%{
+    transform:scale(1.08) translate3d(0,0,0);
+  }
+  100%{
+    transform:scale(1.16) translate3d(-18px,-8px,0);
+  }
+}
+
+@keyframes heroDayCycle{
+  0%{
+    filter:brightness(.90) saturate(.92) hue-rotate(-6deg);
+  }
+  35%{
+    filter:brightness(1.08) saturate(1.05) hue-rotate(0deg);
+  }
+  70%{
+    filter:brightness(.98) saturate(1.12) hue-rotate(8deg);
+  }
+  100%{
+    filter:brightness(.90) saturate(.92) hue-rotate(-6deg);
+  }
+}
+
+.hero-mist,
+.hero-content,
+.hero-side,
+.scroll,
+.scroll-indicator{
+  position:relative;
+  z-index:2;
+}
+
+@media (min-width:981px){
+  .hero{
+    background:#050505 !important;
+  }
+}
+
+@media(max-width:980px){
+  .hero{
+    background:#050505 !important;
+    animation:none !important;
+  }
+
+  .hero-bg{
+    background:
+      linear-gradient(90deg, rgba(0,0,0,.94) 0%, rgba(0,0,0,.82) 36%, rgba(0,0,0,.50) 66%, rgba(0,0,0,.30) 100%),
+      linear-gradient(180deg, rgba(0,0,0,.10) 0%, rgba(0,0,0,.70) 100%),
+      url('mountain.jpg') center center / cover no-repeat;
+    transform:scale(1.06);
+    animation:heroDayCycle 60s ease-in-out infinite;
+  }
+}
+
   </style>
 </head>
 <body class="motion-ready">
@@ -969,6 +1047,7 @@
 
     <main>
       <section class="hero" id="top">
+        <div class="hero-bg" aria-hidden="true"></div>
      <div class="hero-mist" aria-hidden="true"></div>
         
         <div class="hero-content">
@@ -1236,30 +1315,6 @@
       document.querySelector('.nav')
         .classList.toggle('open');
     });
-</script>
-  <script>
-const hero = document.querySelector(".hero");
-
-hero.addEventListener("mousemove", (e) => {
-
-  const rect = hero.getBoundingClientRect();
-
-  const x = (e.clientX - rect.left) / rect.width;
-  const y = (e.clientY - rect.top) / rect.height;
-
-  const moveX = (x - 0.5) * 16;
-  const moveY = (y - 0.5) * 10;
-
-  hero.style.backgroundPosition =
-    `calc(100% + ${moveX}px) calc(50% + ${moveY}px)`;
-
-});
-
-hero.addEventListener("mouseleave", () => {
-
-  hero.style.backgroundPosition = "right center";
-
-});
 </script>
   <div class="ai-chat-panel" id="aiChatPanel">
   <div class="ai-chat-head">
