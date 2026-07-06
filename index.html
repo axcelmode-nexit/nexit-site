@@ -1963,6 +1963,54 @@
   .footer-brand-parts{width:160px;height:44px;}
 }
 
+
+/* ==========================
+   NEXIT Signature v14
+   final N-only strong flare
+========================== */
+.signature-logo-assets.n-final-flare::before{
+  content:"";
+  position:absolute;
+  left:18.5%;
+  top:16%;
+  width:15%;
+  height:62%;
+  opacity:0;
+  pointer-events:none;
+  z-index:8;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255,255,255,1) 0 7%, rgba(255,255,255,.88) 8% 12%, rgba(255,255,255,.22) 24%, transparent 54%),
+    linear-gradient(90deg, transparent 0 4%, rgba(255,255,255,.92) 48%, transparent 96%),
+    linear-gradient(0deg, transparent 0 8%, rgba(255,255,255,.72) 50%, transparent 92%);
+  transform:translate(-50%,-50%) scale(.58) rotate(-14deg);
+  filter:
+    blur(.25px)
+    drop-shadow(0 0 12px rgba(255,255,255,1))
+    drop-shadow(0 0 34px rgba(255,255,255,.78))
+    drop-shadow(0 0 58px rgba(215,25,32,.42));
+  mix-blend-mode:screen;
+  animation:nFinalFlareBurst .72s cubic-bezier(.16,1,.3,1) forwards;
+}
+.signature-logo-assets.n-final-flare::after{
+  /* keep the logo sweep behavior available, but N flare uses ::before */
+}
+@keyframes nFinalFlareBurst{
+  0%{opacity:0;transform:translate(-50%,-50%) scale(.35) rotate(-14deg);}
+  14%{opacity:1;transform:translate(-50%,-50%) scale(1.08) rotate(-14deg);}
+  34%{opacity:.96;transform:translate(-50%,-50%) scale(1.36) rotate(-14deg);}
+  100%{opacity:0;transform:translate(-50%,-50%) scale(1.92) rotate(-14deg);}
+}
+.signature-n-img.n-finale{
+  animation:signatureNFinalFlashV14 .88s cubic-bezier(.16,1,.3,1) forwards !important;
+  z-index:9 !important;
+}
+@keyframes signatureNFinalFlashV14{
+  0%{opacity:1;filter:brightness(1.08) contrast(1.05);transform:translateY(0) scale(1);}
+  12%{opacity:1;filter:brightness(4.4) contrast(1.24) drop-shadow(0 0 18px rgba(255,255,255,1)) drop-shadow(0 0 42px rgba(255,255,255,.85)) drop-shadow(0 0 72px rgba(215,25,32,.58));transform:translateY(0) scale(1.045);}
+  28%{opacity:1;filter:brightness(2.7) contrast(1.14) drop-shadow(0 0 26px rgba(255,255,255,.72)) drop-shadow(0 0 48px rgba(215,25,32,.42));transform:translateY(0) scale(1.025);}
+  100%{opacity:1;filter:brightness(1.08) contrast(1.05);transform:translateY(0) scale(1);}
+}
+
 </style>
 </head>
 <body class="motion-ready">
@@ -2466,7 +2514,11 @@ aiChatForm.addEventListener("submit",async(e)=>{
           logoAssets.classList.add("logo-shine", "logo-finish");
           [a,n,xcelmode,exit].forEach(el => { el.style.opacity = "1"; });
         }, 2360);
-        setTimeout(() => { n.classList.add("n-finale"); }, 3180);
+        setTimeout(() => {
+          logoAssets.classList.add("n-final-flare");
+          n.classList.add("n-finale");
+          setTimeout(() => logoAssets.classList.remove("n-final-flare"), 920);
+        }, 3180);
       }
     }
     requestAnimationFrame(step);
