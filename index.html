@@ -1380,12 +1380,7 @@ aiChatForm.addEventListener("submit",async(e)=>{
   addAiMessage("user",text);
   aiChatInput.value="";
 
-  aiChatInput.addEventListener("keydown", (e) => {
-  if (e.key === "Enter" && !e.shiftKey) {
-    e.preventDefault();
-    aiChatForm.requestSubmit();
-  }
-});
+
 
   const pending=addAiMessage("bot","回答を作成しています...");
   aiChatSend.disabled=true;
@@ -1409,6 +1404,14 @@ aiChatForm.addEventListener("submit",async(e)=>{
     console.error(err);
   }finally{
     aiChatSend.disabled=false;
+  }
+});
+  aiChatInput.addEventListener("keydown", (e) => {
+  if (e.isComposing || e.keyCode === 229) return;
+
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    aiChatForm.requestSubmit();
   }
 });
 
