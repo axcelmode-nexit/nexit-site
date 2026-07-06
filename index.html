@@ -967,7 +967,7 @@
   transform:scale(1.10);
   animation:
     heroBgBreath 38s ease-in-out infinite alternate,
-    heroDayCycle 60s ease-in-out infinite;
+    heroDayCycle 20s ease-in-out infinite;
   will-change:transform, filter;
 }
 
@@ -982,26 +982,33 @@
 
 @keyframes heroDayCycle{
   0%{
-    filter:brightness(.90) saturate(.92) hue-rotate(-6deg);
+    filter:brightness(.78) saturate(.85) hue-rotate(-10deg);
   }
+
   35%{
-    filter:brightness(1.08) saturate(1.05) hue-rotate(0deg);
+    filter:brightness(1.22) saturate(1.08) hue-rotate(0deg);
   }
+
   70%{
-    filter:brightness(.98) saturate(1.12) hue-rotate(8deg);
+    filter:brightness(.95) saturate(1.28) hue-rotate(14deg);
   }
+
   100%{
-    filter:brightness(.90) saturate(.92) hue-rotate(-6deg);
+    filter:brightness(.78) saturate(.85) hue-rotate(-10deg);
   }
 }
 
 .hero-mist,
 .hero-content,
 .hero-side,
-.scroll,
-.scroll-indicator{
+.scroll{
   position:relative;
   z-index:2;
+}
+
+.scroll-indicator{
+  position:absolute;
+  z-index:10;
 }
 
 @media (min-width:981px){
@@ -1022,7 +1029,7 @@
       linear-gradient(180deg, rgba(0,0,0,.10) 0%, rgba(0,0,0,.70) 100%),
       url('mountain.jpg') center center / cover no-repeat;
     transform:scale(1.06);
-    animation:heroDayCycle 60s ease-in-out infinite;
+    animation:heroDayCycle 20s ease-in-out infinite;
   }
 }
 
