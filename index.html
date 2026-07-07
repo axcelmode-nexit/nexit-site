@@ -2721,6 +2721,29 @@
   opacity:0 !important;
 }
 
+
+/* ==========================
+   NEXIT Signature v52
+   Thicken the main wave itself in latter half, no delayed extra trail
+========================== */
+.signature-stage{
+  --signature-core-width:3.55px;
+  --signature-glow-width:11.5px;
+  --signature-tip-width:4px;
+}
+
+.signature-path{
+  stroke-width:var(--signature-core-width) !important;
+}
+
+.signature-path-glow{
+  stroke-width:var(--signature-glow-width) !important;
+}
+
+.signature-path-tip{
+  stroke-width:var(--signature-tip-width) !important;
+}
+
 </style>
 </head>
 <body class="motion-ready">
@@ -3209,10 +3232,10 @@ aiChatForm.addEventListener("submit",async(e)=>{
     const visible = Math.max(0, end - start);
 
     const speedGain = Math.max(0, Math.min(head / length, 1));
-    const drsGain = Math.max(0, Math.min((speedGain - .58) / .42, 1));
-    stage.style.setProperty("--signature-core-width", (3.55 + drsGain * 1.15).toFixed(2) + "px");
-    stage.style.setProperty("--signature-glow-width", (11.5 + drsGain * 5.0).toFixed(2) + "px");
-    stage.style.setProperty("--signature-tip-width", (4.0 + drsGain * 1.25).toFixed(2) + "px");
+    const drsGain = Math.max(0, Math.min((speedGain - .50) / .50, 1));
+    stage.style.setProperty("--signature-core-width", (3.55 + drsGain * 3.15).toFixed(2) + "px");
+    stage.style.setProperty("--signature-glow-width", (11.5 + drsGain * 7.5).toFixed(2) + "px");
+    stage.style.setProperty("--signature-tip-width", (4.0 + drsGain * 1.7).toFixed(2) + "px");
 
     path.style.strokeDasharray = visible + " " + length;
     path.style.strokeDashoffset = String(-start);
