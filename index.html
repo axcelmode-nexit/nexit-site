@@ -3239,7 +3239,7 @@ aiChatForm.addEventListener("submit",async(e)=>{
 
   function finishLine(shouldShowTagline, shouldLoop){
     const start = performance.now();
-    const finishDuration = 120;
+    const finishDuration = 80;
 
     function step(now){
       const raw = Math.min((now - start) / finishDuration, 1);
