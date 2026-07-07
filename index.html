@@ -2395,6 +2395,136 @@
   }
 }
 
+
+/* ==========================
+   NEXIT Signature v40
+   Premium light trail + N charge glow + signature loop
+========================== */
+.signature-path-glow{
+  opacity:.30 !important;
+  filter:
+    blur(7px)
+    drop-shadow(0 0 22px rgba(215,25,32,.30))
+    drop-shadow(0 0 36px rgba(255,255,255,.10)) !important;
+}
+
+.signature-path{
+  filter:
+    drop-shadow(0 0 3px rgba(255,245,245,.24))
+    drop-shadow(0 0 10px rgba(215,25,32,.46))
+    drop-shadow(0 0 22px rgba(215,25,32,.20)) !important;
+}
+
+.signature-path-tip{
+  stroke:rgba(255,238,238,.96) !important;
+  filter:
+    drop-shadow(0 0 7px rgba(255,255,255,.56))
+    drop-shadow(0 0 16px rgba(215,25,32,.44))
+    drop-shadow(0 0 30px rgba(215,25,32,.20)) !important;
+}
+
+.signature-logo-assets{
+  transition:opacity .42s cubic-bezier(.16,1,.3,1), filter .42s cubic-bezier(.16,1,.3,1);
+}
+
+.signature-logo-assets.loop-fade{
+  opacity:0 !important;
+  filter:blur(5px);
+}
+
+.signature-logo-assets.loop-fade .signature-fragment,
+.signature-logo-assets.loop-fade .signature-n-flash-overlay{
+  opacity:0 !important;
+  animation:none !important;
+  transform:none !important;
+}
+
+.signature-n-flash-overlay.is-active{
+  animation:nexitNChargeOverlay 1.34s cubic-bezier(.22,.8,.2,1) forwards !important;
+}
+
+@keyframes nexitNChargeOverlay{
+  0%{
+    opacity:0;
+    filter:brightness(1) contrast(1);
+  }
+  22%{
+    opacity:.20;
+    filter:
+      brightness(1.35)
+      contrast(1.04)
+      drop-shadow(0 0 7px rgba(255,255,255,.18));
+  }
+  48%{
+    opacity:.62;
+    filter:
+      brightness(2.15)
+      contrast(1.10)
+      drop-shadow(0 0 14px rgba(255,255,255,.42))
+      drop-shadow(0 0 24px rgba(215,25,32,.18));
+  }
+  67%{
+    opacity:.90;
+    filter:
+      brightness(3.0)
+      contrast(1.14)
+      drop-shadow(0 0 20px rgba(255,255,255,.68))
+      drop-shadow(0 0 38px rgba(255,255,255,.28))
+      drop-shadow(0 0 22px rgba(215,25,32,.20));
+  }
+  84%{
+    opacity:.42;
+    filter:
+      brightness(1.85)
+      contrast(1.08)
+      drop-shadow(0 0 12px rgba(255,255,255,.30));
+  }
+  100%{
+    opacity:0;
+    filter:brightness(1) contrast(1);
+  }
+}
+
+.signature-n-img.n-finale{
+  animation:nexitNChargeBase 1.34s cubic-bezier(.22,.8,.2,1) forwards !important;
+}
+
+@keyframes nexitNChargeBase{
+  0%{
+    filter:brightness(1.05) contrast(1.05);
+  }
+  24%{
+    filter:
+      brightness(1.16)
+      contrast(1.06)
+      drop-shadow(0 0 6px rgba(255,255,255,.14));
+  }
+  52%{
+    filter:
+      brightness(1.48)
+      contrast(1.08)
+      drop-shadow(0 0 12px rgba(255,255,255,.30))
+      drop-shadow(0 0 18px rgba(215,25,32,.10));
+  }
+  68%{
+    filter:
+      brightness(1.95)
+      contrast(1.12)
+      drop-shadow(0 0 18px rgba(255,255,255,.58))
+      drop-shadow(0 0 30px rgba(255,255,255,.22))
+      drop-shadow(0 0 14px rgba(215,25,32,.12));
+  }
+  86%{
+    filter:
+      brightness(1.34)
+      contrast(1.07)
+      drop-shadow(0 0 9px rgba(255,255,255,.20));
+  }
+  100%{
+    filter:brightness(1.08) contrast(1.05);
+  }
+}
+
 </style>
 </head>
 <body class="motion-ready">
@@ -2835,6 +2965,41 @@ aiChatForm.addEventListener("submit",async(e)=>{
   const trailLength = Math.min(length * 0.34, 320);
   const travelLength = length + trailLength + 80;
 
+  let loopTimer = null;
+
+  function clearTimers(){
+    if(loopTimer) window.clearTimeout(loopTimer);
+    loopTimer = null;
+  }
+
+  function resetSignature(){
+    clearTimers();
+
+    stage.classList.remove("energy-bloom");
+
+    logoAssets.classList.remove("logo-shine", "logo-finish", "loop-fade");
+
+    [a, n, xcelmode, exit].forEach((el) => {
+      el.classList.remove("is-active", "is-red", "is-white", "n-finale");
+      el.style.opacity = "";
+      el.style.transform = "";
+      el.style.filter = "";
+      el.style.animation = "none";
+      void el.offsetWidth;
+      el.style.animation = "";
+    });
+
+    if(nFlashOverlay){
+      nFlashOverlay.classList.remove("is-active");
+      nFlashOverlay.style.animation = "none";
+      void nFlashOverlay.offsetWidth;
+      nFlashOverlay.style.animation = "";
+    }
+
+    setLine(0);
+    if(ghost) ghost.style.opacity = "0";
+  }
+
   function setLine(draw){
     const head = draw;
     const tail = draw - trailLength;
@@ -2879,20 +3044,15 @@ aiChatForm.addEventListener("submit",async(e)=>{
     return;
   }
 
-  setLine(0);
-  if(ghost) ghost.style.opacity = "0";
-
-  const delay = 3600;
-  const duration = 3400;
-
   function easeInOutCubic(t){
     return t < .5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2;
   }
+
   function easeOutCubic(t){
     return 1 - Math.pow(1 - t, 3);
   }
 
-  function finishLine(){
+  function finishLine(shouldShowTagline, shouldLoop){
     const start = performance.now();
     const finishDuration = 120;
 
@@ -2931,30 +3091,46 @@ aiChatForm.addEventListener("submit",async(e)=>{
             nFlashOverlay.classList.add("is-active");
           }
         }, 3180);
-        setTimeout(() => {
-          if(tagline) tagline.classList.add("is-visible");
-        }, 4200);
+        if(shouldShowTagline){
+          setTimeout(() => {
+            if(tagline) tagline.classList.add("is-visible");
+          }, 4200);
+        }
+
+        if(shouldLoop){
+          loopTimer = setTimeout(() => {
+            logoAssets.classList.add("loop-fade");
+            setTimeout(() => {
+              resetSignature();
+              requestAnimationFrame(() => animateSignature(performance.now(), false, true));
+            }, 520);
+          }, 9200);
+        }
       }
     }
     requestAnimationFrame(step);
   }
 
-  function animateSignature(startTime){
+  function animateSignature(startTime, shouldShowTagline, shouldLoop){
+    const duration = 3400;
     const elapsed = performance.now() - startTime;
     const raw = Math.min(Math.max(elapsed / duration, 0), 1);
     const progress = easeInOutCubic(raw);
     setLine(progress * travelLength);
 
     if(raw < 1){
-      requestAnimationFrame(() => animateSignature(startTime));
+      requestAnimationFrame(() => animateSignature(startTime, shouldShowTagline, shouldLoop));
     }else{
-      finishLine();
+      finishLine(shouldShowTagline, shouldLoop);
     }
   }
 
+  resetSignature();
+
+  const initialDelay = 3600;
   setTimeout(() => {
-    requestAnimationFrame(() => animateSignature(performance.now()));
-  }, delay);
+    requestAnimationFrame(() => animateSignature(performance.now(), true, true));
+  }, initialDelay);
 })();
 </script>
 
