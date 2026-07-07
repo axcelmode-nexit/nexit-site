@@ -2623,7 +2623,7 @@
 /* Nの後半だけ太く・白く、ロゴNと重なる主役ラインにする */
 .signature-path-n-bold{
   display:block;
-  stroke:rgba(255,255,255,.96);
+  stroke: #d71920;
   stroke-width:0;
   stroke-dasharray:0 9999;
   stroke-dashoffset:0;
@@ -2692,6 +2692,23 @@
 .signature-fragment.is-active,
 .signature-logo-assets.logo-finish .signature-fragment{
   opacity:1;
+}
+
+
+/* ==========================
+   NEXIT Signature v50
+   Sync white tip with red wave; N bold becomes red body, not delayed white trail
+========================== */
+.signature-path-n-bold{
+  stroke:#d71920 !important;
+  opacity:0;
+  filter:
+    drop-shadow(0 0 8px rgba(215,25,32,.44))
+    drop-shadow(0 0 18px rgba(215,25,32,.22)) !important;
+}
+
+.signature-path-tip{
+  opacity:.82 !important;
 }
 
 </style>
@@ -3198,7 +3215,7 @@ aiChatForm.addEventListener("submit",async(e)=>{
     }
 
     if(tip){
-      const tipLen = Math.min(24, visible);
+      const tipLen = Math.min(18, visible);
       const tipStart = Math.max(end - tipLen, 0);
       tip.style.strokeDasharray = tipLen + " " + length;
       tip.style.strokeDashoffset = String(-tipStart);
@@ -3213,7 +3230,7 @@ aiChatForm.addEventListener("submit",async(e)=>{
       nBold.style.strokeDasharray = nVisible + " " + nBoldLength;
       nBold.style.strokeDashoffset = "0";
       nBold.style.strokeWidth = nWidth.toFixed(2);
-      nBold.style.opacity = nVisible > 2 ? String(.18 + nRaw * .82) : "0";
+      nBold.style.opacity = nVisible > 2 ? String(.12 + nRaw * .48) : "0";
     }
   }
 
