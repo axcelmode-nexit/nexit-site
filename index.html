@@ -2788,6 +2788,234 @@
   opacity:0 !important;
 }
 
+
+/* ==========================
+   NEXIT Signature v58
+   Strong visible latter-half bold overlay
+========================== */
+.signature-path-n-bold{
+  display:block !important;
+  fill:none !important;
+  stroke:#d71920 !important;
+  stroke-width:0;
+  stroke-linecap:butt !important;
+  stroke-linejoin:miter !important;
+  stroke-miterlimit:10 !important;
+  stroke-dasharray:0 9999;
+  stroke-dashoffset:0;
+  opacity:0;
+  filter:
+    drop-shadow(0 0 10px rgba(215,25,32,.95))
+    drop-shadow(0 0 26px rgba(215,25,32,.58))
+    drop-shadow(0 0 52px rgba(215,25,32,.28)) !important;
+}
+
+/* 前半の本線は細く維持。太さは後半専用レイヤーで見せる */
+.signature-path{
+  stroke-width:3.6px !important;
+}
+
+.signature-path-glow{
+  stroke-width:11px !important;
+}
+
+.signature-path-tip{
+  stroke-width:4.2px !important;
+}
+
+
+
+/* ==========================
+   NEXIT Signature v63
+   Fix: make latter N wave visibly thick and let escape line fade upward
+========================== */
+.signature-path-n-bold{
+  display:block !important;
+  fill:none !important;
+  stroke:#d71920 !important;
+  stroke-width:22px;
+  stroke-linecap:butt !important;
+  stroke-linejoin:miter !important;
+  stroke-miterlimit:10 !important;
+  stroke-dasharray:0 9999;
+  stroke-dashoffset:0;
+  opacity:0;
+  vector-effect:none !important;
+  filter:
+    drop-shadow(0 0 12px rgba(215,25,32,.95))
+    drop-shadow(0 0 30px rgba(215,25,32,.62))
+    drop-shadow(0 0 60px rgba(215,25,32,.34)) !important;
+}
+
+.signature-path-escape{
+  display:block;
+  fill:none;
+  stroke:#d71920;
+  stroke-width:3.4px;
+  stroke-linecap:butt;
+  stroke-linejoin:miter;
+  stroke-miterlimit:10;
+  stroke-dasharray:0 9999;
+  stroke-dashoffset:0;
+  opacity:0;
+  filter:
+    drop-shadow(0 0 8px rgba(215,25,32,.72))
+    drop-shadow(0 0 22px rgba(215,25,32,.36));
+}
+
+
+/* ==========================
+   NEXIT Signature v63
+   Based on v59: extend the original path only.
+   No late extra fade line. The N diagonal continues farther upper-right and tapers.
+========================== */
+.signature-wave{
+  overflow:visible !important;
+}
+.signature-path-escape{
+  display:none !important;
+}
+.signature-path-n-bold{
+  display:block !important;
+  stroke:#d71920 !important;
+  filter:
+    drop-shadow(0 0 10px rgba(215,25,32,.95))
+    drop-shadow(0 0 26px rgba(215,25,32,.58))
+    drop-shadow(0 0 52px rgba(215,25,32,.28)) !important;
+}
+
+
+
+/* ==========================
+   NEXIT Signature v64
+   iPad/tablet fit: prevent bottom clipping and avoid JOETSU/AI overlap
+========================== */
+@media (min-width: 768px) and (max-width: 1180px){
+  .hero{
+    height:auto !important;
+    min-height:100svh !important;
+    padding-top:96px !important;
+    padding-bottom:128px !important;
+    align-items:center !important;
+  }
+
+  .hero-content{
+    max-width:min(700px, 76vw) !important;
+    padding-bottom:0 !important;
+  }
+
+  .catch{
+    font-size:clamp(34px, 5.2vw, 58px) !important;
+    line-height:1.18 !important;
+    margin-top:4px !important;
+    margin-bottom:8px !important;
+  }
+
+  .signature-stage{
+    width:min(760px, 76vw) !important;
+    min-height:214px !important;
+    margin-bottom:0 !important;
+  }
+
+  .signature-wave{
+    width:min(760px, 76vw) !important;
+    max-width:760px !important;
+    height:226px !important;
+    top:4px !important;
+  }
+
+  .signature-logo-assets{
+    top:70px !important;
+    width:min(560px, 64vw) !important;
+  }
+
+  .hero-content .lead.tagline{
+    font-size:clamp(15px, 1.8vw, 19px) !important;
+    line-height:1.7 !important;
+    margin-bottom:18px !important;
+  }
+
+  .hero-content .btn{
+    min-width:210px !important;
+    padding:14px 22px !important;
+    margin-bottom:0 !important;
+  }
+
+  .hero-side{
+    display:block !important;
+    right:118px !important;
+    bottom:62px !important;
+    max-width:210px !important;
+    z-index:12 !important;
+    opacity:.9 !important;
+  }
+
+  .hero-side .coord{
+    font-size:clamp(14px, 1.7vw, 20px) !important;
+    line-height:1.55 !important;
+    letter-spacing:.22em !important;
+  }
+
+  .coord-label{
+    font-size:10px !important;
+    margin-top:8px !important;
+  }
+
+  .scroll-indicator{
+    bottom:42px !important;
+    left:30px !important;
+  }
+
+  .ai-chat-button{
+    right:22px !important;
+    bottom:22px !important;
+    width:66px !important;
+    height:66px !important;
+    font-size:31px !important;
+  }
+
+  .ai-chat-panel{
+    right:22px !important;
+    bottom:98px !important;
+    height:min(520px, calc(100svh - 126px)) !important;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1180px) and (max-height: 760px){
+  .hero{
+    padding-top:82px !important;
+    padding-bottom:110px !important;
+  }
+
+  .catch{
+    font-size:clamp(30px, 4.6vw, 48px) !important;
+    margin-bottom:2px !important;
+  }
+
+  .signature-stage{
+    min-height:186px !important;
+  }
+
+  .signature-wave{
+    height:198px !important;
+    top:0 !important;
+  }
+
+  .signature-logo-assets{
+    top:60px !important;
+    width:min(520px, 62vw) !important;
+  }
+
+  .hero-content .lead.tagline{
+    margin-bottom:12px !important;
+  }
+
+  .hero-side{
+    right:112px !important;
+    bottom:54px !important;
+  }
+}
+
 </style>
 </head>
 <body class="motion-ready">
@@ -2835,15 +3063,15 @@
                 </linearGradient>
               </defs>
               <path id="signaturePathGhost" class="signature-path-ghost"
-                d="M0 126 H72 L142 -24 L214 126 H760 L880 -18 L940 126 L1460 -520" />
+                d="M0 126 H72 L142 -24 L214 126 H760 L880 -18 L940 126 L1880 -1010" />
               <path id="signaturePathGlow" class="signature-path-glow"
-                d="M0 126 H72 L142 -24 L214 126 H760 L880 -18 L940 126 L1460 -520" />
+                d="M0 126 H72 L142 -24 L214 126 H760 L880 -18 L940 126 L1880 -1010" />
               <path id="signaturePath" class="signature-path"
-                d="M0 126 H72 L142 -24 L214 126 H760 L880 -18 L940 126 L1460 -520" />
+                d="M0 126 H72 L142 -24 L214 126 H760 L880 -18 L940 126 L1880 -1010" />
               <path id="signaturePathNBold" class="signature-path-n-bold"
-                d="M880 -18 L940 126 L1460 -520" />
+                d="M880 -18 L940 126 L1880 -1010" />
               <path id="signaturePathTip" class="signature-path-tip"
-                d="M0 126 H72 L142 -24 L214 126 H760 L880 -18 L940 126 L1460 -520" />
+                d="M0 126 H72 L142 -24 L214 126 H760 L880 -18 L940 126 L1880 -1010" />
             </svg>
 
             <div class="signature-logo-build signature-logo-assets">
@@ -3214,7 +3442,7 @@ aiChatForm.addEventListener("submit",async(e)=>{
   const glow = document.getElementById("signaturePathGlow");
   const ghost = document.getElementById("signaturePathGhost");
   const tip = document.getElementById("signaturePathTip");
-  const nBold = null;
+  const nBold = document.getElementById("signaturePathNBold");
   const stage = document.querySelector(".signature-stage");
   const n = document.querySelector(".signature-n-img");
   const nFlashOverlay = document.querySelector(".signature-n-flash-overlay");
@@ -3229,8 +3457,8 @@ aiChatForm.addEventListener("submit",async(e)=>{
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const length = path.getTotalLength();
   const nBoldLength = nBold ? nBold.getTotalLength() : 0;
-  const trailLength = Math.min(length * 0.34, 320);
-  const travelLength = length + trailLength + 80;
+  const trailLength = Math.min(length * 0.42, 520);
+  const travelLength = length + trailLength + 180;
 
   let loopTimer = null;
 
@@ -3281,17 +3509,17 @@ aiChatForm.addEventListener("submit",async(e)=>{
     // 後半の太さ（大胆版）
     stage.style.setProperty(
       "--signature-core-width",
-      (3.35 + drsGain * 5.20).toFixed(2) + "px");
+      (3.35 + drsGain * 0.8).toFixed(2) + "px");
 
     // グロー
     stage.style.setProperty(
       "--signature-glow-width",
-      (10.5 + drsGain * 12.0).toFixed(2) + "px");
+      (10.5 + drsGain * 3.0).toFixed(2) + "px");
 
     // 白い先端
     stage.style.setProperty(
       "--signature-tip-width",
-      (3.8 + drsGain * 2.0).toFixed(2) + "px");
+      (3.8 + drsGain * 0.6).toFixed(2) + "px");
 
     path.style.strokeDasharray = visible + " " + length;
     path.style.strokeDashoffset = String(-start);
@@ -3312,14 +3540,18 @@ aiChatForm.addEventListener("submit",async(e)=>{
     }
 
     if(nBold){
+      // 後半Nだけを太い別レイヤーで同時に走らせる
       const nStartRatio = .54;
       const nRaw = Math.max(0, Math.min((head / length - nStartRatio) / (1 - nStartRatio), 1));
       const nVisible = nBoldLength * nRaw;
-      const nWidth = 4.6 + nRaw * 3.8;
+      const taper = Math.max(0, Math.min((nRaw - .72) / .28, 1));
+      const nWidth = 14.0 + nRaw * 22.0 - taper * 24.0;
+      const nOpacity = nVisible > 3 ? String(1 - taper * .55) : "0";
+
       nBold.style.strokeDasharray = nVisible + " " + nBoldLength;
       nBold.style.strokeDashoffset = "0";
-      nBold.style.strokeWidth = nWidth.toFixed(2);
-      nBold.style.opacity = nVisible > 2 ? String(.12 + nRaw * .48) : "0";
+      nBold.style.strokeWidth = Math.max(8, nWidth).toFixed(2);
+      nBold.style.opacity = nOpacity;
     }
   }
 
@@ -3405,7 +3637,7 @@ aiChatForm.addEventListener("submit",async(e)=>{
   }
 
   function animateSignature(startTime, shouldShowTagline, shouldLoop){
-    const duration = 3400;
+    const duration = 3900;
     const elapsed = performance.now() - startTime;
     const raw = Math.min(Math.max(elapsed / duration, 0), 1);
     const progress = easeInOutCubic(raw);
