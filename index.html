@@ -2744,6 +2744,50 @@
   stroke-width:var(--signature-tip-width) !important;
 }
 
+
+/* ==========================
+   NEXIT Signature v55
+   Preserve docking flow; wave passes through future A/N positions
+   Latter half thickens by main path itself
+========================== */
+.signature-stage{
+  --signature-core-width:3.35px;
+  --signature-glow-width:10.5px;
+  --signature-tip-width:3.8px;
+}
+
+.signature-wave{
+  overflow:visible !important;
+}
+
+.signature-path,
+.signature-path-glow,
+.signature-path-tip{
+  stroke-linecap:butt !important;
+  stroke-linejoin:miter !important;
+  stroke-miterlimit:10 !important;
+}
+
+.signature-path{
+  stroke-width:var(--signature-core-width) !important;
+}
+
+.signature-path-glow{
+  stroke-width:var(--signature-glow-width) !important;
+  opacity:.26 !important;
+}
+
+.signature-path-tip{
+  stroke-width:var(--signature-tip-width) !important;
+  opacity:.72 !important;
+}
+
+/* 後追いに見える別太線は使わず、本線自体を太くする */
+.signature-path-n-bold{
+  display:none !important;
+  opacity:0 !important;
+}
+
 </style>
 </head>
 <body class="motion-ready">
@@ -2774,9 +2818,9 @@
   <span style="--i:15">確</span><span style="--i:16">か</span><span style="--i:17">な</span><span style="--i:18">前</span><span style="--i:19">進</span><span style="--i:20">に</span><span style="--i:21">。</span>
 </h1>
           <div class="signature-stage" aria-hidden="true">
-            <svg class="signature-wave" viewBox="0 -210 1200 420" preserveAspectRatio="xMinYMid meet">
+            <svg class="signature-wave" viewBox="0 -260 1500 560" preserveAspectRatio="xMinYMid meet">
               <defs>
-                <linearGradient id="signatureLineGradient" x1="0" y1="170" x2="1040" y2="-504" gradientUnits="userSpaceOnUse">
+                <linearGradient id="signatureLineGradient" x1="0" y1="170" x2="1460" y2="-520" gradientUnits="userSpaceOnUse">
                   <stop offset="0%" stop-color="#a80f16" />
                   <stop offset="28%" stop-color="#d71920" />
                   <stop offset="48%" stop-color="#ff4a4f" />
@@ -2784,22 +2828,22 @@
                   <stop offset="76%" stop-color="#d71920" />
                   <stop offset="100%" stop-color="#7d070d" />
                 </linearGradient>
-                <linearGradient id="signatureGlowGradient" x1="0" y1="170" x2="1040" y2="-504" gradientUnits="userSpaceOnUse">
+                <linearGradient id="signatureGlowGradient" x1="0" y1="170" x2="1460" y2="-520" gradientUnits="userSpaceOnUse">
                   <stop offset="0%" stop-color="rgba(215,25,32,.18)" />
                   <stop offset="48%" stop-color="rgba(255,255,255,.28)" />
                   <stop offset="100%" stop-color="rgba(215,25,32,.16)" />
                 </linearGradient>
               </defs>
               <path id="signaturePathGhost" class="signature-path-ghost"
-                d="M0 170 H146 L210 34 L274 170 H430 L555 -10 L640 136 L1430 -740" />
+                d="M0 126 H72 L142 -24 L214 126 H760 L880 -18 L940 126 L1460 -520" />
               <path id="signaturePathGlow" class="signature-path-glow"
-                d="M0 170 H146 L210 34 L274 170 H430 L555 -10 L640 136 L1430 -740" />
+                d="M0 126 H72 L142 -24 L214 126 H760 L880 -18 L940 126 L1460 -520" />
               <path id="signaturePath" class="signature-path"
-                d="M0 170 H146 L210 34 L274 170 H430 L555 -10 L640 136 L1430 -740" />
+                d="M0 126 H72 L142 -24 L214 126 H760 L880 -18 L940 126 L1460 -520" />
               <path id="signaturePathNBold" class="signature-path-n-bold"
-                d="M640 136 L1430 -740" />
+                d="M880 -18 L940 126 L1460 -520" />
               <path id="signaturePathTip" class="signature-path-tip"
-                d="M0 170 H146 L210 34 L274 170 H430 L555 -10 L640 136 L1430 -740" />
+                d="M0 126 H72 L142 -24 L214 126 H760 L880 -18 L940 126 L1460 -520" />
             </svg>
 
             <div class="signature-logo-build signature-logo-assets">
@@ -3232,10 +3276,22 @@ aiChatForm.addEventListener("submit",async(e)=>{
     const visible = Math.max(0, end - start);
 
     const speedGain = Math.max(0, Math.min(head / length, 1));
-    const drsGain = Math.max(0, Math.min((speedGain - .50) / .50, 1));
-    stage.style.setProperty("--signature-core-width", (3.55 + drsGain * 3.15).toFixed(2) + "px");
-    stage.style.setProperty("--signature-glow-width", (11.5 + drsGain * 7.5).toFixed(2) + "px");
-    stage.style.setProperty("--signature-tip-width", (4.0 + drsGain * 1.7).toFixed(2) + "px");
+    const drsGain = Math.max(0, Math.min((speedGain - .46) / .54, 1));
+
+    // 後半の太さ（大胆版）
+    stage.style.setProperty(
+      "--signature-core-width",
+      (3.35 + drsGain * 5.20).toFixed(2) + "px");
+
+    // グロー
+    stage.style.setProperty(
+      "--signature-glow-width",
+      (10.5 + drsGain * 12.0).toFixed(2) + "px");
+
+    // 白い先端
+    stage.style.setProperty(
+      "--signature-tip-width",
+      (3.8 + drsGain * 2.0).toFixed(2) + "px");
 
     path.style.strokeDasharray = visible + " " + length;
     path.style.strokeDashoffset = String(-start);
