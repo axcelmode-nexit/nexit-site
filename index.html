@@ -3016,6 +3016,24 @@
   }
 }
 
+
+
+/* ==========================
+   NEXIT Signature v73
+   N snap bold: sharper/stronger N pulse -> immediate thin escape
+========================== */
+.signature-path-n-bold{
+  display:block !important;
+  stroke:#d71920 !important;
+  stroke-linecap:butt !important;
+  stroke-linejoin:miter !important;
+  stroke-miterlimit:10 !important;
+  filter:
+    drop-shadow(0 0 14px rgba(215,25,32,1))
+    drop-shadow(0 0 34px rgba(215,25,32,.72))
+    drop-shadow(0 0 62px rgba(215,25,32,.36)) !important;
+}
+
 </style>
 </head>
 <body class="motion-ready">
@@ -3069,7 +3087,7 @@
               <path id="signaturePath" class="signature-path"
                 d="M0 126 H72 L142 -24 L214 126 H760 L880 -18 L940 126 L1880 -1010" />
               <path id="signaturePathNBold" class="signature-path-n-bold"
-                d="M880 -18 L940 126 L1880 -1010" />
+                d="M760 126 L880 -18 L940 126" />
               <path id="signaturePathTip" class="signature-path-tip"
                 d="M0 126 H72 L142 -24 L214 126 H760 L880 -18 L940 126 L1880 -1010" />
             </svg>
@@ -3540,18 +3558,28 @@ aiChatForm.addEventListener("submit",async(e)=>{
     }
 
     if(nBold){
-      // 後半Nだけを太い別レイヤーで同時に走らせる
-      const nStartRatio = .54;
-      const nRaw = Math.max(0, Math.min((head / length - nStartRatio) / (1 - nStartRatio), 1));
+      // v73: N区間だけ「パッ」と太くする。
+      // 通常波形は細いまま。Nを抜けたら即細線へ戻す。
+      const nStart = length * 0.343;
+      const nEnd = length * 0.467;
+      const nSpan = Math.max(nEnd - nStart, 1);
+      const nRaw = Math.max(0, Math.min((head - nStart) / nSpan, 1));
       const nVisible = nBoldLength * nRaw;
-      const taper = Math.max(0, Math.min((nRaw - .72) / .28, 1));
-      const nWidth = 14.0 + nRaw * 22.0 - taper * 24.0;
-      const nOpacity = nVisible > 3 ? String(1 - taper * .55) : "0";
+
+      // Nを抜けた後は短く鋭く消す。余韻は本線側に任せる。
+      const afterN = Math.max(0, head - nEnd);
+      const fadeAfter = Math.max(0, Math.min(afterN / (length * 0.028), 1));
+      const inN = head >= nStart && head <= nEnd;
+      const justAfterN = head > nEnd && fadeAfter < 1;
+
+      // 入った瞬間に太く、N通過中は強く、抜けたら即戻る。
+      const snapIn = Math.max(0, Math.min((head - nStart) / (length * 0.012), 1));
+      const nWidth = 10.8 + snapIn * 3.2;
 
       nBold.style.strokeDasharray = nVisible + " " + nBoldLength;
       nBold.style.strokeDashoffset = "0";
-      nBold.style.strokeWidth = Math.max(8, nWidth).toFixed(2);
-      nBold.style.opacity = nOpacity;
+      nBold.style.strokeWidth = (inN || justAfterN) ? nWidth.toFixed(2) : "0";
+      nBold.style.opacity = nVisible > 3 ? String(Math.max(0, 1 - fadeAfter)) : "0";
     }
   }
 
