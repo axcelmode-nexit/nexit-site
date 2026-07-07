@@ -2711,6 +2711,16 @@
   opacity:.82 !important;
 }
 
+
+/* ==========================
+   NEXIT Signature v51
+   Remove delayed N-bold trail; only main wave + synced white tip
+========================== */
+.signature-path-n-bold{
+  display:none !important;
+  opacity:0 !important;
+}
+
 </style>
 </head>
 <body class="motion-ready">
@@ -3137,7 +3147,7 @@ aiChatForm.addEventListener("submit",async(e)=>{
   const glow = document.getElementById("signaturePathGlow");
   const ghost = document.getElementById("signaturePathGhost");
   const tip = document.getElementById("signaturePathTip");
-  const nBold = document.getElementById("signaturePathNBold");
+  const nBold = null;
   const stage = document.querySelector(".signature-stage");
   const n = document.querySelector(".signature-n-img");
   const nFlashOverlay = document.querySelector(".signature-n-flash-overlay");
