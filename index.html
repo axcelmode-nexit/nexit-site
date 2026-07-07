@@ -2525,6 +2525,175 @@
   }
 }
 
+
+/* ==========================
+   NEXIT Signature v41
+   Fixed SVG design width for stable wave proportions
+========================== */
+.signature-stage{
+  width:min(960px, 96vw) !important;
+}
+
+.signature-wave{
+  width:min(960px, 96vw) !important;
+  max-width:960px !important;
+  height:280px !important;
+  overflow:visible !important;
+}
+
+@media(max-width:980px){
+  .signature-stage{
+    width:min(480px, 94vw) !important;
+  }
+
+  .signature-wave{
+    width:min(480px, 94vw) !important;
+    max-width:480px !important;
+    height:170px !important;
+  }
+}
+
+
+/* ==========================
+   NEXIT Signature v42
+   Wave overlay on logo + thicker N latter half
+========================== */
+
+/* ロゴパーツの上を波形がなぞるように近づける */
+.signature-stage{
+  width:min(960px, 96vw) !important;
+  min-height:300px !important;
+}
+
+.signature-wave{
+  width:min(960px, 96vw) !important;
+  max-width:960px !important;
+  height:300px !important;
+  top:22px !important;
+  overflow:visible !important;
+  z-index:5 !important;
+}
+
+.signature-logo-assets{
+  top:92px !important;
+  z-index:4 !important;
+}
+
+/* 前半は細いレーシングライン */
+.signature-path,
+.signature-path-glow,
+.signature-path-tip,
+.signature-path-n-bold{
+  fill:none;
+  stroke-linecap:butt !important;
+  stroke-linejoin:miter !important;
+  stroke-miterlimit:10 !important;
+  vector-effect:non-scaling-stroke;
+}
+
+.signature-path{
+  stroke:url(#signatureLineGradient) !important;
+  stroke-width:3.6px !important;
+  filter:
+    drop-shadow(0 0 3px rgba(255,245,245,.26))
+    drop-shadow(0 0 10px rgba(215,25,32,.48))
+    drop-shadow(0 0 22px rgba(215,25,32,.20)) !important;
+}
+
+.signature-path-glow{
+  stroke:url(#signatureGlowGradient) !important;
+  stroke-width:12px !important;
+  opacity:.28 !important;
+  filter:
+    blur(7px)
+    drop-shadow(0 0 24px rgba(215,25,32,.30))
+    drop-shadow(0 0 36px rgba(255,255,255,.10)) !important;
+}
+
+.signature-path-tip{
+  stroke:rgba(255,238,238,.96) !important;
+  stroke-width:4.4px !important;
+  opacity:.96;
+  filter:
+    drop-shadow(0 0 7px rgba(255,255,255,.58))
+    drop-shadow(0 0 16px rgba(215,25,32,.44))
+    drop-shadow(0 0 30px rgba(215,25,32,.20)) !important;
+}
+
+/* Nの後半だけ太く・白く、ロゴNと重なる主役ラインにする */
+.signature-path-n-bold{
+  display:block;
+  stroke:rgba(255,255,255,.96);
+  stroke-width:0;
+  stroke-dasharray:0 9999;
+  stroke-dashoffset:0;
+  opacity:0;
+  filter:
+    drop-shadow(0 0 8px rgba(255,255,255,.62))
+    drop-shadow(0 0 18px rgba(215,25,32,.44))
+    drop-shadow(0 0 36px rgba(215,25,32,.22));
+}
+
+/* ロゴ生成・ドッキングを見せるため、logo-finish前もコンテナは表示しておく */
+.signature-logo-assets:not(.loop-fade){
+  opacity:1;
+}
+
+@media(max-width:980px){
+  .signature-stage{
+    width:min(480px, 94vw) !important;
+    min-height:185px !important;
+  }
+
+  .signature-wave{
+    width:min(480px, 94vw) !important;
+    max-width:480px !important;
+    height:185px !important;
+    top:8px !important;
+  }
+
+  .signature-logo-assets{
+    top:58px !important;
+  }
+
+  .signature-path{
+    stroke-width:3.1px !important;
+  }
+
+  .signature-path-tip{
+    stroke-width:3.7px !important;
+  }
+}
+
+
+/* ==========================
+   NEXIT Signature v43
+   Restore logo build / docking while keeping bold N wave
+========================== */
+.signature-logo-assets{
+  opacity:1 !important;
+}
+
+.signature-logo-assets.loop-fade{
+  opacity:0 !important;
+}
+
+.signature-logo-assets:not(.loop-fade){
+  filter:none;
+}
+
+/* アニメーション中の各パーツは従来通り個別に出現 */
+.signature-fragment{
+  opacity:0;
+}
+
+.signature-fragment.is-red,
+.signature-fragment.is-white,
+.signature-fragment.is-active,
+.signature-logo-assets.logo-finish .signature-fragment{
+  opacity:1;
+}
+
 </style>
 </head>
 <body class="motion-ready">
@@ -2555,7 +2724,7 @@
   <span style="--i:15">確</span><span style="--i:16">か</span><span style="--i:17">な</span><span style="--i:18">前</span><span style="--i:19">進</span><span style="--i:20">に</span><span style="--i:21">。</span>
 </h1>
           <div class="signature-stage" aria-hidden="true">
-            <svg class="signature-wave" viewBox="0 -210 900 420" preserveAspectRatio="none">
+            <svg class="signature-wave" viewBox="0 -210 1200 420" preserveAspectRatio="xMinYMid meet">
               <defs>
                 <linearGradient id="signatureLineGradient" x1="0" y1="170" x2="1040" y2="-504" gradientUnits="userSpaceOnUse">
                   <stop offset="0%" stop-color="#a80f16" />
@@ -2574,11 +2743,13 @@
               <path id="signaturePathGhost" class="signature-path-ghost"
                 d="M0 170 H146 L210 34 L274 170 H430 L518 -10 L590 136 L678 -10 L766 -156 L854 -302 L942 -448 L1030 -594 L1118 -740" />
               <path id="signaturePathGlow" class="signature-path-glow"
-                d="M0 170 H146 L210 34 L274 170 H430 L518 -10 L590 136 L1120 -650" />
+                d="M0 170 H146 L210 34 L274 170 H430 L518 -10 L590 136 L678 -10 L766 -156 L854 -302 L942 -448 L1030 -594 L1118 -740" />
               <path id="signaturePath" class="signature-path"
-                d="M0 170 H146 L210 34 L274 170 H430 L518 -10 L590 136 L1120 -650" />
+                d="M0 170 H146 L210 34 L274 170 H430 L518 -10 L590 136 L678 -10 L766 -156 L854 -302 L942 -448 L1030 -594 L1118 -740" />
+              <path id="signaturePathNBold" class="signature-path-n-bold"
+                d="M590 136 L678 -10 L766 -156 L854 -302 L942 -448 L1030 -594 L1118 -740" />
               <path id="signaturePathTip" class="signature-path-tip"
-                d="M0 170 H146 L210 34 L274 170 H430 L518 -10 L590 136 L1120 -650" />
+                d="M0 170 H146 L210 34 L274 170 H430 L518 -10 L590 136 L678 -10 L766 -156 L854 -302 L942 -448 L1030 -594 L1118 -740" />
             </svg>
 
             <div class="signature-logo-build signature-logo-assets">
@@ -2949,6 +3120,7 @@ aiChatForm.addEventListener("submit",async(e)=>{
   const glow = document.getElementById("signaturePathGlow");
   const ghost = document.getElementById("signaturePathGhost");
   const tip = document.getElementById("signaturePathTip");
+  const nBold = document.getElementById("signaturePathNBold");
   const stage = document.querySelector(".signature-stage");
   const n = document.querySelector(".signature-n-img");
   const nFlashOverlay = document.querySelector(".signature-n-flash-overlay");
@@ -2962,6 +3134,7 @@ aiChatForm.addEventListener("submit",async(e)=>{
 
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const length = path.getTotalLength();
+  const nBoldLength = nBold ? nBold.getTotalLength() : 0;
   const trailLength = Math.min(length * 0.34, 320);
   const travelLength = length + trailLength + 80;
 
@@ -2998,6 +3171,7 @@ aiChatForm.addEventListener("submit",async(e)=>{
 
     setLine(0);
     if(ghost) ghost.style.opacity = "0";
+    if(nBold){ nBold.style.opacity = "0"; nBold.style.strokeDasharray = "0 " + nBoldLength; nBold.style.strokeDashoffset = "0"; }
   }
 
   function setLine(draw){
@@ -3029,6 +3203,17 @@ aiChatForm.addEventListener("submit",async(e)=>{
       tip.style.strokeDasharray = tipLen + " " + length;
       tip.style.strokeDashoffset = String(-tipStart);
       tip.style.opacity = visible > 3 && head <= length + 4 ? ".98" : "0";
+    }
+
+    if(nBold){
+      const nStartRatio = .54;
+      const nRaw = Math.max(0, Math.min((head / length - nStartRatio) / (1 - nStartRatio), 1));
+      const nVisible = nBoldLength * nRaw;
+      const nWidth = 4.6 + nRaw * 3.8;
+      nBold.style.strokeDasharray = nVisible + " " + nBoldLength;
+      nBold.style.strokeDashoffset = "0";
+      nBold.style.strokeWidth = nWidth.toFixed(2);
+      nBold.style.opacity = nVisible > 2 ? String(.18 + nRaw * .82) : "0";
     }
   }
 
@@ -3064,6 +3249,7 @@ aiChatForm.addEventListener("submit",async(e)=>{
       if(glow) glow.style.opacity = String(.42 - t * .42);
       if(ghost) ghost.style.opacity = "0";
       if(tip) tip.style.opacity = String(.98 - t * .98);
+      if(nBold) nBold.style.opacity = String(1 - t);
 
       if(raw < 1){
         requestAnimationFrame(step);
@@ -3072,6 +3258,7 @@ aiChatForm.addEventListener("submit",async(e)=>{
         if(glow) glow.style.opacity = "0";
         if(ghost) ghost.style.opacity = "0";
         if(tip) tip.style.opacity = "0";
+        if(nBold) nBold.style.opacity = "0";
         stage.classList.add("energy-bloom");
 
         setTimeout(() => n.classList.add("is-red"), 0);
