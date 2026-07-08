@@ -1310,7 +1310,7 @@
   .signature-logo-assets{top:70px !important;width:min(560px,64vw) !important;}
   .hero-content .lead.tagline{font-size:clamp(15px,1.8vw,19px) !important;line-height:1.7 !important;margin-bottom:18px !important;}
   .hero-content .btn{min-width:210px !important;padding:14px 22px !important;margin-bottom:0 !important;}
-  .hero-side{display:none !important;right:118px !important;bottom:62px !important;max-width:210px !important;z-index:12 !important;opacity:.9 !important;}
+  .hero-side{display:block !important;right:118px !important;bottom:62px !important;max-width:210px !important;z-index:12 !important;opacity:.9 !important;}
   .hero-side .coord{font-size:clamp(14px,1.7vw,20px) !important;line-height:1.55 !important;letter-spacing:.22em !important;}
   .coord-label{font-size:10px !important;margin-top:8px !important;}
   .scroll-indicator{bottom:42px !important;left:30px !important;}
@@ -1518,6 +1518,22 @@
   68%{filter:brightness(1.85) contrast(1.12) drop-shadow(0 0 18px rgba(255,255,255,.52)) drop-shadow(0 0 18px rgba(255,255,255,.20)) drop-shadow(0 0 14px rgba(215,25,32,.10));}
   86%{filter:brightness(1.30) contrast(1.07) drop-shadow(0 0 9px rgba(255,255,255,.18));}
   100%{filter:brightness(1.08) contrast(1.05);}
+}
+
+
+/* v87: keep JOETSU visible on iPad/tablet, hidden only on phone */
+@media (min-width:768px) and (max-width:1180px){
+  .hero-side{
+    display:block !important;
+    right:118px !important;
+    bottom:62px !important;
+    max-width:210px !important;
+    z-index:12 !important;
+    opacity:.9 !important;
+  }
+}
+@media (max-width:767px){
+  .hero-side{display:none !important;}
 }
 
 </style>
