@@ -487,12 +487,15 @@ ${knowledgeBase}
         { role: "user", content: message }
       ],
       max_tokens: 1000,
-      temperature: 0.3
+      temperature: 0.3,
+      stream: true
     });
 
-    return json({
-      answer: result.response || "すみません。回答を生成できませんでした。"
-    });
+    if (result && typeof result.getReader === "function") {
+      return streamText(result);
+    }
+
+    return text(result?.response || "すみません。回答を生成できませんでした。");
 
   } catch (e) {
     return json({ error: String(e) }, 500);
@@ -529,6 +532,93 @@ async function loadKnowledge(env) {
     return FALLBACK_KNOWLEDGE;
   }
 }
+
+
+function streamText(aiStream) {
+  const decoder = new TextDecoder();
+  const encoder = new TextEncoder();
+
+  const stream = new ReadableStream({
+    async start(controller) {
+      const reader = aiStream.getReader();
+      let buffer = "";
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+
+          // Workers AI streaming is usually Server-Sent Events.
+          // Convert SSE chunks to plain text so existing pages can render them safely.
+          const events = buffer.split("\n\n");
+          buffer = events.pop() || "";
+
+          for (const event of events) {
+            const lines = event.split("\n");
+            for (const line of lines) {
+              if (!line.startsWith("data:")) continue;
+
+              const data = line.replace(/^data:\s*/, "").trim();
+              if (!data || data === "[DONE]") continue;
+
+              let textChunk = "";
+
+              try {
+                const parsed = JSON.parse(data);
+                textChunk =
+                  parsed.response ||
+                  parsed.delta ||
+                  parsed.text ||
+                  parsed.choices?.[0]?.delta?.content ||
+                  parsed.choices?.[0]?.text ||
+                  "";
+              } catch {
+                textChunk = data;
+              }
+
+              if (textChunk) {
+                controller.enqueue(encoder.encode(textChunk));
+              }
+            }
+          }
+        }
+
+        // If the upstream returned plain text rather than SSE, flush it.
+        if (buffer.trim() && !buffer.includes("data:")) {
+          controller.enqueue(encoder.encode(buffer));
+        }
+      } catch (e) {
+        controller.error(e);
+      } finally {
+        controller.close();
+      }
+    }
+  });
+
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "text/plain; charset=utf-8",
+      "Cache-Control": "no-store",
+      "Access-Control-Allow-Origin": "*"
+    }
+  });
+}
+
+function text(body, status = 200) {
+  return new Response(body, {
+    status,
+    headers: {
+      "Content-Type": "text/plain; charset=utf-8",
+      "Cache-Control": "no-store",
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type"
+    }
+  });
+}
+
 
 async function readMessage(request) {
   const contentType = request.headers.get("Content-Type") || "";
