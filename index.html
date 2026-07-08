@@ -5,7 +5,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>AXCEL MODE NEXIT | 株式会社アクセル・モード・ネクスト</title>
-  <!-- version: v88 phone parallax off / tablet on -->
+  <!-- version: v94 visible brush stroke test -->
   <meta property="og:type" content="website">
   <meta property="og:title" content="AXCEL MODE NEXIT">
   <meta property="og:description"content="上越を拠点にソフトウェア開発・ITソリューションを提供。UIJターン歓迎。">
@@ -1560,11 +1560,23 @@
 }
 
 
-/* v88: phone-only parallax off */
-@media (max-width:767px){
-  .motion-permission{
-    display:none !important;
-  }
+/* v94: visible brush stroke test */
+.signature-path-n-bold{
+  display:block !important;
+  fill:none !important;
+  stroke:#d71920 !important;
+  stroke-width:0;
+  stroke-linecap:round !important;
+  stroke-linejoin:round !important;
+  stroke-miterlimit:10 !important;
+  stroke-dasharray:0 9999;
+  stroke-dashoffset:0;
+  opacity:0;
+  vector-effect:non-scaling-stroke !important;
+  filter:
+    drop-shadow(0 0 14px rgba(215,25,32,.98))
+    drop-shadow(0 0 34px rgba(215,25,32,.68))
+    drop-shadow(0 0 64px rgba(215,25,32,.32)) !important;
 }
 
 </style>
@@ -1620,7 +1632,7 @@
               <path id="signaturePath" class="signature-path"
                 d="M0 126 H72 L142 -24 L214 126 H760 L880 -18 L940 108 L1880 -1010" />
               <path id="signaturePathNBold" class="signature-path-n-bold"
-                d="M760 126 L880 -18 L940 108 L1880 -1010" />
+                d="M214 126 H760 L880 -18 L940 108 L1880 -1010" />
               <path id="signaturePathTip" class="signature-path-tip"
                 d="M0 126 H72 L142 -24 L214 126 H760 L880 -18 L940 108 L1880 -1010" />
             </svg>
@@ -2118,31 +2130,27 @@ aiChatForm.addEventListener("submit",async(e)=>{
     }
 
     if(nBold){
-      // disabled bold overlay
-      nBold.style.opacity='0';
-      nBold.style.strokeWidth='0';
-      /* Nに入ったところから、右上へ抜け切るところまで太線を維持する。
-      // 追加線として後から出すのではなく、同じ進行に同期して描画する。
-      const boldStart = length * 0.343;
-      const boldSpan = Math.max(length - boldStart, 1);
-      const boldRaw = Math.max(0, Math.min((head - boldStart) / boldSpan, 1));
-      const boldVisible = nBoldLength * boldRaw;
+      // v94 brush:
+      // A後から太いブラシが走る。見えることを優先した確認版。
+      const boldStart = length * 0.14;
+      const boldFull  = length * 0.50;
 
-      // v85: 太線はフェードインし、右上へ抜ける途中で早めにフェードアウト。
-      // 太線だけが溶けるように消え、細線はそのまま残す。
-      const fadeInEnd = boldStart + length * 0.025;
-      const fadeIn = Math.max(0, Math.min((head - boldStart) / (fadeInEnd - boldStart), 1));
+      const travel = Math.max(0, Math.min((head - boldStart) / Math.max(length - boldStart, 1), 1));
+      const growRaw = Math.max(0, Math.min((head - boldStart) / Math.max(boldFull - boldStart, 1), 1));
+      const eased = growRaw * growRaw * (3 - 2 * growRaw);
 
-      const fadeStart = length * 0.82;
-      const fadeOut = Math.max(0, Math.min((head - fadeStart) / (length * 0.12), 1));
+      const brushHead = nBoldLength * travel;
+      const brushLen = 120 + eased * 360;
+      const brushStart = Math.max(brushHead - brushLen, 0);
+      const visibleBrush = Math.max(0, brushHead - brushStart);
 
-      const boldWidth = 12.0;
-      const alpha = fadeIn * (1 - fadeOut);
+      const boldWidth = 5.0 + eased * 9.0;  // 5px -> 14px
+      const alpha = 0.35 + eased * 0.65;    // 最初から見える
 
-      nBold.style.strokeDasharray = boldVisible + " " + nBoldLength;
-      nBold.style.strokeDashoffset = "0";
-      nBold.style.strokeWidth = boldVisible > 2 ? boldWidth.toFixed(2) : "0";
-      */
+      nBold.style.strokeDasharray = visibleBrush + " " + nBoldLength;
+      nBold.style.strokeDashoffset = String(-brushStart);
+      nBold.style.strokeWidth = visibleBrush > 2 ? boldWidth.toFixed(2) : "0";
+      nBold.style.opacity = visibleBrush > 2 ? alpha.toFixed(3) : "0";
     }
   }
 
@@ -2265,14 +2273,6 @@ aiChatForm.addEventListener("submit",async(e)=>{
 
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   if(reduceMotion){
-    if(permissionButton) permissionButton.classList.add('is-hidden');
-    return;
-  }
-
-  // v88: parallax enabled on PC and tablet, disabled on phone only.
-  // Phone: <= 767px. Tablet/iPad: >= 768px remains enabled.
-  const isPhone = window.matchMedia('(max-width: 767px)').matches;
-  if(isPhone){
     if(permissionButton) permissionButton.classList.add('is-hidden');
     return;
   }
