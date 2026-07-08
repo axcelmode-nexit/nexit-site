@@ -824,14 +824,14 @@
 
 @keyframes catchBreath{
   0%,100%{
-    transform:translateY(0);
+    transform:translateY(0) scale(1);
     text-shadow:0 10px 32px rgba(0,0,0,.75);
   }
   50%{
-    transform:translateY(-2px);
+    transform:translateY(-4px) scale(1.01);
     text-shadow:
       0 10px 32px rgba(0,0,0,.75),
-      0 0 18px rgba(255,255,255,.16);
+      0 0 24px rgba(255,255,255,.22);
   }
 }
 
@@ -1549,6 +1549,14 @@
 .motion-ready .hero-content .lead.tagline.is-visible{
   opacity:1 !important;
   transform:translateY(0) !important;
+}
+
+
+/* v86 breathing sync */
+.animated-catch span{
+  animation-delay:
+    calc(var(--i) * .13s),
+    1.8s !important;
 }
 
 </style>
