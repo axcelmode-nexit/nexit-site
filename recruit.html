@@ -45,7 +45,7 @@ background:rgba(255,255,255,.03);transition:.25s}
     .hero-ai{display:inline-flex;align-items:center;gap:8px;margin-top:24px;color:#d8d8d8;font-size:14px;font-weight:700;transition:.25s;}
     .hero-ai:hover{color:#fff;transform:translateX(4px);}
   
-/* Floating AI chat widget for Recruit */
+/* Floating AI chat widget - same as index */
 .ai-chat-button{
   position:fixed;
   right:24px;
@@ -67,7 +67,6 @@ background:rgba(255,255,255,.03);transition:.25s}
   
 }
 .ai-chat-button:hover{transform:translateY(-2px);box-shadow:0 18px 42px rgba(0,0,0,.48);}
-50%{transform:translateY(-7px);}}
 .ai-chat-panel{
   position:fixed;
   right:24px;
@@ -253,9 +252,7 @@ background:rgba(255,255,255,.03);transition:.25s}
   </div>
 
   <div class="ai-chat-messages" id="aiChatMessages">
-    <div class="ai-msg bot">
-      採用ページをご覧いただきありがとうございます。給与・働き方・東京案件・AI活用・UIJターンなど、気になることは何でも聞いてください。
-    </div>
+    <div class="ai-msg bot">こんにちは。NEXIT AI採用アシスタントです。働き方、募集内容、東京案件、AI活用など、気になることを聞いてください。</div>
   </div>
 
   <form class="ai-chat-form" id="aiChatForm">
@@ -265,7 +262,6 @@ background:rgba(255,255,255,.03);transition:.25s}
 </div>
 
 <button class="ai-chat-button" id="aiChatButton" type="button" aria-label="AI採用アシスタントを開く">🤖</button>
-
 <script>
 const aiChatPanel=document.getElementById("aiChatPanel");
 const aiChatButton=document.getElementById("aiChatButton");
@@ -322,17 +318,6 @@ function addAiMessage(role,text){
   return div;
 }
 
-function typeText(element,text,speed=18){
-  element.textContent="";
-  let i=0;
-  const timer=setInterval(()=>{
-    element.textContent+=text.charAt(i);
-    aiChatMessages.scrollTop=aiChatMessages.scrollHeight;
-    i++;
-    if(i>=text.length)clearInterval(timer);
-  },speed);
-}
-
 aiChatButton.addEventListener("click",()=>{
   aiChatPanel.classList.toggle("open");
   if(aiChatPanel.classList.contains("open")){
@@ -343,6 +328,7 @@ aiChatButton.addEventListener("click",()=>{
 aiChatClose.addEventListener("click",()=>{
   aiChatPanel.classList.remove("open");
 });
+
 
 aiChatInput.addEventListener("keydown", (e) => {
   if (e.isComposing || e.keyCode === 229) return;
@@ -355,13 +341,14 @@ aiChatInput.addEventListener("keydown", (e) => {
 
 aiChatForm.addEventListener("submit",async(e)=>{
   e.preventDefault();
+
   const text=aiChatInput.value.trim();
   if(!text)return;
 
   addAiMessage("user",text);
   aiChatInput.value="";
 
-  const pending=addAiMessage("bot","考えています...");
+  const pending=addAiMessage("bot","回答を作成しています...");
   aiChatSend.disabled=true;
 
   try{
@@ -379,6 +366,7 @@ aiChatForm.addEventListener("submit",async(e)=>{
     aiChatSend.disabled=false;
   }
 });
+
 </script>
 
 </body>
