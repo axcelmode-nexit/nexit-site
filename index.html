@@ -1310,7 +1310,7 @@
   .signature-logo-assets{top:70px !important;width:min(560px,64vw) !important;}
   .hero-content .lead.tagline{font-size:clamp(15px,1.8vw,19px) !important;line-height:1.7 !important;margin-bottom:18px !important;}
   .hero-content .btn{min-width:210px !important;padding:14px 22px !important;margin-bottom:0 !important;}
-  .hero-side{display:block !important;right:118px !important;bottom:62px !important;max-width:210px !important;z-index:12 !important;opacity:.9 !important;}
+  .hero-side{display:none !important;right:118px !important;bottom:62px !important;max-width:210px !important;z-index:12 !important;opacity:.9 !important;}
   .hero-side .coord{font-size:clamp(14px,1.7vw,20px) !important;line-height:1.55 !important;letter-spacing:.22em !important;}
   .coord-label{font-size:10px !important;margin-top:8px !important;}
   .scroll-indicator{bottom:42px !important;left:30px !important;}
@@ -1348,8 +1348,8 @@
 
 
 /* ==========================
-   NEXIT Hero Gyro / Pointer Parallax v75
-   subtle 3D depth on hero photo + signature
+   NEXIT Hero Gyro / Pointer Parallax v85
+   subtle 3D depth on hero photo only
 ========================== */
 .hero{
   --tilt-bg-x:0px;
@@ -1377,27 +1377,19 @@
 }
 
 .hero-content{
-  transform:translate3d(var(--tilt-content-x), var(--tilt-content-y), 0)
-    rotateX(var(--tilt-rx)) rotateY(var(--tilt-ry));
-  transform-style:preserve-3d;
-  transition:transform .18s ease-out;
-  will-change:transform;
+  transform:none !important;
+  transform-style:flat;
+  transition:none;
+  will-change:auto;
 }
 
-.hero-content .catch{
-  transform:translateZ(18px);
-}
-
-.hero-content .signature-stage{
-  transform:translate3d(var(--tilt-signature-x), var(--tilt-signature-y), 36px);
-  transform-style:preserve-3d;
-  transition:transform .18s ease-out;
-  will-change:transform;
-}
-
+.hero-content .catch,
+.hero-content .signature-stage,
 .hero-content .lead.tagline,
 .hero-content .btn{
-  transform:translateZ(14px);
+  transform:none !important;
+  transition:none;
+  will-change:auto;
 }
 
 @media(max-width:980px){
@@ -1414,6 +1406,118 @@
     transform:none !important;
     transition:none !important;
   }
+}
+
+
+/* ==========================
+   NEXIT Mobile Motion Permission v79
+   iPhone/iPad gyro parallax enable button
+========================== */
+.motion-permission{
+  position:absolute;
+  right:24px;
+  bottom:112px;
+  z-index:30;
+  display:none;
+  align-items:center;
+  gap:10px;
+  padding:10px 14px;
+  border:1px solid rgba(255,255,255,.22);
+  border-radius:999px;
+  background:rgba(5,5,5,.68);
+  color:#fff;
+  font-size:12px;
+  font-weight:800;
+  letter-spacing:.08em;
+  backdrop-filter:blur(10px);
+  box-shadow:0 14px 34px rgba(0,0,0,.36);
+  cursor:pointer;
+  opacity:.86;
+  transition:opacity .24s ease, transform .24s ease, border-color .24s ease;
+}
+.motion-permission:hover{
+  opacity:1;
+  transform:translateY(-2px);
+  border-color:rgba(255,255,255,.45);
+}
+.motion-permission .mark{
+  color:#d71920;
+  font-size:15px;
+  line-height:1;
+}
+.motion-permission.is-visible{display:inline-flex;}
+.motion-permission.is-hidden{display:none !important;}
+@media(max-width:980px){
+  .motion-permission{
+    left:50%;
+    right:auto;
+    bottom:88px;
+    transform:translateX(-50%);
+    white-space:nowrap;
+  }
+  .motion-permission:hover{transform:translateX(-50%) translateY(-2px);}
+}
+@media(prefers-reduced-motion:reduce){
+  .motion-permission{display:none !important;}
+}
+
+
+/* ==========================
+   NEXIT Signature v85
+   Bold wave fade-in/out + background-only parallax + N/EXIT simultaneous final flash
+========================== */
+.signature-path-n-bold{
+  display:block !important;
+  fill:none !important;
+  stroke:#d71920 !important;
+  stroke-width:0;
+  stroke-linecap:butt !important;
+  stroke-linejoin:miter !important;
+  stroke-miterlimit:10 !important;
+  stroke-dasharray:0 9999;
+  stroke-dashoffset:0;
+  opacity:0;
+  vector-effect:non-scaling-stroke;
+  filter:
+    drop-shadow(0 0 10px rgba(215,25,32,.90))
+    drop-shadow(0 0 24px rgba(215,25,32,.55))
+    drop-shadow(0 0 48px rgba(215,25,32,.24)) !important;
+}
+.signature-exit-flash-overlay{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:auto;
+  display:block;
+  opacity:0;
+  z-index:13;
+  pointer-events:none;
+  transform:none !important;
+  filter:brightness(1) contrast(1);
+  mix-blend-mode:screen;
+}
+.signature-exit-flash-overlay.is-active{
+  animation:nexitExitChargeOverlay 1.34s cubic-bezier(.22,.8,.2,1) forwards;
+}
+.signature-exit-img.exit-finale{
+  animation:nexitExitChargeBase 1.34s cubic-bezier(.22,.8,.2,1) forwards;
+  z-index:10;
+}
+@keyframes nexitExitChargeOverlay{
+  0%{opacity:0;filter:brightness(1) contrast(1);}
+  22%{opacity:.18;filter:brightness(1.35) contrast(1.04) drop-shadow(0 0 7px rgba(255,255,255,.16));}
+  48%{opacity:.58;filter:brightness(2.10) contrast(1.10) drop-shadow(0 0 13px rgba(255,255,255,.40)) drop-shadow(0 0 22px rgba(215,25,32,.16));}
+  67%{opacity:.86;filter:brightness(2.85) contrast(1.14) drop-shadow(0 0 20px rgba(255,255,255,.64)) drop-shadow(0 0 36px rgba(255,255,255,.26)) drop-shadow(0 0 22px rgba(215,25,32,.18));}
+  84%{opacity:.40;filter:brightness(1.80) contrast(1.08) drop-shadow(0 0 12px rgba(255,255,255,.28));}
+  100%{opacity:0;filter:brightness(1) contrast(1);}
+}
+@keyframes nexitExitChargeBase{
+  0%{filter:brightness(1.04) contrast(1.04);}
+  24%{filter:brightness(1.14) contrast(1.06) drop-shadow(0 0 6px rgba(255,255,255,.12));}
+  52%{filter:brightness(1.42) contrast(1.08) drop-shadow(0 0 12px rgba(255,255,255,.26)) drop-shadow(0 0 18px rgba(215,25,32,.08));}
+  68%{filter:brightness(1.85) contrast(1.12) drop-shadow(0 0 18px rgba(255,255,255,.52)) drop-shadow(0 0 18px rgba(255,255,255,.20)) drop-shadow(0 0 14px rgba(215,25,32,.10));}
+  86%{filter:brightness(1.30) contrast(1.07) drop-shadow(0 0 9px rgba(255,255,255,.18));}
+  100%{filter:brightness(1.08) contrast(1.05);}
 }
 
 </style>
@@ -1469,7 +1573,7 @@
               <path id="signaturePath" class="signature-path"
                 d="M0 126 H72 L142 -24 L214 126 H760 L880 -18 L940 126 L1880 -1010" />
               <path id="signaturePathNBold" class="signature-path-n-bold"
-                d="M760 126 L880 -18 L940 126" />
+                d="M760 126 L880 -18 L940 126 L1880 -1010" />
               <path id="signaturePathTip" class="signature-path-tip"
                 d="M0 126 H72 L142 -24 L214 126 H760 L880 -18 L940 126 L1880 -1010" />
             </svg>
@@ -1480,6 +1584,7 @@
               <img class="signature-fragment signature-n-img" src="N.png" alt="" aria-hidden="true">
               <img class="signature-fragment signature-n-flash-overlay" src="N.png" alt="" aria-hidden="true">
               <img class="signature-fragment signature-exit-img" src="EXIT.png" alt="" aria-hidden="true">
+              <img class="signature-fragment signature-exit-flash-overlay" src="EXIT.png" alt="" aria-hidden="true">
             </div>
           </div>
 
@@ -1499,6 +1604,9 @@
     ↓
   </div>
 </div>
+        <button class="motion-permission" id="motionPermission" type="button" aria-label="モーションを有効にする">
+          <span class="mark">▣</span> 端末を傾けてみる
+        </button>
       </section>
       <section style="padding:50px 7vw;border-bottom:1px solid rgba(255,255,255,.14);background:#070707;">
   <a class="recruit-cta-link"
@@ -1846,6 +1954,7 @@ aiChatForm.addEventListener("submit",async(e)=>{
   const stage = document.querySelector(".signature-stage");
   const n = document.querySelector(".signature-n-img");
   const nFlashOverlay = document.querySelector(".signature-n-flash-overlay");
+  const exitFlashOverlay = document.querySelector(".signature-exit-flash-overlay");
   const a = document.querySelector(".signature-a-img");
   const xcelmode = document.querySelector(".signature-xm-img");
   const exit = document.querySelector(".signature-exit-img");
@@ -1857,8 +1966,9 @@ aiChatForm.addEventListener("submit",async(e)=>{
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const length = path.getTotalLength();
   const nBoldLength = nBold ? nBold.getTotalLength() : 0;
-  const trailLength = Math.min(length * 0.42, 520);
-  const travelLength = length + trailLength + 180;
+  const baseTrailLength = Math.min(length * 0.34, 420);
+  const rightTrailBoost = Math.min(length * 0.20, 260);
+  const travelLength = length + baseTrailLength + rightTrailBoost + 180;
 
   let loopTimer = null;
 
@@ -1875,7 +1985,7 @@ aiChatForm.addEventListener("submit",async(e)=>{
     logoAssets.classList.remove("logo-shine", "logo-finish", "loop-fade");
 
     [a, n, xcelmode, exit].forEach((el) => {
-      el.classList.remove("is-active", "is-red", "is-white", "n-finale");
+      el.classList.remove("is-active", "is-red", "is-white", "n-finale", "exit-finale");
       el.style.opacity = "";
       el.style.transform = "";
       el.style.filter = "";
@@ -1891,6 +2001,13 @@ aiChatForm.addEventListener("submit",async(e)=>{
       nFlashOverlay.style.animation = "";
     }
 
+    if(exitFlashOverlay){
+      exitFlashOverlay.classList.remove("is-active");
+      exitFlashOverlay.style.animation = "none";
+      void exitFlashOverlay.offsetWidth;
+      exitFlashOverlay.style.animation = "";
+    }
+
     setLine(0);
     if(ghost) ghost.style.opacity = "0";
     if(nBold){ nBold.style.opacity = "0"; nBold.style.strokeDasharray = "0 " + nBoldLength; nBold.style.strokeDashoffset = "0"; }
@@ -1898,28 +2015,37 @@ aiChatForm.addEventListener("submit",async(e)=>{
 
   function setLine(draw){
     const head = draw;
-    const tail = draw - trailLength;
+    const speedGain = Math.max(0, Math.min(head / length, 1));
+
+    // v83:
+    // - 本線の残像は維持
+    // - Nから右上へ抜け切るまで、同期した太線を重ねる
+    // - 最後のN/EXIT同時フラッシュはv82を維持
+    const nStartMain = length * 0.343;
+    const nEndMain = length * 0.467;
+    const rightUpGain = Math.max(0, Math.min((head - nEndMain) / (length * 0.23), 1));
+    const nZoneGain = Math.max(0, Math.min((head - nStartMain) / (nEndMain - nStartMain), 1));
+
+    // 右上へ抜けるほど残像を長くする。N付近では伸ばしすぎない。
+    const dynamicTrailLength = baseTrailLength + rightTrailBoost * rightUpGain;
+    const tail = head - dynamicTrailLength;
     const start = Math.max(tail, 0);
     const end = Math.min(head, length);
     const visible = Math.max(0, end - start);
 
-    const speedGain = Math.max(0, Math.min(head / length, 1));
+    // 本線は基本細く。右上がりの終盤だけ、ほんの少しだけ光量を足す。
     const drsGain = Math.max(0, Math.min((speedGain - .46) / .54, 1));
-
-    // 後半の太さ（大胆版）
     stage.style.setProperty(
       "--signature-core-width",
-      (3.35 + drsGain * 0.8).toFixed(2) + "px");
+      (3.35 + drsGain * 0.35).toFixed(2) + "px");
 
-    // グロー
     stage.style.setProperty(
       "--signature-glow-width",
-      (10.5 + drsGain * 3.0).toFixed(2) + "px");
+      (10.5 + drsGain * 2.4 + rightUpGain * 2.2).toFixed(2) + "px");
 
-    // 白い先端
     stage.style.setProperty(
       "--signature-tip-width",
-      (3.8 + drsGain * 0.6).toFixed(2) + "px");
+      (3.8 + drsGain * 0.35).toFixed(2) + "px");
 
     path.style.strokeDasharray = visible + " " + length;
     path.style.strokeDashoffset = String(-start);
@@ -1928,7 +2054,7 @@ aiChatForm.addEventListener("submit",async(e)=>{
     if(glow){
       glow.style.strokeDasharray = visible + " " + length;
       glow.style.strokeDashoffset = String(-start);
-      glow.style.opacity = visible > 1 ? ".42" : "0";
+      glow.style.opacity = visible > 1 ? String(0.34 + rightUpGain * 0.10) : "0";
     }
 
     if(tip){
@@ -1940,28 +2066,31 @@ aiChatForm.addEventListener("submit",async(e)=>{
     }
 
     if(nBold){
-      // v73: N区間だけ「パッ」と太くする。
-      // 通常波形は細いまま。Nを抜けたら即細線へ戻す。
-      const nStart = length * 0.343;
-      const nEnd = length * 0.467;
-      const nSpan = Math.max(nEnd - nStart, 1);
-      const nRaw = Math.max(0, Math.min((head - nStart) / nSpan, 1));
-      const nVisible = nBoldLength * nRaw;
+      // disabled bold overlay
+      nBold.style.opacity='0';
+      nBold.style.strokeWidth='0';
+      /* Nに入ったところから、右上へ抜け切るところまで太線を維持する。
+      // 追加線として後から出すのではなく、同じ進行に同期して描画する。
+      const boldStart = length * 0.343;
+      const boldSpan = Math.max(length - boldStart, 1);
+      const boldRaw = Math.max(0, Math.min((head - boldStart) / boldSpan, 1));
+      const boldVisible = nBoldLength * boldRaw;
 
-      // Nを抜けた後は短く鋭く消す。余韻は本線側に任せる。
-      const afterN = Math.max(0, head - nEnd);
-      const fadeAfter = Math.max(0, Math.min(afterN / (length * 0.028), 1));
-      const inN = head >= nStart && head <= nEnd;
-      const justAfterN = head > nEnd && fadeAfter < 1;
+      // v85: 太線はフェードインし、右上へ抜ける途中で早めにフェードアウト。
+      // 太線だけが溶けるように消え、細線はそのまま残す。
+      const fadeInEnd = boldStart + length * 0.025;
+      const fadeIn = Math.max(0, Math.min((head - boldStart) / (fadeInEnd - boldStart), 1));
 
-      // 入った瞬間に太く、N通過中は強く、抜けたら即戻る。
-      const snapIn = Math.max(0, Math.min((head - nStart) / (length * 0.012), 1));
-      const nWidth = 10.8 + snapIn * 3.2;
+      const fadeStart = length * 0.82;
+      const fadeOut = Math.max(0, Math.min((head - fadeStart) / (length * 0.12), 1));
 
-      nBold.style.strokeDasharray = nVisible + " " + nBoldLength;
+      const boldWidth = 12.0;
+      const alpha = fadeIn * (1 - fadeOut);
+
+      nBold.style.strokeDasharray = boldVisible + " " + nBoldLength;
       nBold.style.strokeDashoffset = "0";
-      nBold.style.strokeWidth = (inN || justAfterN) ? nWidth.toFixed(2) : "0";
-      nBold.style.opacity = nVisible > 3 ? String(Math.max(0, 1 - fadeAfter)) : "0";
+      nBold.style.strokeWidth = boldVisible > 2 ? boldWidth.toFixed(2) : "0";
+      */
     }
   }
 
@@ -2009,7 +2138,7 @@ aiChatForm.addEventListener("submit",async(e)=>{
         if(nBold) nBold.style.opacity = "0";
         stage.classList.add("energy-bloom");
 
-        setTimeout(() => n.classList.add("is-red"), 0);
+        requestAnimationFrame(() => n.classList.add("is-red"));
         setTimeout(() => n.classList.add("is-white"), 650);
         setTimeout(() => a.classList.add("is-active"), 1040);
         setTimeout(() => xcelmode.classList.add("is-active"), 1320);
@@ -2020,10 +2149,16 @@ aiChatForm.addEventListener("submit",async(e)=>{
         }, 2360);
         setTimeout(() => {
           n.classList.add("n-finale");
+          exit.classList.add("exit-finale");
           if(nFlashOverlay){
             nFlashOverlay.classList.remove("is-active");
             void nFlashOverlay.offsetWidth;
             nFlashOverlay.classList.add("is-active");
+          }
+          if(exitFlashOverlay){
+            exitFlashOverlay.classList.remove("is-active");
+            void exitFlashOverlay.offsetWidth;
+            exitFlashOverlay.classList.add("is-active");
           }
         }, 3180);
         if(shouldShowTagline){
@@ -2073,10 +2208,14 @@ aiChatForm.addEventListener("submit",async(e)=>{
 <script>
 (function(){
   const hero = document.querySelector('.hero');
+  const permissionButton = document.getElementById('motionPermission');
   if(!hero) return;
 
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if(reduceMotion) return;
+  if(reduceMotion){
+    if(permissionButton) permissionButton.classList.add('is-hidden');
+    return;
+  }
 
   let active = true;
   let raf = null;
@@ -2086,6 +2225,7 @@ aiChatForm.addEventListener("submit",async(e)=>{
   let currentY = 0;
   let baseBeta = null;
   let baseGamma = null;
+  let orientationEnabled = false;
 
   function clamp(value, min, max){
     return Math.min(Math.max(value, min), max);
@@ -2106,14 +2246,9 @@ aiChatForm.addEventListener("submit",async(e)=>{
     const x = currentX;
     const y = currentY;
 
+    // v85: パララックスは背景だけに適用。文字・ロゴ・波形は固定。
     hero.style.setProperty('--tilt-bg-x', (-x * 16).toFixed(2) + 'px');
     hero.style.setProperty('--tilt-bg-y', (-y * 10).toFixed(2) + 'px');
-    hero.style.setProperty('--tilt-content-x', (x * 4).toFixed(2) + 'px');
-    hero.style.setProperty('--tilt-content-y', (y * 3).toFixed(2) + 'px');
-    hero.style.setProperty('--tilt-signature-x', (x * 8).toFixed(2) + 'px');
-    hero.style.setProperty('--tilt-signature-y', (y * 5).toFixed(2) + 'px');
-    hero.style.setProperty('--tilt-rx', (-y * 1.8).toFixed(2) + 'deg');
-    hero.style.setProperty('--tilt-ry', (x * 2.2).toFixed(2) + 'deg');
 
     if(Math.abs(targetX-currentX) > 0.003 || Math.abs(targetY-currentY) > 0.003){
       raf = requestAnimationFrame(renderTilt);
@@ -2148,31 +2283,52 @@ aiChatForm.addEventListener("submit",async(e)=>{
 
   function onDeviceOrientation(event){
     if(typeof event.beta !== 'number' || typeof event.gamma !== 'number') return;
-    if(baseBeta === null){
+
+    if(baseBeta === null || baseGamma === null){
       baseBeta = event.beta;
       baseGamma = event.gamma;
     }
+
     const x = (event.gamma - baseGamma) / 18;
     const y = (event.beta - baseBeta) / 18;
     setTarget(x, y);
   }
 
   function startOrientation(){
+    if(orientationEnabled) return;
+    orientationEnabled = true;
+    baseBeta = null;
+    baseGamma = null;
     window.addEventListener('deviceorientation', onDeviceOrientation, true);
+    if(permissionButton){
+      permissionButton.classList.remove('is-visible');
+      permissionButton.classList.add('is-hidden');
+    }
   }
 
-  if(window.DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission === 'function'){
-    const requestOnce = () => {
-      DeviceOrientationEvent.requestPermission()
-        .then(state => { if(state === 'granted') startOrientation(); })
-        .catch(()=>{});
-      window.removeEventListener('pointerdown', requestOnce);
-      window.removeEventListener('touchstart', requestOnce);
-    };
-    window.addEventListener('pointerdown', requestOnce, {once:true, passive:true});
-    window.addEventListener('touchstart', requestOnce, {once:true, passive:true});
+  const needsPermission = window.DeviceOrientationEvent &&
+    typeof DeviceOrientationEvent.requestPermission === 'function';
+
+  if(needsPermission){
+    if(permissionButton){
+      // ロゴアニメーションの邪魔をしないよう、少し遅れて表示
+      window.setTimeout(() => {
+        if(!orientationEnabled) permissionButton.classList.add('is-visible');
+      }, 5200);
+
+      permissionButton.addEventListener('click', () => {
+        DeviceOrientationEvent.requestPermission()
+          .then(state => {
+            if(state === 'granted') startOrientation();
+            else permissionButton.classList.add('is-hidden');
+          })
+          .catch(() => permissionButton.classList.add('is-hidden'));
+      }, {once:true});
+    }
   }else if(window.DeviceOrientationEvent){
     startOrientation();
+  }else if(permissionButton){
+    permissionButton.classList.add('is-hidden');
   }
 })();
 </script>
