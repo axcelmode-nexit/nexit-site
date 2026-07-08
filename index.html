@@ -684,18 +684,10 @@
   cursor:pointer;
   z-index:9999;
   box-shadow:0 14px 36px rgba(0,0,0,.42);
-  transition:
-      transform .25s ease,
-      box-shadow .25s ease,
-      filter .25s ease;
+  transition:transform .25s ease, box-shadow .25s ease;
+  
 }
-
-.ai-chat-button:hover{
-  transform:translateY(-2px) scale(1.04);
-  box-shadow:0 18px 42px rgba(215,25,32,.30);
-  filter:brightness(1.05);
-}
-
+.ai-chat-button:hover{transform:translateY(-2px);box-shadow:0 18px 42px rgba(0,0,0,.48);}
 .ai-chat-panel{
   position:fixed;
   right:24px;
@@ -710,17 +702,20 @@
   display:none;
   flex-direction:column;
   box-shadow:0 28px 80px rgba(0,0,0,.55);
+  overflow:hidden;
 }
-
 .ai-chat-panel.open{display:flex;}
-
 .ai-chat-head{
   padding:18px 20px;
   border-bottom:1px solid rgba(255,255,255,.12);
   display:flex;
+  align-items:center;
   justify-content:space-between;
 }
-
+.ai-chat-head strong{font-size:14px;letter-spacing:.12em;}
+.ai-chat-head small{color:#b8b8b8;font-size:11px;letter-spacing:.08em;}
+.ai-chat-close{border:0;background:transparent;color:#fff;font-size:24px;cursor:pointer;opacity:.8;}
+.ai-chat-close:hover{opacity:1;}
 .ai-chat-messages{
   flex:1;
   padding:18px;
@@ -729,39 +724,54 @@
   flex-direction:column;
   gap:12px;
 }
-
 .ai-msg{
+  max-width:88%;
   padding:12px 14px;
   border:1px solid rgba(255,255,255,.12);
   line-height:1.8;
   font-size:13px;
   white-space:pre-wrap;
 }
-
 .ai-msg.bot{align-self:flex-start;background:rgba(255,255,255,.045);}
-.ai-msg.user{align-self:flex-end;background:rgba(215,25,32,.16);}
-
+.ai-msg.user{align-self:flex-end;background:rgba(215,25,32,.16);border-color:rgba(215,25,32,.42);}
 .ai-chat-form{
   display:flex;
   gap:10px;
   padding:14px;
   border-top:1px solid rgba(255,255,255,.12);
+  background:rgba(0,0,0,.34);
 }
-
 .ai-chat-form textarea{
   flex:1;
+  min-height:46px;
+  max-height:110px;
+  resize:vertical;
   background:#050505;
   color:#fff;
   border:1px solid rgba(255,255,255,.18);
   padding:12px;
+  font:inherit;
+  font-size:13px;
+  line-height:1.55;
+  outline:none;
 }
-
 .ai-chat-form button{
   width:76px;
   background:transparent;
   color:#fff;
   border:1px solid rgba(255,255,255,.5);
+  font-weight:900;
+  cursor:pointer;
+  letter-spacing:.08em;
 }
+.ai-chat-form button:hover{background:#fff;color:#000;}
+.ai-chat-form button:disabled{opacity:.45;cursor:not-allowed;}
+@media(max-width:700px){
+  .ai-chat-button{width:62px;height:62px;right:18px;bottom:18px;font-size:30px;}
+  .ai-chat-panel{right:12px;left:12px;bottom:92px;width:auto;height:min(560px, calc(100vh - 118px));}
+}
+
+
 .hero-mist {
   position: absolute;
   inset: 0;
@@ -1972,7 +1982,7 @@ const __PARALLAX_ENABLED__ =
       <strong>NEXIT AI</strong><br>
       <small>Recruit Assistant</small>
     </div>
-    <button id="aiChatClose" type="button">×</button>
+    <button class="ai-chat-close" id="aiChatClose" type="button" aria-label="閉じる">×</button>
   </div>
 
   <div class="ai-chat-messages" id="aiChatMessages">
@@ -1987,7 +1997,7 @@ const __PARALLAX_ENABLED__ =
   </form>
 </div>
 
-<button class="ai-chat-button" id="aiChatButton" type="button">🤖</button>
+<button class="ai-chat-button" id="aiChatButton" type="button" aria-label="AI採用アシスタントを開く">🤖</button>
 <script>
 const aiChatPanel=document.getElementById("aiChatPanel");
 const aiChatButton=document.getElementById("aiChatButton");
@@ -1996,6 +2006,44 @@ const aiChatMessages=document.getElementById("aiChatMessages");
 const aiChatForm=document.getElementById("aiChatForm");
 const aiChatInput=document.getElementById("aiChatInput");
 const aiChatSend=document.getElementById("aiChatSend");
+
+
+async function writeResponseStream(res, target, scrollEl) {
+  if (!res.ok) {
+    let message = "AI error";
+    try {
+      const data = await res.json();
+      message = data.error || message;
+    } catch {
+      try {
+        message = await res.text();
+      } catch {}
+    }
+    throw new Error(message);
+  }
+
+  const contentType = res.headers.get("Content-Type") || "";
+
+  if (!res.body || contentType.includes("application/json")) {
+    const data = await res.json();
+    target.textContent = data.answer || "すみません。回答を生成できませんでした。";
+    if (scrollEl) scrollEl.scrollTop = scrollEl.scrollHeight;
+    return;
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  target.textContent = "";
+
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+
+    target.textContent += decoder.decode(value, { stream: true });
+    if (scrollEl) scrollEl.scrollTop = scrollEl.scrollHeight;
+  }
+}
+
 
 function addAiMessage(role,text){
   const div=document.createElement("div");
@@ -2008,6 +2056,9 @@ function addAiMessage(role,text){
 
 aiChatButton.addEventListener("click",()=>{
   aiChatPanel.classList.toggle("open");
+  if(aiChatPanel.classList.contains("open")){
+    setTimeout(()=>aiChatInput.focus(),120);
+  }
 });
 
 aiChatClose.addEventListener("click",()=>{
@@ -2043,13 +2094,7 @@ aiChatForm.addEventListener("submit",async(e)=>{
       body:text
     });
 
-    const data=await res.json();
-
-    if(!res.ok){
-      throw new Error(data.error||"AI error");
-    }
-
-    pending.textContent=data.answer||"すみません。回答を生成できませんでした。";
+    await writeResponseStream(res, pending, aiChatMessages);
   }catch(err){
     pending.textContent="すみません。現在AIが応答できません。時間をおいて再度お試しください。";
     console.error(err);
