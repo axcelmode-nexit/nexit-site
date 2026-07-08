@@ -5,7 +5,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>AXCEL MODE NEXIT | 株式会社アクセル・モード・ネクスト</title>
-  <!-- version: v74 clean code: v73 snap bold + v64 iPad fit -->
+  <!-- version: v88 phone parallax off / tablet on -->
   <meta property="og:type" content="website">
   <meta property="og:title" content="AXCEL MODE NEXIT">
   <meta property="og:description"content="上越を拠点にソフトウェア開発・ITソリューションを提供。UIJターン歓迎。">
@@ -1559,6 +1559,14 @@
     1.8s !important;
 }
 
+
+/* v88: phone-only parallax off */
+@media (max-width:767px){
+  .motion-permission{
+    display:none !important;
+  }
+}
+
 </style>
 </head>
 <body class="motion-ready">
@@ -2257,6 +2265,14 @@ aiChatForm.addEventListener("submit",async(e)=>{
 
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   if(reduceMotion){
+    if(permissionButton) permissionButton.classList.add('is-hidden');
+    return;
+  }
+
+  // v88: parallax enabled on PC and tablet, disabled on phone only.
+  // Phone: <= 767px. Tablet/iPad: >= 768px remains enabled.
+  const isPhone = window.matchMedia('(max-width: 767px)').matches;
+  if(isPhone){
     if(permissionButton) permissionButton.classList.add('is-hidden');
     return;
   }
