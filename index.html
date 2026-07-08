@@ -1836,6 +1836,11 @@
   </div>
 
   <script>
+
+/* Desktop-only parallax support */
+const __PARALLAX_ENABLED__ =
+  window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+
     const motionGroups = [
       ['section:not(.hero) .section-title', 0, false],
       ['section:not(.hero) .big-copy', 1, false],
