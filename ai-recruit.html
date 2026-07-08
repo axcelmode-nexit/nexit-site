@@ -95,6 +95,19 @@ form.addEventListener("submit", async (e) => {
   await askAI(text);
 });
 
+
+question.addEventListener("keydown", (e) => {
+  // 日本語変換中は送信しない
+  if (e.isComposing || e.keyCode === 229) return;
+
+  // Enterで送信、Shift+Enterは改行
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    form.requestSubmit();
+  }
+});
+
+
 document.querySelectorAll("[data-q]").forEach((btn) => {
   btn.addEventListener("click", () => askAI(btn.dataset.q));
 });
