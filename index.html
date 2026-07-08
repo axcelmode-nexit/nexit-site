@@ -5,7 +5,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>AXCEL MODE NEXIT | 株式会社アクセル・モード・ネクスト</title>
-  <!-- version: v94 visible brush stroke test -->
+  <!-- version: v96 phone-off + brush growth wave -->
   <meta property="og:type" content="website">
   <meta property="og:title" content="AXCEL MODE NEXIT">
   <meta property="og:description"content="上越を拠点にソフトウェア開発・ITソリューションを提供。UIJターン歓迎。">
@@ -1579,6 +1579,32 @@
     drop-shadow(0 0 64px rgba(215,25,32,.32)) !important;
 }
 
+
+/* Smartphone: hide motion permission button */
+@media (max-width:767px){
+  .motion-permission{display:none!important;}
+}
+
+
+/* v96: brush growth wave */
+.signature-path-n-bold{
+  display:block !important;
+  fill:none !important;
+  stroke:#d71920 !important;
+  stroke-width:0;
+  stroke-linecap:round !important;
+  stroke-linejoin:round !important;
+  stroke-miterlimit:10 !important;
+  stroke-dasharray:0 9999;
+  stroke-dashoffset:0;
+  opacity:0;
+  vector-effect:non-scaling-stroke !important;
+  filter:
+    drop-shadow(0 0 14px rgba(215,25,32,.98))
+    drop-shadow(0 0 34px rgba(215,25,32,.68))
+    drop-shadow(0 0 64px rgba(215,25,32,.32)) !important;
+}
+
 </style>
 </head>
 <body class="motion-ready">
@@ -2130,8 +2156,9 @@ aiChatForm.addEventListener("submit",async(e)=>{
     }
 
     if(nBold){
-      // v94 brush:
-      // A後から太いブラシが走る。見えることを優先した確認版。
+      // v96 brush growth:
+      // A後からブラシが走り、Nに近づくほど太く・強くなる。
+      // 後端が追いかけて消えるため、太線が二重に残りにくい。
       const boldStart = length * 0.14;
       const boldFull  = length * 0.50;
 
@@ -2140,15 +2167,23 @@ aiChatForm.addEventListener("submit",async(e)=>{
       const eased = growRaw * growRaw * (3 - 2 * growRaw);
 
       const brushHead = nBoldLength * travel;
-      const brushLen = 120 + eased * 360;
-      const brushStart = Math.max(brushHead - brushLen, 0);
-      const visibleBrush = Math.max(0, brushHead - brushStart);
+      const brushLen = 90 + eased * 330;
+      const brushTail = Math.max(brushHead - brushLen, 0);
+      const visibleBrush = Math.max(0, brushHead - brushTail);
 
-      const boldWidth = 5.0 + eased * 9.0;  // 5px -> 14px
-      const alpha = 0.35 + eased * 0.65;    // 最初から見える
+      const boldWidth = 3.6 + eased * 10.4; // 3.6px -> 14px
+      const alpha = Math.min(1, 0.18 + eased * 0.82);
+
+      const glow1 = 10 + eased * 12;
+      const glow2 = 24 + eased * 24;
+
+      nBold.style.filter =
+        `drop-shadow(0 0 ${glow1}px rgba(215,25,32,.96))
+         drop-shadow(0 0 ${glow2}px rgba(215,25,32,.58))
+         drop-shadow(0 0 ${glow2 + 24}px rgba(215,25,32,.22))`;
 
       nBold.style.strokeDasharray = visibleBrush + " " + nBoldLength;
-      nBold.style.strokeDashoffset = String(-brushStart);
+      nBold.style.strokeDashoffset = String(-brushTail);
       nBold.style.strokeWidth = visibleBrush > 2 ? boldWidth.toFixed(2) : "0";
       nBold.style.opacity = visibleBrush > 2 ? alpha.toFixed(3) : "0";
     }
@@ -2273,6 +2308,14 @@ aiChatForm.addEventListener("submit",async(e)=>{
 
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   if(reduceMotion){
+    if(permissionButton) permissionButton.classList.add('is-hidden');
+    return;
+  }
+
+  // Smartphone: disable parallax, keep tablet/desktop enabled
+  if (window.matchMedia('(max-width: 767px)').matches) {
+    hero.style.setProperty('--tilt-bg-x','0px');
+    hero.style.setProperty('--tilt-bg-y','0px');
     if(permissionButton) permissionButton.classList.add('is-hidden');
     return;
   }
