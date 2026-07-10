@@ -21,33 +21,20 @@
     .chat-form{display:flex;gap:12px;padding:18px;border-top:1px solid var(--line);background:rgba(0,0,0,.36)}textarea{flex:1;min-height:54px;max-height:150px;resize:vertical;border:1px solid rgba(255,255,255,.18);background:#050505;color:#fff;padding:15px;font:inherit;line-height:1.6;outline:none}.send{width:120px;border:1px solid rgba(255,255,255,.58);background:transparent;color:#fff;font-weight:900;letter-spacing:.12em;cursor:pointer}.send:hover{background:#fff;color:#000}.send:disabled{opacity:.45}
     .note{color:var(--muted);font-size:12px;line-height:1.8;margin-top:18px}
     @media(max-width:980px){.chat{height:min(760px,calc(100vh - 120px));min-height:0}.header{padding:20px 6vw}.brand img{width:150px}.nav{gap:14px;font-size:10px}.hero{grid-template-columns:1fr;min-height:auto;padding:120px 6vw 70px;gap:42px;background-position:62% center}.chat{min-height:590px}.msg{max-width:96%}.chat-form{flex-direction:column}.send{width:100%;height:52px}}
+    @media(max-width:700px){.hero{padding:110px 5vw 40px;gap:28px;}h1{font-size:34px;}.lead{font-size:14px;line-height:1.8;margin-bottom:24px;}.quick{display:grid;grid-template-columns:1fr 1fr;gap:8px;}.quick button{padding:10px 8px;font-size:11px;}
+    .entry-cta{margin-top:22px;}.cta-link{padding:18px 0;}.cta-main{font-size:24px;}.cta-sub{font-size:11px;}.chat{height:min(620px, calc(100vh - 90px));min-height:520px;}.chat-head{padding:18px;}
+    .messages{padding:16px;}.msg{max-width:96%;font-size:13px;}.chat-form{padding:14px;}}
+    /* v: online status lamp green */
+    .dot,.status-dot,.online-dot,.chat-status-dot{background:#28d17c !important;box-shadow:0 0 0 4px rgba(40,209,124,.12),0 0 14px rgba(40,209,124,.72) !important;}
   
-/* v: online status lamp green */
-.dot,
-.status-dot,
-.online-dot,
-.chat-status-dot{
+/* v: AI status lamp dynamic */
+.dot{
   background:#28d17c !important;
   box-shadow:
     0 0 0 4px rgba(40,209,124,.12),
     0 0 14px rgba(40,209,124,.72) !important;
 }
-
-
-/* v: AI status lamp turns red only after response error */
-.dot,
-.status-dot,
-.online-dot,
-.chat-status-dot{
-  background:#28d17c !important;
-  box-shadow:
-    0 0 0 4px rgba(40,209,124,.12),
-    0 0 14px rgba(40,209,124,.72) !important;
-}
-.dot.is-error,
-.status-dot.is-error,
-.online-dot.is-error,
-.chat-status-dot.is-error{
+.dot.is-error{
   background:#d71920 !important;
   box-shadow:
     0 0 0 4px rgba(215,25,32,.14),
@@ -90,6 +77,11 @@ const messages = document.getElementById("messages");
 const form = document.getElementById("chatForm");
 const question = document.getElementById("question");
 const sendBtn = document.getElementById("sendBtn");
+const statusDot = document.querySelector(".dot");
+function setAiStatus(state){
+  if(!statusDot) return;
+  statusDot.classList.toggle("is-error", state === "error");
+}
 
 
 async function writeResponseStream(res, target, scrollEl) {
@@ -139,6 +131,7 @@ function addMessage(role, text) {
 }
 
 async function askAI(text) {
+  setAiStatus("online");
   addMessage("user", text);
   const pending = addMessage("ai", "回答を作成しています...");
   sendBtn.disabled = true;
@@ -151,7 +144,9 @@ async function askAI(text) {
     });
 
     await writeResponseStream(res, pending, messages);
+    setAiStatus("online");
   } catch (err) {
+    setAiStatus("error");
     pending.textContent = "すみません。現在AIが応答できません。時間をおいて再度お試しください。";
     console.error(err);
   } finally {
@@ -184,37 +179,5 @@ document.querySelectorAll("[data-q]").forEach((btn) => {
   btn.addEventListener("click", () => askAI(btn.dataset.q));
 });
 </script>
-
-<script>
-(function(){
-  const lamp = document.querySelector(".dot,.status-dot,.online-dot,.chat-status-dot");
-  if(!lamp || window.__nexitStatusLampInstalled) return;
-  window.__nexitStatusLampInstalled = true;
-
-  function setLamp(state){
-    lamp.classList.toggle("is-error", state === "error");
-  }
-
-  const originalFetch = window.fetch;
-  window.fetch = async function(input, init){
-    const url = typeof input === "string" ? input : (input && input.url) || "";
-    const isRecruitChat = url.includes("/api/recruit-chat") || url.includes("recruit-chat");
-
-    try{
-      const res = await originalFetch.apply(this, arguments);
-      if(isRecruitChat){
-        setLamp(res.ok ? "online" : "error");
-      }
-      return res;
-    }catch(error){
-      if(isRecruitChat){
-        setLamp("error");
-      }
-      throw error;
-    }
-  };
-})();
-</script>
-
 </body>
 </html>
