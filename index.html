@@ -2662,14 +2662,17 @@ aiChatForm.addEventListener("submit",async(e)=>{
     void stage.offsetWidth;
     createLines();
 
-    setTimeout(()=>stage.classList.add("is-axcel"),2300);
-    setTimeout(()=>stage.classList.add("is-a-flash"),3000);
-    setTimeout(()=>stage.classList.add("is-nexit"),4100);
-    setTimeout(()=>stage.classList.add("is-n-pulse"),4920);
-    setTimeout(()=>stage.classList.add("is-nexit-flash"),5740);
-    setTimeout(()=>stage.classList.add("is-final"),6740);
-    setTimeout(()=>{if(tagline)tagline.classList.add("is-visible")},7100);
+setTimeout(()=>stage.classList.add("is-axcel"),2300);
+setTimeout(()=>stage.classList.add("is-a-flash"),3000);
 
+setTimeout(()=>stage.classList.add("is-nexit"),3900);
+setTimeout(()=>stage.classList.add("is-n-pulse"),4450);
+setTimeout(()=>stage.classList.add("is-nexit-flash"),4950);
+
+setTimeout(()=>stage.classList.add("is-final"),5900);
+setTimeout(()=>{
+  if(tagline) tagline.classList.add("is-visible");
+},6200);
     loopTimer=setTimeout(play,LOOP_INTERVAL);
   }
 
