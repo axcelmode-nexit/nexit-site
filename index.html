@@ -1802,6 +1802,70 @@
   }
 }
 
+
+
+/* ==========================
+   Desktop hero refinement v112
+   Desktop only (1181px+): preserve tablet/mobile behavior
+========================== */
+@media (min-width:1181px){
+  /* Make the logo animation the clear focal point. */
+  .race-stage{
+    width:min(1100px,86vw);
+    min-height:292px;
+    margin-bottom:4px;
+  }
+  .race-logo-assets{
+    top:68px;
+    width:min(790px,72vw);
+  }
+
+  /* Keep the headline and logo visually connected. */
+  .hero-content .catch{
+    margin-bottom:8px !important;
+  }
+
+  /* Give racing lines enough presence on wide screens only. */
+  .race-line{
+    left:-68%;
+    width:clamp(56%,var(--w),82%);
+    animation-name:raceLinePassDesktop;
+  }
+
+  /* Reduce competing background movement while retaining depth. */
+  .hero-bg{
+    animation:
+      heroBgBreathDesktop 46s ease-in-out infinite alternate,
+      heroDayCycle 20s ease-in-out infinite;
+  }
+
+  /* Keep location detail atmospheric rather than dominant. */
+  .hero-side{
+    opacity:.62 !important;
+  }
+  .hero-side .coord{
+    color:rgba(255,255,255,.08);
+  }
+  .coord-label{
+    color:rgba(255,255,255,.26);
+  }
+}
+
+@keyframes raceLinePassDesktop{
+  0%{opacity:0;transform:translateX(0) skewX(-10deg) scaleX(.86)}
+  12%,80%{opacity:var(--alpha)}
+  100%{opacity:0;transform:translateX(170vw) skewX(-10deg) scaleX(1.22)}
+}
+
+@keyframes heroBgBreathDesktop{
+  0%{
+    transform:scale(1.045) translate3d(var(--tilt-bg-x),var(--tilt-bg-y),0);
+  }
+  100%{
+    transform:scale(1.085) translate3d(calc(-16px + var(--tilt-bg-x)),calc(-7px + var(--tilt-bg-y)),0);
+  }
+}
+
 </style>
 </head>
 <body class="motion-ready">
