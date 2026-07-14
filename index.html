@@ -1722,10 +1722,21 @@
   45%{transform:translateY(0) scale(1);filter:brightness(2.45) saturate(1.75) drop-shadow(0 0 20px rgba(215,25,32,1)) drop-shadow(0 0 48px rgba(215,25,32,.95)) drop-shadow(0 0 96px rgba(215,25,32,.58));}
   100%{transform:translateY(0) scale(1);filter:brightness(1.05) saturate(1.12) drop-shadow(0 0 10px rgba(215,25,32,.36));}
 }42%{filter:brightness(1.65) saturate(1.35) drop-shadow(0 0 18px rgba(215,25,32,1)) drop-shadow(0 0 42px rgba(215,25,32,.72))}100%{filter:brightness(1.03) saturate(1.08) drop-shadow(0 0 8px rgba(215,25,32,.34))}}
-.race-n,.race-exit{transform:translateX(240px);filter:blur(8px)}
-.race-stage.is-nexit .race-n,.race-stage.is-nexit .race-exit{animation:raceNexitIn .82s cubic-bezier(.08,.86,.18,1) forwards}
-.race-stage.is-nexit .race-exit{animation-delay:.025s}
-@keyframes raceNexitIn{0%{opacity:0;transform:translateX(240px);filter:blur(8px) brightness(1.25)}58%{opacity:1;transform:translateX(-12px);filter:blur(1px) brightness(1.5) drop-shadow(0 0 18px rgba(255,255,255,.32))}100%{opacity:1;transform:none;filter:blur(0) brightness(1.05) contrast(1.04)}}
+.race-n{transform:translateY(-220px) scale(1.08);filter:blur(5px)}
+.race-exit{transform:translateX(240px);filter:blur(8px)}
+.race-stage.is-exit .race-exit{animation:raceExitIn .58s cubic-bezier(.08,.86,.18,1) forwards}
+@keyframes raceExitIn{0%{opacity:0;transform:translateX(240px);filter:blur(8px) brightness(1.25)}58%{opacity:1;transform:translateX(-10px);filter:blur(1px) brightness(1.5) drop-shadow(0 0 18px rgba(255,255,255,.32))}100%{opacity:1;transform:translateX(0);filter:blur(0) brightness(1.05) contrast(1.04)}}
+.race-stage.is-n-drop .race-n{
+  opacity:1;
+  transform-origin:center center;
+  animation:raceNDrop .82s cubic-bezier(.14,.82,.22,1) forwards;
+}
+@keyframes raceNDrop{
+  0%{opacity:0;transform:translateY(-220px) scale(1.10);filter:blur(5px) brightness(1.35) drop-shadow(0 0 34px rgba(215,25,32,.72));}
+  68%{opacity:1;transform:translateY(12px) scale(1.03);filter:blur(0) brightness(1.18) drop-shadow(0 0 22px rgba(215,25,32,.72));}
+  84%{opacity:1;transform:translateY(-5px) scale(.99);filter:brightness(1.12) drop-shadow(0 0 15px rgba(215,25,32,.58));}
+  100%{opacity:1;transform:translateY(0) scale(1);filter:brightness(1.05) contrast(1.04) drop-shadow(0 0 10px rgba(215,25,32,.34));}
+}
 .race-stage.is-final .race-fragment{opacity:1}
 .race-stage.is-final .race-a{filter:brightness(1.03) saturate(1.08) drop-shadow(0 0 8px rgba(215,25,32,.3))}
 .race-stage.is-final .race-xm,.race-stage.is-final .race-n,.race-stage.is-final .race-exit{filter:brightness(1.05) contrast(1.04)}
@@ -1733,29 +1744,14 @@
 @media(prefers-reduced-motion:reduce){.race-lines{display:none!important}.race-fragment{opacity:1!important;transform:none!important;filter:none!important;animation:none!important}}
 
 
-.race-stage.is-n-pulse .race-n{
+.race-stage.is-n-white .race-n{
   opacity:1;
-  animation:raceNPulse .72s cubic-bezier(.16,1,.3,1) forwards;
-  transform-origin:center center;
+  animation:raceNWhite .46s cubic-bezier(.16,1,.3,1) forwards;
 }
-@keyframes raceNPulse{
-  0%{
-    transform:translateX(0) scale(1);
-    filter:brightness(1.05) contrast(1.04);
-  }
-  45%{
-    transform:translateX(0) scale(1.16);
-    filter:brightness(1.28) contrast(1.08)
-      drop-shadow(0 0 12px rgba(255,255,255,.34));
-  }
-  72%{
-    transform:translateX(0) scale(.98);
-    filter:brightness(1.10) contrast(1.05);
-  }
-  100%{
-    transform:translateX(0) scale(1);
-    filter:brightness(1.05) contrast(1.04);
-  }
+@keyframes raceNWhite{
+  0%{transform:translateY(0) scale(1);filter:brightness(1.05) contrast(1.04) drop-shadow(0 0 10px rgba(215,25,32,.34));}
+  55%{transform:translateY(0) scale(1.04);filter:brightness(2.25) contrast(1.10) drop-shadow(0 0 18px rgba(255,255,255,.68));}
+  100%{transform:translateY(0) scale(1);filter:brightness(1.18) contrast(1.06) drop-shadow(0 0 10px rgba(255,255,255,.26));}
 }
 
 /* 最後にNEXIT全体が白く輝く */
@@ -2630,7 +2626,7 @@ aiChatForm.addEventListener("submit",async(e)=>{
   let loopTimer=null;
 
   function reset(){
-    stage.classList.remove("is-axcel","is-a-flash","is-nexit","is-n-pulse","is-nexit-flash","is-final");
+    stage.classList.remove("is-axcel","is-a-flash","is-exit","is-n-drop","is-n-white","is-nexit-flash","is-final");
     lines.innerHTML="";
   }
 
@@ -2662,17 +2658,15 @@ aiChatForm.addEventListener("submit",async(e)=>{
     void stage.offsetWidth;
     createLines();
 
-setTimeout(()=>stage.classList.add("is-axcel"),2300);
-setTimeout(()=>stage.classList.add("is-a-flash"),3000);
+    setTimeout(()=>stage.classList.add("is-axcel"),2300);
+    setTimeout(()=>stage.classList.add("is-a-flash"),2800);
+    setTimeout(()=>stage.classList.add("is-exit"),3150);
+    setTimeout(()=>stage.classList.add("is-n-drop"),4050);
+    setTimeout(()=>stage.classList.add("is-n-white"),4780);
+    setTimeout(()=>stage.classList.add("is-nexit-flash"),5100);
+    setTimeout(()=>stage.classList.add("is-final"),5900);
+    setTimeout(()=>{if(tagline)tagline.classList.add("is-visible")},6200);
 
-setTimeout(()=>stage.classList.add("is-nexit"),3900);
-setTimeout(()=>stage.classList.add("is-n-pulse"),4450);
-setTimeout(()=>stage.classList.add("is-nexit-flash"),4950);
-
-setTimeout(()=>stage.classList.add("is-final"),5900);
-setTimeout(()=>{
-  if(tagline) tagline.classList.add("is-visible");
-},6200);
     loopTimer=setTimeout(play,LOOP_INTERVAL);
   }
 
