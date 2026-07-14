@@ -5,7 +5,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>AXCEL MODE NEXIT | 株式会社アクセル・モード・ネクスト</title>
-  <!-- version: v106 phone-off + brush growth wave + normal red N drop -->
+  <!-- version: v111 racing-line longer + long A glow + white N pulse + NEXIT white flash -->
   <meta property="og:type" content="website">
   <meta property="og:title" content="AXCEL MODE NEXIT">
   <meta property="og:description"content="上越を拠点にソフトウェア開発・ITソリューションを提供。UIJターン歓迎。">
@@ -1082,7 +1082,7 @@
   --signature-tip-width:3.8px;
   position:relative;
   width:min(960px,96vw);
-  min-height:300px;
+  min-height:260px;
   margin:0 0 10px;
   overflow:visible;
   isolation:isolate;
@@ -1153,7 +1153,7 @@
 .signature-logo-assets{
   position:absolute;
   left:0;
-  top:92px;
+  top:68px;
   width:min(660px,86vw);
   height:auto;
   aspect-ratio:597 / 157;
@@ -1678,6 +1678,109 @@
   animation:signatureNAssetWhite .58s cubic-bezier(.16,1,.3,1) forwards !important;
 }
 
+
+/* Racing line logo prototype v1 */
+.race-stage{position:relative;width:min(960px,96vw);min-height:260px;margin:0 0 10px;overflow:hidden;isolation:isolate}
+.race-lines{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.race-line{position:absolute;left:-52%;top:var(--y);width:var(--w);height:var(--h);opacity:0;border-radius:999px;background:linear-gradient(90deg,transparent,rgba(150,12,18,.45),rgba(215,25,32,1),rgba(255,120,120,.95),transparent);filter:blur(var(--blur)) drop-shadow(0 0 6px rgba(215,25,32,.8)) drop-shadow(0 0 16px rgba(215,25,32,.35));transform:skewX(-10deg);animation:raceLinePass var(--dur) cubic-bezier(.18,.72,.16,1) var(--delay) forwards}
+.race-line.is-white{background:linear-gradient(90deg,transparent,rgba(255,255,255,.18),rgba(255,255,255,1),transparent);filter:blur(var(--blur)) drop-shadow(0 0 8px rgba(255,255,255,.7))}
+.race-line.is-orange{background:linear-gradient(90deg,transparent,rgba(220,52,20,.45),rgba(255,125,50,1),transparent)}
+@keyframes raceLinePass{0%{opacity:0;transform:translateX(0) skewX(-10deg) scaleX(.75)}12%,80%{opacity:var(--alpha)}100%{opacity:0;transform:translateX(155vw) skewX(-10deg) scaleX(1.15)}}
+.race-logo-assets{position:absolute;left:0;top:68px;width:min(660px,86vw);aspect-ratio:597/157;z-index:5}
+.race-fragment{position:absolute;inset:0;width:100%;height:auto;opacity:0;will-change:opacity,transform,filter}
+.race-a,.race-xm{transform:translateY(16px) scale(.985)}
+.race-stage.is-axcel .race-a,.race-stage.is-axcel .race-xm{animation:raceAxcelIn .72s cubic-bezier(.16,1,.3,1) forwards}
+.race-stage.is-axcel .race-xm{animation-delay:.04s}
+@keyframes raceAxcelIn{0%{opacity:0;transform:translateY(18px) scale(.97);filter:blur(7px)}100%{opacity:1;transform:none;filter:blur(0)}}
+.race-stage.is-a-flash .race-a{opacity:1;animation:raceAFlash 1.20s cubic-bezier(.16,1,.3,1) forwards}
+@keyframes raceAFlash{
+  0%{
+    transform:translateY(0) scale(1);
+    filter:brightness(1.04) saturate(1.08)
+      drop-shadow(0 0 10px rgba(215,25,32,.42));
+  }
+  24%{
+    transform:translateY(0) scale(1);
+    filter:brightness(2.45) saturate(1.75)
+      drop-shadow(0 0 20px rgba(215,25,32,1))
+      drop-shadow(0 0 48px rgba(215,25,32,.95))
+      drop-shadow(0 0 96px rgba(215,25,32,.58));
+  }
+  72%{
+    transform:translateY(0) scale(1);
+    filter:brightness(2.35) saturate(1.68)
+      drop-shadow(0 0 20px rgba(215,25,32,1))
+      drop-shadow(0 0 46px rgba(215,25,32,.88))
+      drop-shadow(0 0 88px rgba(215,25,32,.52));
+  }
+  100%{
+    transform:translateY(0) scale(1);
+    filter:brightness(1.05) saturate(1.12)
+      drop-shadow(0 0 10px rgba(215,25,32,.36));
+  }
+}
+  45%{transform:translateY(0) scale(1);filter:brightness(2.45) saturate(1.75) drop-shadow(0 0 20px rgba(215,25,32,1)) drop-shadow(0 0 48px rgba(215,25,32,.95)) drop-shadow(0 0 96px rgba(215,25,32,.58));}
+  100%{transform:translateY(0) scale(1);filter:brightness(1.05) saturate(1.12) drop-shadow(0 0 10px rgba(215,25,32,.36));}
+}42%{filter:brightness(1.65) saturate(1.35) drop-shadow(0 0 18px rgba(215,25,32,1)) drop-shadow(0 0 42px rgba(215,25,32,.72))}100%{filter:brightness(1.03) saturate(1.08) drop-shadow(0 0 8px rgba(215,25,32,.34))}}
+.race-n,.race-exit{transform:translateX(240px);filter:blur(8px)}
+.race-stage.is-nexit .race-n,.race-stage.is-nexit .race-exit{animation:raceNexitIn .82s cubic-bezier(.08,.86,.18,1) forwards}
+.race-stage.is-nexit .race-exit{animation-delay:.025s}
+@keyframes raceNexitIn{0%{opacity:0;transform:translateX(240px);filter:blur(8px) brightness(1.25)}58%{opacity:1;transform:translateX(-12px);filter:blur(1px) brightness(1.5) drop-shadow(0 0 18px rgba(255,255,255,.32))}100%{opacity:1;transform:none;filter:blur(0) brightness(1.05) contrast(1.04)}}
+.race-stage.is-final .race-fragment{opacity:1}
+.race-stage.is-final .race-a{filter:brightness(1.03) saturate(1.08) drop-shadow(0 0 8px rgba(215,25,32,.3))}
+.race-stage.is-final .race-xm,.race-stage.is-final .race-n,.race-stage.is-final .race-exit{filter:brightness(1.05) contrast(1.04)}
+@media(max-width:980px){.race-stage{width:min(480px,94vw);min-height:185px;margin-bottom:16px}.race-logo-assets{top:42px;width:min(420px,88vw)}}
+@media(prefers-reduced-motion:reduce){.race-lines{display:none!important}.race-fragment{opacity:1!important;transform:none!important;filter:none!important;animation:none!important}}
+
+
+.race-stage.is-n-pulse .race-n{
+  opacity:1;
+  animation:raceNPulse .72s cubic-bezier(.16,1,.3,1) forwards;
+  transform-origin:center center;
+}
+@keyframes raceNPulse{
+  0%{
+    transform:translateX(0) scale(1);
+    filter:brightness(1.05) contrast(1.04);
+  }
+  45%{
+    transform:translateX(0) scale(1.16);
+    filter:brightness(1.28) contrast(1.08)
+      drop-shadow(0 0 12px rgba(255,255,255,.34));
+  }
+  72%{
+    transform:translateX(0) scale(.98);
+    filter:brightness(1.10) contrast(1.05);
+  }
+  100%{
+    transform:translateX(0) scale(1);
+    filter:brightness(1.05) contrast(1.04);
+  }
+}
+
+/* 最後にNEXIT全体が白く輝く */
+.race-stage.is-nexit-flash .race-n,
+.race-stage.is-nexit-flash .race-exit{
+  opacity:1;
+  animation:raceNexitWhiteFlash .92s cubic-bezier(.16,1,.3,1) forwards;
+}
+@keyframes raceNexitWhiteFlash{
+  0%{
+    transform:translateX(0) scale(1);
+    filter:brightness(1.05) contrast(1.04);
+  }
+  44%{
+    transform:translateX(0) scale(1);
+    filter:brightness(2.35) contrast(1.12)
+      drop-shadow(0 0 18px rgba(255,255,255,.86))
+      drop-shadow(0 0 42px rgba(255,255,255,.50));
+  }
+  100%{
+    transform:translateX(0) scale(1);
+    filter:brightness(1.05) contrast(1.04);
+  }
+}
+
 </style>
 </head>
 <body class="motion-ready">
@@ -1707,44 +1810,15 @@
   <span style="--i:1">挑</span><span style="--i:2">戦</span><span style="--i:3">を</span><span style="--i:4">、</span><br>
   <span style="--i:15">確</span><span style="--i:16">か</span><span style="--i:17">な</span><span style="--i:18">前</span><span style="--i:19">進</span><span style="--i:20">に</span><span style="--i:21">。</span>
 </h1>
-          <div class="signature-stage" aria-hidden="true">
-            <svg class="signature-wave" viewBox="0 -260 1500 560" preserveAspectRatio="xMinYMid meet">
-              <defs>
-                <linearGradient id="signatureLineGradient" x1="0" y1="170" x2="1460" y2="-520" gradientUnits="userSpaceOnUse">
-                  <stop offset="0%" stop-color="#a80f16" />
-                  <stop offset="28%" stop-color="#d71920" />
-                  <stop offset="48%" stop-color="#ff4a4f" />
-                  <stop offset="63%" stop-color="#f9f1ee" />
-                  <stop offset="76%" stop-color="#d71920" />
-                  <stop offset="100%" stop-color="#7d070d" />
-                </linearGradient>
-                <linearGradient id="signatureGlowGradient" x1="0" y1="170" x2="1460" y2="-520" gradientUnits="userSpaceOnUse">
-                  <stop offset="0%" stop-color="rgba(215,25,32,.18)" />
-                  <stop offset="48%" stop-color="rgba(255,255,255,.28)" />
-                  <stop offset="100%" stop-color="rgba(215,25,32,.16)" />
-                </linearGradient>
-              </defs>
-              <path id="signaturePathGhost" class="signature-path-ghost"
-                d="M0 80 H72 L142 -24 L214 126 H760 L880 -18 L940 108 L1880 -1010" />
-              <path id="signaturePathGlow" class="signature-path-glow"
-                d="M0 80 H72 L142 -24 L214 126 H760 L880 -18 L940 108 L1880 -1010" />
-              <path id="signaturePath" class="signature-path"
-                d="M0 80 H72 L142 -24 L214 126 H760 L880 -18 L940 108 L1880 -1010" />
-              <path id="signaturePathNBold" class="signature-path-n-bold"
-                d="M214 126 H760 L880 -18 L940 108 L1880 -1010" />
-              <path id="signaturePathTip" class="signature-path-tip"
-                d="M0 80 H72 L142 -24 L214 126 H760 L880 -18 L940 108 L1880 -1010" />
-            </svg>
-
-            <div class="signature-logo-build signature-logo-assets">
-              <img class="signature-fragment signature-a-img" src="A.png" alt="" aria-hidden="true">
-              <img class="signature-fragment signature-xm-img" src="XM.png" alt="" aria-hidden="true">
-              <img class="signature-fragment signature-n-img" src="N.png" alt="" aria-hidden="true">
-              <img class="signature-fragment signature-n-flash-overlay" src="N.png" alt="" aria-hidden="true">
-              <img class="signature-fragment signature-exit-img" src="EXIT.png" alt="" aria-hidden="true">
-              <img class="signature-fragment signature-exit-flash-overlay" src="EXIT.png" alt="" aria-hidden="true">
-            </div>
-          </div>
+          <div class="race-stage" aria-hidden="true">
+  <div class="race-lines" id="raceLines"></div>
+  <div class="race-logo-assets">
+    <img class="race-fragment race-a" src="A.png" alt="">
+    <img class="race-fragment race-xm" src="XM.png" alt="">
+    <img class="race-fragment race-n" src="N.png" alt="">
+    <img class="race-fragment race-exit" src="EXIT.png" alt="">
+  </div>
+</div>
 
           <p class="lead tagline">一歩外へ。次の未来へ。</p>
           <a class="btn" href="recruit.html">RECRUIT <span>→</span></a>
@@ -2539,6 +2613,68 @@ aiChatForm.addEventListener("submit",async(e)=>{
   }else if(permissionButton){
     permissionButton.classList.add('is-hidden');
   }
+})();
+</script>
+
+
+<script>
+(function(){
+  const stage=document.querySelector(".race-stage");
+  const lines=document.getElementById("raceLines");
+  const tagline=document.querySelector(".lead.tagline");
+  if(!stage||!lines)return;
+
+  const reduceMotion=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const FIRST_START_DELAY=3300;
+  const LOOP_INTERVAL=11600;
+  let loopTimer=null;
+
+  function reset(){
+    stage.classList.remove("is-axcel","is-a-flash","is-nexit","is-n-pulse","is-nexit-flash","is-final");
+    lines.innerHTML="";
+  }
+
+  function createLines(){
+    const palette=["red","red","red","red","red","red","red","red","white","orange"];
+    for(let i=0;i<18;i++){
+      const line=document.createElement("span");
+      const c=palette[Math.floor(Math.random()*palette.length)];
+      line.className="race-line"+(c==="white"?" is-white":c==="orange"?" is-orange":"");
+      line.style.setProperty("--y",(4+Math.random()*88).toFixed(2)+"%");
+      line.style.setProperty("--w",(34+Math.random()*34).toFixed(2)+"%");
+      line.style.setProperty("--h",[2,2,3,3,4,5][Math.floor(Math.random()*6)]+"px");
+      line.style.setProperty("--delay",(0.18+Math.random()*1.85).toFixed(3)+"s");
+      line.style.setProperty("--dur",(1.35+Math.random()*0.95).toFixed(3)+"s");
+      line.style.setProperty("--alpha",(0.42+Math.random()*0.48).toFixed(2));
+      line.style.setProperty("--blur",Math.random()<.62?"0px":(Math.random()*1.5).toFixed(1)+"px");
+      lines.appendChild(line);
+    }
+  }
+
+  function play(){
+    reset();
+    void stage.offsetWidth;
+    createLines();
+
+    setTimeout(()=>stage.classList.add("is-axcel"),2300);
+    setTimeout(()=>stage.classList.add("is-a-flash"),3000);
+    setTimeout(()=>stage.classList.add("is-nexit"),4100);
+    setTimeout(()=>stage.classList.add("is-n-pulse"),4920);
+    setTimeout(()=>stage.classList.add("is-nexit-flash"),5740);
+    setTimeout(()=>stage.classList.add("is-final"),6740);
+    setTimeout(()=>{if(tagline)tagline.classList.add("is-visible")},7100);
+
+    loopTimer=setTimeout(play,LOOP_INTERVAL);
+  }
+
+  if(reduceMotion){
+    stage.classList.add("is-final");
+    if(tagline)tagline.classList.add("is-visible");
+    return;
+  }
+
+  setTimeout(play,FIRST_START_DELAY);
+  window.addEventListener("pagehide",()=>{if(loopTimer)clearTimeout(loopTimer)},{once:true});
 })();
 </script>
 
