@@ -1682,7 +1682,7 @@
 /* Racing line logo prototype v1 */
 .race-stage{position:relative;width:min(960px,96vw);min-height:260px;margin:0 0 10px;overflow:hidden;isolation:isolate}
 .race-lines{position:absolute;inset:0;overflow:hidden;pointer-events:none}
-.race-line{position:absolute;left:-52%;top:var(--y);width:var(--w);height:var(--h);opacity:0;border-radius:999px;background:linear-gradient(90deg,transparent,rgba(150,12,18,.45),rgba(215,25,32,1),rgba(255,120,120,.95),transparent);filter:blur(var(--blur)) drop-shadow(0 0 6px rgba(215,25,32,.8)) drop-shadow(0 0 16px rgba(215,25,32,.35));transform:skewX(-10deg);animation:raceLinePass var(--dur) cubic-bezier(.18,.72,.16,1) var(--delay) forwards}
+.race-line{position:absolute;left:var(--start,-52%);top:var(--y);width:var(--w);height:var(--h);opacity:0;border-radius:999px;background:linear-gradient(90deg,transparent,rgba(150,12,18,.45),rgba(215,25,32,1),rgba(255,120,120,.95),transparent);filter:blur(var(--blur)) drop-shadow(0 0 6px rgba(215,25,32,.8)) drop-shadow(0 0 16px rgba(215,25,32,.35));transform:skewX(-10deg);animation:raceLinePass var(--dur) cubic-bezier(.18,.72,.16,1) var(--delay) forwards}
 .race-line.is-white{background:linear-gradient(90deg,transparent,rgba(255,255,255,.18),rgba(255,255,255,1),transparent);filter:blur(var(--blur)) drop-shadow(0 0 8px rgba(255,255,255,.7))}
 .race-line.is-orange{background:linear-gradient(90deg,transparent,rgba(220,52,20,.45),rgba(255,125,50,1),transparent)}
 @keyframes raceLinePass{0%{opacity:0;transform:translateX(0) skewX(-10deg) scaleX(.75)}12%,80%{opacity:var(--alpha)}100%{opacity:0;transform:translateX(155vw) skewX(-10deg) scaleX(1.15)}}
@@ -2641,10 +2641,16 @@ aiChatForm.addEventListener("submit",async(e)=>{
       const c=palette[Math.floor(Math.random()*palette.length)];
       line.className="race-line"+(c==="white"?" is-white":c==="orange"?" is-orange":"");
       line.style.setProperty("--y",(4+Math.random()*88).toFixed(2)+"%");
-      line.style.setProperty("--w",(34+Math.random()*34).toFixed(2)+"%");
+      const mobile = window.matchMedia("(max-width: 767px)").matches;
+      line.style.setProperty("--w", mobile
+        ? (120+Math.random()*90).toFixed(2)+"%"
+        : (34+Math.random()*34).toFixed(2)+"%");
+      line.style.setProperty("--start", mobile ? "-100%" : "-52%");
       line.style.setProperty("--h",[2,2,3,3,4,5][Math.floor(Math.random()*6)]+"px");
       line.style.setProperty("--delay",(0.18+Math.random()*1.85).toFixed(3)+"s");
-      line.style.setProperty("--dur",(1.35+Math.random()*0.95).toFixed(3)+"s");
+      line.style.setProperty("--dur", mobile
+        ? (0.90+Math.random()*0.60).toFixed(3)+"s"
+        : (1.35+Math.random()*0.95).toFixed(3)+"s");
       line.style.setProperty("--alpha",(0.42+Math.random()*0.48).toFixed(2));
       line.style.setProperty("--blur",Math.random()<.62?"0px":(Math.random()*1.5).toFixed(1)+"px");
       lines.appendChild(line);
