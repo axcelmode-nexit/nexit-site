@@ -1866,6 +1866,49 @@
   }
 }
 
+
+
+/* Footer visibility fix + Instagram link */
+.footer{
+  position:relative;
+  z-index:2;
+  opacity:1 !important;
+  transform:none !important;
+  filter:none !important;
+  visibility:visible !important;
+}
+.footer.reveal{
+  opacity:1 !important;
+  transform:none !important;
+  filter:none !important;
+  transition:none !important;
+}
+.footer-links{
+  align-items:center;
+}
+.footer-instagram{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  margin-left:4px;
+  line-height:1;
+}
+.footer-instagram img{
+  width:20px !important;
+  height:20px !important;
+  object-fit:contain;
+  opacity:.78;
+  filter:brightness(0) invert(1);
+  transition:opacity .25s ease, transform .25s ease;
+}
+.footer-instagram:hover img{
+  opacity:1;
+  transform:translateY(-2px);
+}
+@media(max-width:980px){
+  .footer-instagram{margin-left:0;}
+}
+
 </style>
 </head>
 <body class="motion-ready">
@@ -2109,6 +2152,9 @@
         <a href="#office">OFFICE</a>
         <a href="#company">COMPANY</a>
         <a href="recruit.html">RECRUIT</a>
+        <a href="https://www.instagram.com/axcelmode_nexit/" target="_blank" rel="noopener noreferrer" class="footer-instagram" aria-label="Instagram">
+          <img src="instagram.png" alt="Instagram">
+        </a>
       </div>
     </footer>
   </div>
@@ -2135,7 +2181,6 @@ const __PARALLAX_ENABLED__ =
       ['.recruit-cta-link', 3, false],
       ['.recruit-note-small', 4, false],
       ['.recruit-image', 2, false],
-      ['footer.footer', 0, false],
       ['.vision-card', 1, true],
       ['.business-card', 1, true],
       ['.news-item', 1, true]
