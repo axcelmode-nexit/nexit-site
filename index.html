@@ -2048,7 +2048,7 @@
 
 /* Seamless handoff from generator to the real N.
    No falling, sliding or rotation is applied. */
-.race-stage.is-n-generated .race-n{
+.race-stage.is-n-generated:not(.is-n-white):not(.is-nexit-flash):not(.is-final) .race-n{
   opacity:1;
   transform-origin:center center;
   animation:raceNGenerated .24s linear forwards;
@@ -2072,6 +2072,16 @@
 }
 @media(prefers-reduced-motion:reduce){
   .race-n-generator{display:none!important;}
+}
+
+
+/* v2.1.1: generated red N must hand off to the original white/flash sequence */
+.race-stage.is-n-white .race-n{
+  animation:raceNWhite .46s cubic-bezier(.16,1,.3,1) forwards !important;
+}
+.race-stage.is-nexit-flash .race-n,
+.race-stage.is-nexit-flash .race-exit{
+  animation:raceNexitWhiteFlash .92s cubic-bezier(.16,1,.3,1) forwards !important;
 }
 
 </style>
