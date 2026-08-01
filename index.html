@@ -1909,83 +1909,6 @@
   .footer-instagram{margin-left:0;}
 }
 
-
-
-/* ==========================
-   NEXIT Random N Entrance v1
-   Reload and every loop choose a new N entrance.
-========================== */
-.race-stage.nfx-classic.is-n-drop .race-n{
-  animation:raceNDrop .82s cubic-bezier(.14,.82,.22,1) forwards;
-}
-.race-stage.nfx-speed.is-n-drop .race-n{
-  animation:nfxSpeed .78s cubic-bezier(.08,.86,.18,1) forwards;
-}
-.race-stage.nfx-slash.is-n-drop .race-n{
-  animation:nfxSlash .82s cubic-bezier(.12,.88,.18,1) forwards;
-}
-.race-stage.nfx-energy.is-n-drop .race-n{
-  animation:nfxEnergy .92s cubic-bezier(.16,1,.3,1) forwards;
-}
-.race-stage.nfx-particle.is-n-drop .race-n{
-  animation:nfxParticle .98s cubic-bezier(.16,1,.3,1) forwards;
-}
-.race-stage.nfx-rotate.is-n-drop .race-n{
-  animation:nfxRotate .88s cubic-bezier(.12,.86,.18,1) forwards;
-}
-
-@keyframes nfxSpeed{
-  0%{opacity:0;transform:translateX(250px) skewX(-10deg) scaleX(1.14);filter:invert(16%) sepia(98%) saturate(5363%) hue-rotate(349deg) brightness(118%) contrast(118%) blur(12px) drop-shadow(-42px 0 20px rgba(215,25,32,.72));}
-  56%{opacity:1;transform:translateX(-12px) skewX(2deg) scaleX(.98);filter:invert(16%) sepia(98%) saturate(5363%) hue-rotate(349deg) brightness(112%) contrast(114%) blur(1px) drop-shadow(-18px 0 16px rgba(215,25,32,.62));}
-  100%{opacity:1;transform:translateX(0) skewX(0) scale(1);filter:invert(16%) sepia(98%) saturate(5363%) hue-rotate(349deg) brightness(106%) contrast(110%) drop-shadow(0 0 12px rgba(215,25,32,.48));}
-}
-@keyframes nfxSlash{
-  0%{opacity:0;transform:translate(-150px,-95px) rotate(-14deg) scale(1.16);clip-path:polygon(0 0,0 0,0 100%,0 100%);filter:invert(16%) sepia(98%) saturate(5363%) hue-rotate(349deg) brightness(120%) contrast(118%) blur(6px) drop-shadow(0 0 34px rgba(215,25,32,.9));}
-  58%{opacity:1;transform:translate(10px,7px) rotate(2deg) scale(1.03);clip-path:polygon(0 0,100% 0,82% 100%,0 100%);filter:invert(16%) sepia(98%) saturate(5363%) hue-rotate(349deg) brightness(112%) contrast(114%) blur(0) drop-shadow(0 0 24px rgba(215,25,32,.78));}
-  100%{opacity:1;transform:none;clip-path:polygon(0 0,100% 0,100% 100%,0 100%);filter:invert(16%) sepia(98%) saturate(5363%) hue-rotate(349deg) brightness(106%) contrast(110%) drop-shadow(0 0 12px rgba(215,25,32,.48));}
-}
-@keyframes nfxEnergy{
-  0%{opacity:0;transform:scale(.35);filter:invert(16%) sepia(98%) saturate(5363%) hue-rotate(349deg) brightness(150%) contrast(125%) blur(18px) drop-shadow(0 0 8px rgba(215,25,32,0));}
-  48%{opacity:.92;transform:scale(1.16);filter:invert(16%) sepia(98%) saturate(5363%) hue-rotate(349deg) brightness(132%) contrast(120%) blur(2px) drop-shadow(0 0 34px rgba(215,25,32,1)) drop-shadow(0 0 76px rgba(215,25,32,.74));}
-  72%{opacity:1;transform:scale(.97);filter:invert(16%) sepia(98%) saturate(5363%) hue-rotate(349deg) brightness(114%) contrast(114%) blur(0) drop-shadow(0 0 24px rgba(215,25,32,.76));}
-  100%{opacity:1;transform:scale(1);filter:invert(16%) sepia(98%) saturate(5363%) hue-rotate(349deg) brightness(106%) contrast(110%) drop-shadow(0 0 12px rgba(215,25,32,.48));}
-}
-@keyframes nfxParticle{
-  0%{opacity:0;transform:scale(.58) translateY(24px);filter:invert(16%) sepia(98%) saturate(5363%) hue-rotate(349deg) brightness(132%) contrast(118%) blur(22px) drop-shadow(0 0 50px rgba(215,25,32,.9));clip-path:circle(3% at 50% 50%);}
-  42%{opacity:.72;transform:scale(1.10) translateY(-4px);filter:invert(16%) sepia(98%) saturate(5363%) hue-rotate(349deg) brightness(122%) contrast(116%) blur(7px) drop-shadow(0 0 36px rgba(215,25,32,.85));clip-path:circle(38% at 50% 50%);}
-  76%{opacity:1;transform:scale(.98);filter:invert(16%) sepia(98%) saturate(5363%) hue-rotate(349deg) brightness(112%) contrast(114%) blur(1px) drop-shadow(0 0 22px rgba(215,25,32,.68));clip-path:circle(72% at 50% 50%);}
-  100%{opacity:1;transform:scale(1);filter:invert(16%) sepia(98%) saturate(5363%) hue-rotate(349deg) brightness(106%) contrast(110%) drop-shadow(0 0 12px rgba(215,25,32,.48));clip-path:circle(100% at 50% 50%);}
-}
-@keyframes nfxRotate{
-  0%{opacity:0;transform:translateY(-170px) rotate(-32deg) scale(.82);filter:invert(16%) sepia(98%) saturate(5363%) hue-rotate(349deg) brightness(116%) contrast(116%) blur(8px) drop-shadow(0 0 34px rgba(215,25,32,.82));}
-  62%{opacity:1;transform:translateY(10px) rotate(4deg) scale(1.06);filter:invert(16%) sepia(98%) saturate(5363%) hue-rotate(349deg) brightness(112%) contrast(114%) blur(0) drop-shadow(0 0 26px rgba(215,25,32,.78));}
-  82%{transform:translateY(-4px) rotate(-1.5deg) scale(.99);}
-  100%{opacity:1;transform:none;filter:invert(16%) sepia(98%) saturate(5363%) hue-rotate(349deg) brightness(106%) contrast(110%) drop-shadow(0 0 12px rgba(215,25,32,.48));}
-}
-@media(prefers-reduced-motion:reduce){
-  .race-stage[class*="nfx-"] .race-n{animation:none!important;opacity:1!important;transform:none!important;filter:none!important;clip-path:none!important;}
-}
-
-
-/* v2 random N fix: always finish from red to white */
-.race-stage.is-n-white .race-n,
-.race-stage.n-classic.is-n-white .race-n,
-.race-stage.n-speed.is-n-white .race-n,
-.race-stage.n-slash.is-n-white .race-n,
-.race-stage.n-energy.is-n-white .race-n,
-.race-stage.n-particle.is-n-white .race-n,
-.race-stage.n-rotate.is-n-white .race-n{
-  opacity:1 !important;
-  animation:raceNWhite .46s cubic-bezier(.16,1,.3,1) forwards !important;
-  transform-origin:center center !important;
-}
-
-.race-stage.is-final .race-n{
-  opacity:1 !important;
-  transform:translateY(0) translateX(0) rotate(0deg) scale(1) !important;
-  filter:brightness(1.08) contrast(1.05) drop-shadow(0 0 10px rgba(255,255,255,.24)) !important;
-}
-
 </style>
 </meta></head>
 <body class="motion-ready">
@@ -2814,24 +2737,8 @@ aiChatForm.addEventListener("submit",async(e)=>{
   const LOOP_INTERVAL=11600;
   let loopTimer=null;
 
-  const nEffects=[
-    "nfx-classic","nfx-classic","nfx-classic",
-    "nfx-speed","nfx-speed",
-    "nfx-slash",
-    "nfx-energy",
-    "nfx-particle",
-    "nfx-rotate"
-  ];
-
-  function chooseNEffect(){
-    return nEffects[Math.floor(Math.random()*nEffects.length)];
-  }
-
   function reset(){
-    stage.classList.remove(
-      "is-axcel","is-a-flash","is-exit","is-n-drop","is-n-white","is-nexit-flash","is-final",
-      "nfx-classic","nfx-speed","nfx-slash","nfx-energy","nfx-particle","nfx-rotate"
-    );
+    stage.classList.remove("is-axcel","is-a-flash","is-exit","is-n-drop","is-n-white","is-nexit-flash","is-final");
     lines.innerHTML="";
   }
 
@@ -2866,16 +2773,8 @@ aiChatForm.addEventListener("submit",async(e)=>{
     setTimeout(()=>stage.classList.add("is-axcel"),2300);
     setTimeout(()=>stage.classList.add("is-a-flash"),2800);
     setTimeout(()=>stage.classList.add("is-exit"),3150);
-    const nEffect=chooseNEffect();
-    setTimeout(()=>{
-      stage.classList.add(nEffect);
-      stage.classList.add("is-n-drop");
-    },4050);
-    setTimeout(()=>{
-      stage.classList.remove("is-n-white");
-      void stage.offsetWidth;
-      stage.classList.add("is-n-white");
-    },4780);
+    setTimeout(()=>stage.classList.add("is-n-drop"),4050);
+    setTimeout(()=>stage.classList.add("is-n-white"),4780);
     setTimeout(()=>stage.classList.add("is-nexit-flash"),5100);
     setTimeout(()=>stage.classList.add("is-final"),5900);
     setTimeout(()=>{if(tagline)tagline.classList.add("is-visible")},6200);
