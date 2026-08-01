@@ -2084,6 +2084,138 @@
   animation:raceNexitWhiteFlash .92s cubic-bezier(.16,1,.3,1) forwards !important;
 }
 
+
+/* ==========================
+   NEXIT AI N Generation v3.0
+   Additional generator patterns only.
+   Existing red -> white -> final flash sequence is untouched.
+========================== */
+
+/* Wireframe */
+.race-n-generator.gen-wire .gen-wire-line{
+  left:var(--x);
+  top:var(--y);
+  width:var(--w);
+  height:2px;
+  opacity:0;
+  background:linear-gradient(90deg,rgba(255,255,255,.16),rgba(255,92,92,.98));
+  box-shadow:0 0 8px rgba(215,25,32,.68);
+  transform-origin:left center;
+  transform:rotate(var(--r)) scaleX(0);
+  animation:genWireLine .76s cubic-bezier(.16,1,.3,1) var(--delay) forwards;
+}
+.race-n-generator.gen-wire::after{
+  animation:genWireN .82s cubic-bezier(.16,1,.3,1) .20s forwards;
+}
+@keyframes genWireLine{
+  0%{opacity:0;transform:rotate(var(--r)) scaleX(0);}
+  24%{opacity:1;}
+  82%{opacity:.95;transform:rotate(var(--r)) scaleX(1);}
+  100%{opacity:0;transform:rotate(var(--r)) scaleX(1);}
+}
+@keyframes genWireN{
+  0%{opacity:0;transform:scale(.95);filter:blur(5px) invert(16%) sepia(98%) saturate(5363%) hue-rotate(349deg) brightness(120%) contrast(116%);}
+  58%{opacity:.84;transform:scale(1.025);filter:blur(0) invert(16%) sepia(98%) saturate(5363%) hue-rotate(349deg) brightness(126%) contrast(118%) drop-shadow(0 0 28px rgba(215,25,32,.92));}
+  100%{opacity:.98;transform:scale(1);filter:blur(0) invert(16%) sepia(98%) saturate(5363%) hue-rotate(349deg) brightness(110%) contrast(112%) drop-shadow(0 0 14px rgba(215,25,32,.58));}
+}
+
+/* Laser */
+.race-n-generator.gen-laser .gen-laser-beam{
+  left:-12%;
+  top:var(--y);
+  width:124%;
+  height:2px;
+  opacity:0;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.95),rgba(255,72,72,1),transparent);
+  box-shadow:0 0 10px rgba(255,255,255,.50),0 0 24px rgba(215,25,32,.84);
+  transform:translateX(-30%) skewX(-16deg);
+  animation:genLaserBeam .72s cubic-bezier(.12,.82,.18,1) var(--delay) forwards;
+}
+.race-n-generator.gen-laser::after{
+  animation:genLaserN .80s cubic-bezier(.16,1,.3,1) .18s forwards;
+}
+@keyframes genLaserBeam{
+  0%{opacity:0;transform:translateX(-32%) skewX(-16deg);}
+  18%{opacity:1;}
+  78%{opacity:.95;transform:translateX(10%) skewX(-16deg);}
+  100%{opacity:0;transform:translateX(24%) skewX(-16deg);}
+}
+@keyframes genLaserN{
+  0%{opacity:0;clip-path:inset(0 100% 0 0);transform:scale(.98);}
+  60%{opacity:.88;clip-path:inset(0 0 0 0);transform:scale(1.025);filter:invert(16%) sepia(98%) saturate(5363%) hue-rotate(349deg) brightness(128%) contrast(118%) drop-shadow(0 0 32px rgba(215,25,32,.96));}
+  100%{opacity:.98;clip-path:inset(0 0 0 0);transform:scale(1);filter:invert(16%) sepia(98%) saturate(5363%) hue-rotate(349deg) brightness(110%) contrast(112%) drop-shadow(0 0 14px rgba(215,25,32,.58));}
+}
+
+/* Neural Network */
+.race-n-generator.gen-neural .gen-neural-node{
+  left:var(--x);
+  top:var(--y);
+  width:var(--s);
+  height:var(--s);
+  border-radius:50%;
+  opacity:0;
+  background:#fff;
+  box-shadow:0 0 8px rgba(255,255,255,.72),0 0 18px rgba(215,25,32,.84);
+  animation:genNeuralNode .74s cubic-bezier(.16,1,.3,1) var(--delay) forwards;
+}
+.race-n-generator.gen-neural .gen-neural-edge{
+  left:var(--x);
+  top:var(--y);
+  width:var(--w);
+  height:1px;
+  opacity:0;
+  background:linear-gradient(90deg,rgba(215,25,32,.16),rgba(255,100,100,.96));
+  transform-origin:left center;
+  transform:rotate(var(--r)) scaleX(0);
+  box-shadow:0 0 8px rgba(215,25,32,.62);
+  animation:genNeuralEdge .76s cubic-bezier(.16,1,.3,1) var(--delay) forwards;
+}
+.race-n-generator.gen-neural::after{
+  animation:genNeuralN .82s cubic-bezier(.16,1,.3,1) .24s forwards;
+}
+@keyframes genNeuralNode{
+  0%{opacity:0;transform:scale(.2);}
+  45%{opacity:1;transform:scale(1.25);}
+  100%{opacity:0;transform:scale(.7);}
+}
+@keyframes genNeuralEdge{
+  0%{opacity:0;transform:rotate(var(--r)) scaleX(0);}
+  30%{opacity:.9;}
+  82%{opacity:.86;transform:rotate(var(--r)) scaleX(1);}
+  100%{opacity:0;transform:rotate(var(--r)) scaleX(1);}
+}
+@keyframes genNeuralN{
+  0%{opacity:0;transform:scale(.86);filter:blur(10px) invert(16%) sepia(98%) saturate(5363%) hue-rotate(349deg) brightness(122%) contrast(116%);}
+  62%{opacity:.88;transform:scale(1.035);filter:blur(0) invert(16%) sepia(98%) saturate(5363%) hue-rotate(349deg) brightness(128%) contrast(118%) drop-shadow(0 0 34px rgba(215,25,32,.98));}
+  100%{opacity:.98;transform:scale(1);filter:blur(0) invert(16%) sepia(98%) saturate(5363%) hue-rotate(349deg) brightness(110%) contrast(112%) drop-shadow(0 0 14px rgba(215,25,32,.58));}
+}
+
+/* Scan */
+.race-n-generator.gen-scan .gen-scan-bar{
+  left:0;
+  top:var(--y);
+  width:100%;
+  height:var(--h);
+  opacity:0;
+  background:linear-gradient(180deg,transparent,rgba(255,255,255,.18),rgba(215,25,32,.52),transparent);
+  filter:blur(.5px) drop-shadow(0 0 10px rgba(215,25,32,.66));
+  animation:genScanBar .78s cubic-bezier(.16,1,.3,1) var(--delay) forwards;
+}
+.race-n-generator.gen-scan::after{
+  animation:genScanN .82s cubic-bezier(.16,1,.3,1) .18s forwards;
+}
+@keyframes genScanBar{
+  0%{opacity:0;transform:translateY(-40px) scaleY(.5);}
+  24%{opacity:.95;}
+  82%{opacity:.75;transform:translateY(32px) scaleY(1);}
+  100%{opacity:0;transform:translateY(52px) scaleY(.4);}
+}
+@keyframes genScanN{
+  0%{opacity:0;clip-path:inset(100% 0 0 0);transform:scale(.98);}
+  58%{opacity:.86;clip-path:inset(0 0 0 0);transform:scale(1.025);filter:invert(16%) sepia(98%) saturate(5363%) hue-rotate(349deg) brightness(126%) contrast(118%) drop-shadow(0 0 30px rgba(215,25,32,.94));}
+  100%{opacity:.98;clip-path:inset(0 0 0 0);transform:scale(1);filter:invert(16%) sepia(98%) saturate(5363%) hue-rotate(349deg) brightness(110%) contrast(112%) drop-shadow(0 0 14px rgba(215,25,32,.58));}
+}
+
 </style>
 </meta></head>
 <body class="motion-ready">
@@ -2907,7 +3039,7 @@ aiChatForm.addEventListener("submit",async(e)=>{
   const lines=document.getElementById("raceLines");
   const tagline=document.querySelector(".lead.tagline");
   const generator=document.getElementById("raceNGenerator");
-  const GENERATOR_PATTERNS=["stream","particle","circuit"];
+  const GENERATOR_PATTERNS=["stream","particle","circuit","wire","laser","neural","scan"];
   if(!stage||!lines)return;
 
   const reduceMotion=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -2950,7 +3082,7 @@ aiChatForm.addEventListener("submit",async(e)=>{
         dot.style.setProperty("--delay",(Math.random()*.20).toFixed(3)+"s");
         generator.appendChild(dot);
       }
-    }else{
+    }else if(pattern==="circuit"){
       const rotations=[0,0,0,90,-90,28,-28,0,90,-90,18,-18,0,32,-32];
       for(let i=0;i<15;i++){
         const trace=document.createElement("span");
@@ -2961,6 +3093,56 @@ aiChatForm.addEventListener("submit",async(e)=>{
         trace.style.setProperty("--r",rotations[i]+"deg");
         trace.style.setProperty("--delay",(i*.020+Math.random()*.07).toFixed(3)+"s");
         generator.appendChild(trace);
+      }
+    }else if(pattern==="wire"){
+      const rotations=[0,26,-26,90,-90,18,-18,0,34,-34];
+      for(let i=0;i<14;i++){
+        const line=document.createElement("span");
+        line.className="gen-wire-line";
+        line.style.setProperty("--x",(8+Math.random()*72).toFixed(2)+"%");
+        line.style.setProperty("--y",(8+Math.random()*76).toFixed(2)+"%");
+        line.style.setProperty("--w",(10+Math.random()*22).toFixed(2)+"%");
+        line.style.setProperty("--r",rotations[i%rotations.length]+"deg");
+        line.style.setProperty("--delay",(i*.018+Math.random()*.08).toFixed(3)+"s");
+        generator.appendChild(line);
+      }
+    }else if(pattern==="laser"){
+      for(let i=0;i<6;i++){
+        const beam=document.createElement("span");
+        beam.className="gen-laser-beam";
+        beam.style.setProperty("--y",(12+i*12+Math.random()*4).toFixed(2)+"%");
+        beam.style.setProperty("--delay",(i*.045+Math.random()*.05).toFixed(3)+"s");
+        generator.appendChild(beam);
+      }
+    }else if(pattern==="neural"){
+      for(let i=0;i<16;i++){
+        const node=document.createElement("span");
+        node.className="gen-neural-node";
+        node.style.setProperty("--x",(8+Math.random()*72).toFixed(2)+"%");
+        node.style.setProperty("--y",(8+Math.random()*72).toFixed(2)+"%");
+        node.style.setProperty("--s",(4+Math.random()*4).toFixed(2)+"px");
+        node.style.setProperty("--delay",(Math.random()*.20).toFixed(3)+"s");
+        generator.appendChild(node);
+      }
+      const rotations=[0,18,-18,32,-32,90,-90];
+      for(let i=0;i<18;i++){
+        const edge=document.createElement("span");
+        edge.className="gen-neural-edge";
+        edge.style.setProperty("--x",(8+Math.random()*70).toFixed(2)+"%");
+        edge.style.setProperty("--y",(8+Math.random()*72).toFixed(2)+"%");
+        edge.style.setProperty("--w",(8+Math.random()*18).toFixed(2)+"%");
+        edge.style.setProperty("--r",rotations[i%rotations.length]+"deg");
+        edge.style.setProperty("--delay",(Math.random()*.18).toFixed(3)+"s");
+        generator.appendChild(edge);
+      }
+    }else{
+      for(let i=0;i<5;i++){
+        const bar=document.createElement("span");
+        bar.className="gen-scan-bar";
+        bar.style.setProperty("--y",(8+i*15).toFixed(2)+"%");
+        bar.style.setProperty("--h",(6+Math.random()*10).toFixed(2)+"px");
+        bar.style.setProperty("--delay",(i*.05).toFixed(3)+"s");
+        generator.appendChild(bar);
       }
     }
 
