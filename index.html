@@ -2423,6 +2423,63 @@
   }
 }
 
+
+/* ==========================
+   NEXIT N Genesis v4
+   Ultra rare hybrid pattern.
+   Existing white/flash/final sequence remains untouched.
+========================== */
+.race-n-generator.gen-hybrid .gen-hybrid-line{
+  left:var(--x); top:var(--y); width:var(--w); height:2px; opacity:0;
+  border-radius:999px;
+  background:linear-gradient(90deg,transparent,rgba(215,25,32,.36),rgba(255,255,255,.92),rgba(255,76,76,.98),transparent);
+  filter:drop-shadow(0 0 8px rgba(215,25,32,.82));
+  transform:translateX(var(--from)) scaleX(.3);
+  animation:genHybridLine .92s cubic-bezier(.12,.82,.18,1) var(--delay) forwards;
+}
+.race-n-generator.gen-hybrid .gen-hybrid-dot{
+  left:var(--x); top:var(--y); width:var(--s); height:var(--s); border-radius:50%; opacity:0;
+  background:#fff;
+  box-shadow:0 0 8px rgba(255,255,255,.76),0 0 18px rgba(215,25,32,.90);
+  transform:translate(var(--dx),var(--dy)) scale(.15);
+  animation:genHybridDot .96s cubic-bezier(.12,.74,.16,1) var(--delay) forwards;
+}
+.race-n-generator.gen-hybrid .gen-hybrid-edge{
+  left:var(--x); top:var(--y); width:var(--w); height:1px; opacity:0;
+  background:linear-gradient(90deg,rgba(215,25,32,.12),rgba(255,105,105,.96));
+  transform-origin:left center;
+  transform:rotate(var(--r)) scaleX(0);
+  box-shadow:0 0 8px rgba(215,25,32,.66);
+  animation:genHybridEdge .94s cubic-bezier(.16,1,.3,1) var(--delay) forwards;
+}
+.race-n-generator.gen-hybrid::after{
+  animation:genHybridN 1.04s cubic-bezier(.16,1,.3,1) .18s forwards;
+}
+@keyframes genHybridLine{
+  0%{opacity:0;transform:translateX(var(--from)) scaleX(.3);}
+  24%{opacity:1;}
+  72%{opacity:.88;transform:translateX(0) scaleX(1);}
+  100%{opacity:0;transform:translateX(var(--to)) scaleX(.08);}
+}
+@keyframes genHybridDot{
+  0%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(.15);}
+  24%{opacity:.82;}
+  72%{opacity:1;transform:translate(0,0) scale(1);}
+  100%{opacity:0;transform:translate(0,0) scale(.08);}
+}
+@keyframes genHybridEdge{
+  0%{opacity:0;transform:rotate(var(--r)) scaleX(0);}
+  32%{opacity:.24;}
+  76%{opacity:.95;transform:rotate(var(--r)) scaleX(1);}
+  100%{opacity:0;transform:rotate(var(--r)) scaleX(1);}
+}
+@keyframes genHybridN{
+  0%{opacity:0;transform:scale(.78);filter:blur(15px) invert(16%) sepia(98%) saturate(5363%) hue-rotate(349deg) brightness(126%) contrast(116%);}
+  44%{opacity:.42;transform:scale(.94);filter:blur(6px) invert(16%) sepia(98%) saturate(5363%) hue-rotate(349deg) brightness(128%) contrast(118%) drop-shadow(0 0 18px rgba(215,25,32,.76));}
+  76%{opacity:.94;transform:scale(1.045);filter:blur(0) invert(16%) sepia(98%) saturate(5363%) hue-rotate(349deg) brightness(132%) contrast(120%) drop-shadow(0 0 38px rgba(215,25,32,1)) drop-shadow(0 0 22px rgba(255,255,255,.34));}
+  100%{opacity:.98;transform:scale(1);filter:blur(0) invert(16%) sepia(98%) saturate(5363%) hue-rotate(349deg) brightness(110%) contrast(112%) drop-shadow(0 0 14px rgba(215,25,32,.58));}
+}
+
 </style>
 </meta></head>
 <body class="motion-ready">
@@ -3344,6 +3401,40 @@ aiChatForm.addEventListener("submit",async(e)=>{
         edge.style.setProperty("--delay",(Math.random()*.18).toFixed(3)+"s");
         generator.appendChild(edge);
       }
+    }else if(pattern==="hybrid"){
+      for(let i=0;i<12;i++){
+        const line=document.createElement("span");
+        line.className="gen-hybrid-line";
+        line.style.setProperty("--x",(3+Math.random()*72).toFixed(2)+"%");
+        line.style.setProperty("--y",(6+Math.random()*80).toFixed(2)+"%");
+        line.style.setProperty("--w",(12+Math.random()*24).toFixed(2)+"%");
+        line.style.setProperty("--from",((Math.random()<.5?-1:1)*(100+Math.random()*180)).toFixed(1)+"px");
+        line.style.setProperty("--to",((Math.random()<.5?-1:1)*(8+Math.random()*20)).toFixed(1)+"px");
+        line.style.setProperty("--delay",(Math.random()*.20).toFixed(3)+"s");
+        generator.appendChild(line);
+      }
+      for(let i=0;i<24;i++){
+        const dot=document.createElement("span");
+        dot.className="gen-hybrid-dot";
+        dot.style.setProperty("--x",(6+Math.random()*78).toFixed(2)+"%");
+        dot.style.setProperty("--y",(5+Math.random()*82).toFixed(2)+"%");
+        dot.style.setProperty("--s",(2+Math.random()*4).toFixed(2)+"px");
+        dot.style.setProperty("--dx",((Math.random()-.5)*280).toFixed(1)+"px");
+        dot.style.setProperty("--dy",((Math.random()-.5)*180).toFixed(1)+"px");
+        dot.style.setProperty("--delay",(Math.random()*.24).toFixed(3)+"s");
+        generator.appendChild(dot);
+      }
+      const hybridRot=[0,18,-18,32,-32,90,-90];
+      for(let i=0;i<14;i++){
+        const edge=document.createElement("span");
+        edge.className="gen-hybrid-edge";
+        edge.style.setProperty("--x",(8+Math.random()*70).toFixed(2)+"%");
+        edge.style.setProperty("--y",(8+Math.random()*72).toFixed(2)+"%");
+        edge.style.setProperty("--w",(8+Math.random()*18).toFixed(2)+"%");
+        edge.style.setProperty("--r",hybridRot[i%hybridRot.length]+"deg");
+        edge.style.setProperty("--delay",(Math.random()*.22).toFixed(3)+"s");
+        generator.appendChild(edge);
+      }
     }else{
       for(let i=0;i<5;i++){
         const bar=document.createElement("span");
@@ -3361,7 +3452,10 @@ aiChatForm.addEventListener("submit",async(e)=>{
 
   function playGenerator(){
     if(!generator)return;
-    const pattern=GENERATOR_PATTERNS[Math.floor(Math.random()*GENERATOR_PATTERNS.length)];
+    const isUltraRare=Math.random()<0.005;
+    const pattern=isUltraRare
+      ? "hybrid"
+      : GENERATOR_PATTERNS[Math.floor(Math.random()*GENERATOR_PATTERNS.length)];
     buildGenerator(pattern);
   }
 
