@@ -1966,6 +1966,26 @@
   .race-stage[class*="nfx-"] .race-n{animation:none!important;opacity:1!important;transform:none!important;filter:none!important;clip-path:none!important;}
 }
 
+
+/* v2 random N fix: always finish from red to white */
+.race-stage.is-n-white .race-n,
+.race-stage.n-classic.is-n-white .race-n,
+.race-stage.n-speed.is-n-white .race-n,
+.race-stage.n-slash.is-n-white .race-n,
+.race-stage.n-energy.is-n-white .race-n,
+.race-stage.n-particle.is-n-white .race-n,
+.race-stage.n-rotate.is-n-white .race-n{
+  opacity:1 !important;
+  animation:raceNWhite .46s cubic-bezier(.16,1,.3,1) forwards !important;
+  transform-origin:center center !important;
+}
+
+.race-stage.is-final .race-n{
+  opacity:1 !important;
+  transform:translateY(0) translateX(0) rotate(0deg) scale(1) !important;
+  filter:brightness(1.08) contrast(1.05) drop-shadow(0 0 10px rgba(255,255,255,.24)) !important;
+}
+
 </style>
 </meta></head>
 <body class="motion-ready">
@@ -2851,7 +2871,11 @@ aiChatForm.addEventListener("submit",async(e)=>{
       stage.classList.add(nEffect);
       stage.classList.add("is-n-drop");
     },4050);
-    setTimeout(()=>stage.classList.add("is-n-white"),4780);
+    setTimeout(()=>{
+      stage.classList.remove("is-n-white");
+      void stage.offsetWidth;
+      stage.classList.add("is-n-white");
+    },4780);
     setTimeout(()=>stage.classList.add("is-nexit-flash"),5100);
     setTimeout(()=>stage.classList.add("is-final"),5900);
     setTimeout(()=>{if(tagline)tagline.classList.add("is-visible")},6200);
