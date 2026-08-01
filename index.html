@@ -1909,6 +1909,171 @@
   .footer-instagram{margin-left:0;}
 }
 
+
+/* ==========================
+   NEXIT AI N Generation v2.1
+   Replaces only the N entrance.
+   Existing red-to-white and final flash remain unchanged.
+========================== */
+.race-n-generator{
+  position:absolute;
+  left:0;
+  top:68px;
+  width:min(660px,86vw);
+  aspect-ratio:597/157;
+  z-index:7;
+  pointer-events:none;
+  overflow:visible;
+  opacity:0;
+  isolation:isolate;
+}
+.race-n-generator.is-active{opacity:1;}
+.race-n-generator.is-leaving{
+  opacity:0;
+  transition:opacity .18s linear;
+}
+.race-n-generator::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:url('N.png') center/contain no-repeat;
+  opacity:0;
+  transform:scale(.97);
+  filter:
+    invert(16%) sepia(98%) saturate(5363%)
+    hue-rotate(349deg) brightness(112%) contrast(116%)
+    drop-shadow(0 0 20px rgba(215,25,32,.82));
+  mix-blend-mode:screen;
+}
+.race-n-generator > span{
+  position:absolute;
+  display:block;
+  pointer-events:none;
+}
+
+/* Data Stream */
+.race-n-generator.gen-stream .gen-stream-line{
+  left:var(--x);
+  top:var(--y);
+  width:var(--w);
+  height:2px;
+  opacity:0;
+  border-radius:999px;
+  background:linear-gradient(90deg,transparent,rgba(215,25,32,.34),rgba(255,105,105,.98),transparent);
+  filter:drop-shadow(0 0 7px rgba(215,25,32,.82));
+  transform:translateX(var(--from)) scaleX(.35);
+  animation:genStreamLine .74s cubic-bezier(.12,.82,.18,1) var(--delay) forwards;
+}
+.race-n-generator.gen-stream::after{
+  animation:genStreamN .78s cubic-bezier(.16,1,.3,1) .20s forwards;
+}
+@keyframes genStreamLine{
+  0%{opacity:0;transform:translateX(var(--from)) scaleX(.35);}
+  26%{opacity:1;}
+  78%{opacity:.86;transform:translateX(0) scaleX(1);}
+  100%{opacity:0;transform:translateX(var(--to)) scaleX(.1);}
+}
+@keyframes genStreamN{
+  0%{opacity:0;transform:scale(.93);filter:blur(8px) invert(16%) sepia(98%) saturate(5363%) hue-rotate(349deg) brightness(118%) contrast(116%);}
+  58%{opacity:.82;transform:scale(1.025);filter:blur(0) invert(16%) sepia(98%) saturate(5363%) hue-rotate(349deg) brightness(124%) contrast(118%) drop-shadow(0 0 30px rgba(215,25,32,.95));}
+  100%{opacity:.98;transform:scale(1);filter:blur(0) invert(16%) sepia(98%) saturate(5363%) hue-rotate(349deg) brightness(110%) contrast(112%) drop-shadow(0 0 14px rgba(215,25,32,.58));}
+}
+
+/* Particle Build */
+.race-n-generator.gen-particle .gen-particle-dot{
+  left:var(--x);
+  top:var(--y);
+  width:var(--s);
+  height:var(--s);
+  border-radius:50%;
+  opacity:0;
+  background:rgba(255,90,90,.98);
+  box-shadow:0 0 7px rgba(255,255,255,.34),0 0 15px rgba(215,25,32,.86);
+  transform:translate(var(--dx),var(--dy)) scale(.2);
+  animation:genParticleDot .82s cubic-bezier(.16,.84,.22,1) var(--delay) forwards;
+}
+.race-n-generator.gen-particle::after{
+  animation:genParticleN .82s cubic-bezier(.16,1,.3,1) .22s forwards;
+}
+@keyframes genParticleDot{
+  0%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(.18);}
+  22%{opacity:1;}
+  78%{opacity:.92;transform:translate(0,0) scale(1);}
+  100%{opacity:0;transform:translate(0,0) scale(.1);}
+}
+@keyframes genParticleN{
+  0%{opacity:0;transform:scale(.78);filter:blur(13px) invert(16%) sepia(98%) saturate(5363%) hue-rotate(349deg) brightness(122%) contrast(116%);}
+  62%{opacity:.86;transform:scale(1.035);filter:blur(0) invert(16%) sepia(98%) saturate(5363%) hue-rotate(349deg) brightness(126%) contrast(118%) drop-shadow(0 0 32px rgba(215,25,32,.96));}
+  100%{opacity:.98;transform:scale(1);filter:blur(0) invert(16%) sepia(98%) saturate(5363%) hue-rotate(349deg) brightness(110%) contrast(112%) drop-shadow(0 0 14px rgba(215,25,32,.58));}
+}
+
+/* Circuit Build */
+.race-n-generator.gen-circuit .gen-circuit-trace{
+  left:var(--x);
+  top:var(--y);
+  width:var(--w);
+  height:2px;
+  opacity:0;
+  background:linear-gradient(90deg,rgba(215,25,32,.10),rgba(255,102,102,.98));
+  box-shadow:0 0 8px rgba(215,25,32,.78);
+  transform-origin:left center;
+  transform:rotate(var(--r)) scaleX(0);
+  animation:genCircuitTrace .74s cubic-bezier(.16,1,.3,1) var(--delay) forwards;
+}
+.race-n-generator.gen-circuit .gen-circuit-trace::after{
+  content:"";
+  position:absolute;
+  right:-3px;
+  top:-2px;
+  width:6px;
+  height:6px;
+  border-radius:50%;
+  background:#fff;
+  box-shadow:0 0 8px rgba(255,255,255,.78),0 0 15px rgba(215,25,32,.86);
+}
+.race-n-generator.gen-circuit::after{
+  animation:genCircuitN .82s cubic-bezier(.16,1,.3,1) .22s forwards;
+}
+@keyframes genCircuitTrace{
+  0%{opacity:0;transform:rotate(var(--r)) scaleX(0);}
+  24%{opacity:1;}
+  80%{opacity:.96;transform:rotate(var(--r)) scaleX(1);}
+  100%{opacity:0;transform:rotate(var(--r)) scaleX(1);}
+}
+@keyframes genCircuitN{
+  0%{opacity:0;clip-path:inset(0 100% 0 0);transform:scale(.98);}
+  58%{opacity:.84;clip-path:inset(0 0 0 0);transform:scale(1.025);filter:invert(16%) sepia(98%) saturate(5363%) hue-rotate(349deg) brightness(126%) contrast(118%) drop-shadow(0 0 30px rgba(215,25,32,.94));}
+  100%{opacity:.98;clip-path:inset(0 0 0 0);transform:scale(1);filter:invert(16%) sepia(98%) saturate(5363%) hue-rotate(349deg) brightness(110%) contrast(112%) drop-shadow(0 0 14px rgba(215,25,32,.58));}
+}
+
+/* Seamless handoff from generator to the real N.
+   No falling, sliding or rotation is applied. */
+.race-stage.is-n-generated .race-n{
+  opacity:1;
+  transform-origin:center center;
+  animation:raceNGenerated .24s linear forwards;
+}
+@keyframes raceNGenerated{
+  0%,100%{
+    opacity:1;
+    transform:translateY(0) scale(1);
+    filter:
+      invert(16%) sepia(98%) saturate(5363%)
+      hue-rotate(349deg) brightness(106%) contrast(110%)
+      drop-shadow(0 0 12px rgba(215,25,32,.48));
+  }
+}
+
+@media(max-width:980px){
+  .race-n-generator{
+    top:42px;
+    width:min(420px,88vw);
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  .race-n-generator{display:none!important;}
+}
+
 </style>
 </meta></head>
 <body class="motion-ready">
@@ -1938,6 +2103,7 @@
 </h1>
 <div aria-hidden="true" class="race-stage">
 <div class="race-lines" id="raceLines"></div>
+<div class="race-n-generator" id="raceNGenerator" aria-hidden="true"></div>
 <div class="race-logo-assets">
 <img alt="" class="race-fragment race-a" src="A.png"/>
 <img alt="" class="race-fragment race-xm" src="XM.png"/>
@@ -2730,6 +2896,8 @@ aiChatForm.addEventListener("submit",async(e)=>{
   const stage=document.querySelector(".race-stage");
   const lines=document.getElementById("raceLines");
   const tagline=document.querySelector(".lead.tagline");
+  const generator=document.getElementById("raceNGenerator");
+  const GENERATOR_PATTERNS=["stream","particle","circuit"];
   if(!stage||!lines)return;
 
   const reduceMotion=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -2737,9 +2905,69 @@ aiChatForm.addEventListener("submit",async(e)=>{
   const LOOP_INTERVAL=11600;
   let loopTimer=null;
 
+  function clearGenerator(){
+    if(!generator)return;
+    generator.className="race-n-generator";
+    generator.innerHTML="";
+  }
+
+  function buildGenerator(pattern){
+    if(!generator)return;
+    clearGenerator();
+    generator.classList.add("gen-"+pattern);
+
+    if(pattern==="stream"){
+      for(let i=0;i<16;i++){
+        const line=document.createElement("span");
+        line.className="gen-stream-line";
+        line.style.setProperty("--x",(2+Math.random()*74).toFixed(2)+"%");
+        line.style.setProperty("--y",(7+Math.random()*80).toFixed(2)+"%");
+        line.style.setProperty("--w",(12+Math.random()*28).toFixed(2)+"%");
+        line.style.setProperty("--from",((Math.random()<.5?-1:1)*(90+Math.random()*190)).toFixed(1)+"px");
+        line.style.setProperty("--to",((Math.random()<.5?-1:1)*(8+Math.random()*24)).toFixed(1)+"px");
+        line.style.setProperty("--delay",(Math.random()*.18).toFixed(3)+"s");
+        generator.appendChild(line);
+      }
+    }else if(pattern==="particle"){
+      for(let i=0;i<38;i++){
+        const dot=document.createElement("span");
+        dot.className="gen-particle-dot";
+        dot.style.setProperty("--x",(5+Math.random()*80).toFixed(2)+"%");
+        dot.style.setProperty("--y",(4+Math.random()*86).toFixed(2)+"%");
+        dot.style.setProperty("--s",(2+Math.random()*4.5).toFixed(2)+"px");
+        dot.style.setProperty("--dx",((Math.random()-.5)*300).toFixed(1)+"px");
+        dot.style.setProperty("--dy",((Math.random()-.5)*190).toFixed(1)+"px");
+        dot.style.setProperty("--delay",(Math.random()*.20).toFixed(3)+"s");
+        generator.appendChild(dot);
+      }
+    }else{
+      const rotations=[0,0,0,90,-90,28,-28,0,90,-90,18,-18,0,32,-32];
+      for(let i=0;i<15;i++){
+        const trace=document.createElement("span");
+        trace.className="gen-circuit-trace";
+        trace.style.setProperty("--x",(7+Math.random()*74).toFixed(2)+"%");
+        trace.style.setProperty("--y",(7+Math.random()*78).toFixed(2)+"%");
+        trace.style.setProperty("--w",(8+Math.random()*21).toFixed(2)+"%");
+        trace.style.setProperty("--r",rotations[i]+"deg");
+        trace.style.setProperty("--delay",(i*.020+Math.random()*.07).toFixed(3)+"s");
+        generator.appendChild(trace);
+      }
+    }
+
+    void generator.offsetWidth;
+    generator.classList.add("is-active");
+  }
+
+  function playGenerator(){
+    if(!generator)return;
+    const pattern=GENERATOR_PATTERNS[Math.floor(Math.random()*GENERATOR_PATTERNS.length)];
+    buildGenerator(pattern);
+  }
+
   function reset(){
-    stage.classList.remove("is-axcel","is-a-flash","is-exit","is-n-drop","is-n-white","is-nexit-flash","is-final");
+    stage.classList.remove("is-axcel","is-a-flash","is-exit","is-n-drop","is-n-generated","is-n-white","is-nexit-flash","is-final");
     lines.innerHTML="";
+    clearGenerator();
   }
 
   function createLines(){
@@ -2773,7 +3001,12 @@ aiChatForm.addEventListener("submit",async(e)=>{
     setTimeout(()=>stage.classList.add("is-axcel"),2300);
     setTimeout(()=>stage.classList.add("is-a-flash"),2800);
     setTimeout(()=>stage.classList.add("is-exit"),3150);
-    setTimeout(()=>stage.classList.add("is-n-drop"),4050);
+    setTimeout(playGenerator,3500);
+    setTimeout(()=>{
+      stage.classList.add("is-n-generated");
+      if(generator)generator.classList.add("is-leaving");
+    },4050);
+    setTimeout(clearGenerator,4310);
     setTimeout(()=>stage.classList.add("is-n-white"),4780);
     setTimeout(()=>stage.classList.add("is-nexit-flash"),5100);
     setTimeout(()=>stage.classList.add("is-final"),5900);
