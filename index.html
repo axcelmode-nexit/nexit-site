@@ -2216,6 +2216,213 @@
   100%{opacity:.98;clip-path:inset(0 0 0 0);transform:scale(1);filter:invert(16%) sepia(98%) saturate(5363%) hue-rotate(349deg) brightness(110%) contrast(112%) drop-shadow(0 0 14px rgba(215,25,32,.58));}
 }
 
+
+/* ==========================
+   NEXIT AI N Generation v3.1
+   Quality refinement: smoother attraction, depth and handoff.
+========================== */
+
+/* Particle: accelerate inward with depth variation */
+.race-n-generator.gen-particle .gen-particle-dot{
+  animation-name:genParticleDotRefined;
+  animation-duration:.92s;
+  animation-timing-function:cubic-bezier(.12,.74,.16,1);
+}
+@keyframes genParticleDotRefined{
+  0%{
+    opacity:0;
+    transform:
+      translate(var(--dx),var(--dy))
+      scale(var(--start-scale,.18));
+    filter:blur(var(--start-blur,2px));
+  }
+  18%{
+    opacity:.72;
+  }
+  54%{
+    opacity:1;
+    transform:
+      translate(calc(var(--dx) * .28),calc(var(--dy) * .28))
+      scale(1.15);
+    filter:blur(.4px);
+  }
+  82%{
+    opacity:.92;
+    transform:translate(0,0) scale(.9);
+    filter:blur(0);
+  }
+  100%{
+    opacity:0;
+    transform:translate(0,0) scale(.08);
+    filter:blur(0);
+  }
+}
+.race-n-generator.gen-particle::after{
+  animation:genParticleNRefined .92s cubic-bezier(.16,1,.3,1) .22s forwards;
+}
+@keyframes genParticleNRefined{
+  0%{
+    opacity:0;
+    transform:scale(.76);
+    filter:
+      blur(14px)
+      invert(16%) sepia(98%) saturate(5363%)
+      hue-rotate(349deg) brightness(124%) contrast(116%);
+  }
+  42%{
+    opacity:.46;
+    transform:scale(.94);
+    filter:
+      blur(5px)
+      invert(16%) sepia(98%) saturate(5363%)
+      hue-rotate(349deg) brightness(126%) contrast(118%)
+      drop-shadow(0 0 18px rgba(215,25,32,.72));
+  }
+  72%{
+    opacity:.92;
+    transform:scale(1.028);
+    filter:
+      blur(0)
+      invert(16%) sepia(98%) saturate(5363%)
+      hue-rotate(349deg) brightness(126%) contrast(118%)
+      drop-shadow(0 0 32px rgba(215,25,32,.96));
+  }
+  100%{
+    opacity:.98;
+    transform:scale(1);
+    filter:
+      blur(0)
+      invert(16%) sepia(98%) saturate(5363%)
+      hue-rotate(349deg) brightness(110%) contrast(112%)
+      drop-shadow(0 0 14px rgba(215,25,32,.58));
+  }
+}
+
+/* Neural: staged node ignition, then edge propagation */
+.race-n-generator.gen-neural .gen-neural-node{
+  animation-name:genNeuralNodeRefined;
+  animation-duration:.88s;
+}
+.race-n-generator.gen-neural .gen-neural-edge{
+  animation-name:genNeuralEdgeRefined;
+  animation-duration:.88s;
+}
+@keyframes genNeuralNodeRefined{
+  0%{
+    opacity:0;
+    transform:scale(.15);
+    filter:blur(2px);
+  }
+  30%{
+    opacity:1;
+    transform:scale(1.35);
+    filter:blur(0);
+  }
+  58%{
+    opacity:.9;
+    transform:scale(.92);
+  }
+  100%{
+    opacity:0;
+    transform:scale(.45);
+  }
+}
+@keyframes genNeuralEdgeRefined{
+  0%{
+    opacity:0;
+    transform:rotate(var(--r)) scaleX(0);
+  }
+  28%{
+    opacity:.18;
+  }
+  64%{
+    opacity:.95;
+    transform:rotate(var(--r)) scaleX(1);
+  }
+  88%{
+    opacity:.72;
+    transform:rotate(var(--r)) scaleX(1);
+  }
+  100%{
+    opacity:0;
+    transform:rotate(var(--r)) scaleX(1);
+  }
+}
+.race-n-generator.gen-neural::after{
+  animation:genNeuralNRefined .94s cubic-bezier(.16,1,.3,1) .24s forwards;
+}
+@keyframes genNeuralNRefined{
+  0%{
+    opacity:0;
+    transform:scale(.84);
+    filter:
+      blur(11px)
+      invert(16%) sepia(98%) saturate(5363%)
+      hue-rotate(349deg) brightness(122%) contrast(116%);
+  }
+  48%{
+    opacity:.44;
+    transform:scale(.96);
+    filter:
+      blur(4px)
+      invert(16%) sepia(98%) saturate(5363%)
+      hue-rotate(349deg) brightness(125%) contrast(118%)
+      drop-shadow(0 0 18px rgba(215,25,32,.72));
+  }
+  76%{
+    opacity:.9;
+    transform:scale(1.03);
+    filter:
+      blur(0)
+      invert(16%) sepia(98%) saturate(5363%)
+      hue-rotate(349deg) brightness(128%) contrast(118%)
+      drop-shadow(0 0 34px rgba(215,25,32,.98));
+  }
+  100%{
+    opacity:.98;
+    transform:scale(1);
+    filter:
+      blur(0)
+      invert(16%) sepia(98%) saturate(5363%)
+      hue-rotate(349deg) brightness(110%) contrast(112%)
+      drop-shadow(0 0 14px rgba(215,25,32,.58));
+  }
+}
+
+/* Stream and laser: softer merge into the final N */
+.race-n-generator.gen-stream::after,
+.race-n-generator.gen-laser::after,
+.race-n-generator.gen-wire::after,
+.race-n-generator.gen-scan::after,
+.race-n-generator.gen-circuit::after{
+  transform-origin:center center;
+}
+
+/* Handoff polish: generator fades while the real N is already present */
+.race-stage.is-n-generated:not(.is-n-white):not(.is-nexit-flash):not(.is-final) .race-n{
+  animation:raceNGeneratedRefined .30s cubic-bezier(.16,1,.3,1) forwards;
+}
+@keyframes raceNGeneratedRefined{
+  0%{
+    opacity:.35;
+    transform:scale(.985);
+    filter:
+      invert(16%) sepia(98%) saturate(5363%)
+      hue-rotate(349deg) brightness(112%) contrast(112%)
+      blur(1.5px)
+      drop-shadow(0 0 20px rgba(215,25,32,.72));
+  }
+  100%{
+    opacity:1;
+    transform:scale(1);
+    filter:
+      invert(16%) sepia(98%) saturate(5363%)
+      hue-rotate(349deg) brightness(106%) contrast(110%)
+      blur(0)
+      drop-shadow(0 0 12px rgba(215,25,32,.48));
+  }
+}
+
 </style>
 </meta></head>
 <body class="motion-ready">
@@ -3077,9 +3284,11 @@ aiChatForm.addEventListener("submit",async(e)=>{
         dot.style.setProperty("--x",(5+Math.random()*80).toFixed(2)+"%");
         dot.style.setProperty("--y",(4+Math.random()*86).toFixed(2)+"%");
         dot.style.setProperty("--s",(2+Math.random()*4.5).toFixed(2)+"px");
-        dot.style.setProperty("--dx",((Math.random()-.5)*300).toFixed(1)+"px");
-        dot.style.setProperty("--dy",((Math.random()-.5)*190).toFixed(1)+"px");
-        dot.style.setProperty("--delay",(Math.random()*.20).toFixed(3)+"s");
+        dot.style.setProperty("--dx",((Math.random()-.5)*320).toFixed(1)+"px");
+        dot.style.setProperty("--dy",((Math.random()-.5)*210).toFixed(1)+"px");
+        dot.style.setProperty("--start-scale",(0.10+Math.random()*0.22).toFixed(2));
+        dot.style.setProperty("--start-blur",(0.8+Math.random()*2.8).toFixed(2)+"px");
+        dot.style.setProperty("--delay",(Math.random()*.24).toFixed(3)+"s");
         generator.appendChild(dot);
       }
     }else if(pattern==="circuit"){
@@ -3121,7 +3330,7 @@ aiChatForm.addEventListener("submit",async(e)=>{
         node.style.setProperty("--x",(8+Math.random()*72).toFixed(2)+"%");
         node.style.setProperty("--y",(8+Math.random()*72).toFixed(2)+"%");
         node.style.setProperty("--s",(4+Math.random()*4).toFixed(2)+"px");
-        node.style.setProperty("--delay",(Math.random()*.20).toFixed(3)+"s");
+        node.style.setProperty("--delay",(i*.012+Math.random()*.12).toFixed(3)+"s");
         generator.appendChild(node);
       }
       const rotations=[0,18,-18,32,-32,90,-90];
