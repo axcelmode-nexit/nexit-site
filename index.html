@@ -1911,7 +1911,7 @@
 
 
 /* ==========================
-   NEXIT AI N Generation v2.1
+   NEXIT AI N Generation v2.2 - rendered-logo coordinate sync
    Replaces only the N entrance.
    Existing red-to-white and final flash remain unchanged.
 ========================== */
@@ -3303,8 +3303,39 @@ aiChatForm.addEventListener("submit",async(e)=>{
   const lines=document.getElementById("raceLines");
   const tagline=document.querySelector(".lead.tagline");
   const generator=document.getElementById("raceNGenerator");
+  const logoAssets=stage.querySelector(".race-logo-assets");
   const GENERATOR_PATTERNS=["stream","particle","circuit","wire","laser","neural","scan"];
   if(!stage||!lines)return;
+
+  /*
+   * Keep the generator locked to the actual rendered logo canvas.
+   * Desktop CSS enlarges .race-logo-assets, while the generator used to keep
+   * the smaller base width, which caused the generated N to drift on PC.
+   */
+  function syncGeneratorToLogo(){
+    if(!generator||!logoAssets)return;
+
+    const stageRect=stage.getBoundingClientRect();
+    const logoRect=logoAssets.getBoundingClientRect();
+
+    generator.style.left=(logoRect.left-stageRect.left)+"px";
+    generator.style.top=(logoRect.top-stageRect.top)+"px";
+    generator.style.width=logoRect.width+"px";
+    generator.style.height=logoRect.height+"px";
+  }
+
+  let generatorSyncFrame=0;
+  function scheduleGeneratorSync(){
+    if(generatorSyncFrame)cancelAnimationFrame(generatorSyncFrame);
+    generatorSyncFrame=requestAnimationFrame(()=>{
+      generatorSyncFrame=0;
+      syncGeneratorToLogo();
+    });
+  }
+
+  scheduleGeneratorSync();
+  window.addEventListener("resize",scheduleGeneratorSync,{passive:true});
+  window.addEventListener("orientationchange",scheduleGeneratorSync,{passive:true});
 
   const reduceMotion=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const FIRST_START_DELAY=3300;
@@ -3320,6 +3351,7 @@ aiChatForm.addEventListener("submit",async(e)=>{
   function buildGenerator(pattern){
     if(!generator)return;
     clearGenerator();
+    syncGeneratorToLogo();
     generator.classList.add("gen-"+pattern);
 
     if(pattern==="stream"){
@@ -3490,6 +3522,7 @@ aiChatForm.addEventListener("submit",async(e)=>{
 
   function play(){
     reset();
+    syncGeneratorToLogo();
     void stage.offsetWidth;
     createLines();
 
