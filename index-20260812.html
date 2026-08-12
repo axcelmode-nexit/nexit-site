@@ -261,21 +261,6 @@
       display: block;
       opacity: .88;
     }
-    .office-gallery {
-      display: grid;
-      grid-template-columns: 1.2fr 1fr;
-      gap: 18px;
-      margin-top: 32px;
-    }
-    .office-gallery .office-photo {
-      margin-top: 0;
-    }
-    .office-gallery .office-photo img {
-      width: 100%;
-      height: 100%;
-      aspect-ratio: 16 / 10;
-      object-fit: cover;
-    }
 
     .office-list { display: grid; gap: 14px; margin-top: 30px; }
     .office-list div { border-left: 2px solid var(--red); padding-left: 16px; color: #e6e6e6; line-height: 1.8; }
@@ -642,7 +627,6 @@
       .two-col, .office { grid-template-columns: 1fr; gap: 36px; }
       .recruit-content { grid-template-columns: 1fr; gap: 36px; }
       .vision-steps, .business-grid, .photo-grid { grid-template-columns: 1fr; }
-      .office-gallery { grid-template-columns: 1fr; gap: 14px; }
       .business-grid { border-left: none; }
       .business-card { border-right: none; border-bottom: 1px solid var(--line); padding: 38px 28px; min-height: 320px; }
       .company-table { font-size: 14px; }
@@ -2652,9 +2636,9 @@
 <div class="office">
 <div>
 <div class="section-title"><div class="bar"></div><h2>OFFICE</h2><p>拠点</p></div>
-<p class="big-copy" id="officeOpenTitle" style="margin-top:34px">2026 Summer Opening</p>
-<p class="body-copy" id="officeOpenCopy">上越妙高駅西口 フルサットにてオフィス開設準備中。<br/><br/>技術と挑戦が生まれる場所として、現在準備を進めています。</p>
-<div id="officeOpenMedia"><div class="office-photo"><img alt="上越妙高駅" src="station.jpg"/></div></div>
+<p class="big-copy" style="margin-top:34px">2026 Summer Opening</p>
+<p class="body-copy">上越妙高駅西口 フルサットにてオフィス開設準備中。<br/><br/>技術と挑戦が生まれる場所として、現在準備を進めています。</p>
+<div class="office-photo"><img alt="上越妙高駅" src="station.jpg"/></div>
 </div>
 </div>
 </section>
@@ -2676,7 +2660,6 @@
 <div class="two-col">
 <div class="section-title"><div class="bar"></div><h2>NEWS</h2><p>お知らせ</p></div>
 <div class="news-list">
-<div class="news-item" id="officeOpenNews" style="display:none"><time>2026.08.17</time><p>上越妙高駅西口・フルサットにオフィスを開設しました。</p></div>
 <div class="news-item"><time>2026.06.18</time><p>コーポレートサイトを公開しました。</p></div>
 <div class="news-item"><time>2026.04.23</time><p>株式会社アクセル・モード・ネクストを設立しました。</p></div>
 </div>
@@ -3570,46 +3553,5 @@ aiChatForm.addEventListener("submit",async(e)=>{
   window.addEventListener("pagehide",()=>{if(loopTimer)clearTimeout(loopTimer)},{once:true});
 })();
 </script>
-
-<script>
-(function(){
-  const CUTOVER_AT = Date.parse("2026-08-17T09:30:00+09:00");
-  const title = document.getElementById("officeOpenTitle");
-  const copy = document.getElementById("officeOpenCopy");
-  const media = document.getElementById("officeOpenMedia");
-  const news = document.getElementById("officeOpenNews");
-
-  if(!title || !copy || !media || !news) return;
-
-  let switched = false;
-
-  function applyOfficeOpen(){
-    if(switched || Date.now() < CUTOVER_AT) return;
-    switched = true;
-
-    title.textContent = "2026.08.17 OPEN";
-    copy.innerHTML =
-      "2026年8月17日、上越妙高駅西口・フルサットにAXCEL MODE NEXITのオフィスがオープンしました。<br/><br/>" +
-      "開発に集中できるワークスペースと、チームやお客様と気軽に話せるミーティングスペースを備えています。<br/><br/>" +
-      "上越から、新しい仕事と挑戦を生み出す拠点として、ここから次の一歩をつくっていきます。";
-
-    media.innerHTML =
-      '<div class="office-gallery">' +
-        '<div class="office-photo"><img alt="AXCEL MODE NEXIT 上越オフィス ワークスペース" src="office-main.jpg"/></div>' +
-        '<div class="office-photo"><img alt="AXCEL MODE NEXIT 上越オフィス ミーティングスペース" src="office-meeting.jpg"/></div>' +
-      '</div>';
-
-    news.style.display = "";
-  }
-
-  applyOfficeOpen();
-
-  if(!switched){
-    const delay = Math.max(0, CUTOVER_AT - Date.now());
-    setTimeout(applyOfficeOpen, delay + 100);
-  }
-})();
-</script>
-
 </body>
 </html>
