@@ -2324,305 +2324,6 @@
 }
 
 
-/* Lightning impact: briefly illuminate the mountain background */
-.hero-bg.lightning-flash{
-  animation:
-    heroLightningFlash 1.05s cubic-bezier(.16,1,.3,1) forwards !important;
-}
-@keyframes heroLightningFlash{
-  0%{
-    filter:brightness(.78) saturate(.90) contrast(1);
-  }
-  6%{
-    filter:brightness(2.90) saturate(1.08) contrast(1.18);
-  }
-  12%{
-    filter:brightness(1.08) saturate(.94) contrast(1.03);
-  }
-  18%{
-    filter:brightness(2.35) saturate(1.04) contrast(1.13);
-  }
-  25%{
-    filter:brightness(.96) saturate(.92) contrast(1.01);
-  }
-  34%{
-    filter:brightness(2.65) saturate(1.06) contrast(1.16);
-  }
-  43%{
-    filter:brightness(1.02) saturate(.93) contrast(1.02);
-  }
-  54%{
-    filter:brightness(2.10) saturate(1.02) contrast(1.10);
-  }
-  66%{
-    filter:brightness(.94) saturate(.91) contrast(1);
-  }
-  78%{
-    filter:brightness(1.90) saturate(1.00) contrast(1.08);
-  }
-  100%{
-    filter:brightness(.86) saturate(.90) contrast(1);
-  }
-}
-
-
-
-.hero.lightning-sky-flash::before{
-  opacity:.82 !important;
-  background:
-    radial-gradient(circle at 62% 35%, rgba(255,255,255,.44), rgba(255,255,255,.12) 18%, transparent 42%),
-    linear-gradient(135deg, transparent 0 42%, rgba(255,255,255,.22) 43% 43.6%, transparent 44.2% 100%),
-    linear-gradient(28deg, transparent 0 51%, rgba(215,25,32,.20) 51.2% 51.8%, transparent 52.4% 100%) !important;
-  filter:blur(.2px);
-  animation:heroSkyFlash 1.05s ease-out forwards;
-}
-@keyframes heroSkyFlash{
-  0%{opacity:0;}
-  6%{opacity:1;}
-  12%{opacity:.14;}
-  18%{opacity:.88;}
-  25%{opacity:.10;}
-  34%{opacity:.96;}
-  43%{opacity:.16;}
-  54%{opacity:.76;}
-  66%{opacity:.08;}
-  78%{opacity:.52;}
-  100%{opacity:0;}
-}
-
-.hero.lightning-sky-flash::after{
-  content:"";
-  position:absolute;
-  left:var(--lightning-impact-page-x,62%);
-  top:-18vh;
-  width:7px;
-  height:86vh;
-  z-index:3;
-  pointer-events:none;
-  opacity:0;
-  transform:rotate(2deg);
-  transform-origin:top center;
-  background:linear-gradient(
-    180deg,
-    rgba(255,255,255,0),
-    rgba(255,255,255,.95) 16%,
-    rgba(255,120,120,.96) 48%,
-    rgba(215,25,32,.84) 72%,
-    rgba(215,25,32,0)
-  );
-  box-shadow:
-    0 0 12px rgba(255,255,255,.92),
-    0 0 28px rgba(215,25,32,.92),
-    0 0 64px rgba(215,25,32,.58);
-  clip-path:polygon(
-    40% 0, 100% 0,
-    63% 18%, 92% 18%,
-    48% 39%, 80% 39%,
-    35% 62%, 67% 62%,
-    0 100%, 28% 67%,
-    4% 67%, 45% 44%,
-    17% 44%, 55% 22%,
-    30% 22%
-  );
-  animation:heroTopBolt .74s cubic-bezier(.12,.82,.18,1) forwards;
-}
-@keyframes heroTopBolt{
-  0%{opacity:0;filter:brightness(1.2);}
-  8%{opacity:1;filter:brightness(3.4);}
-  22%{opacity:.96;filter:brightness(2.35);}
-  32%{opacity:.24;}
-  48%{opacity:.84;filter:brightness(2.1);}
-  100%{opacity:0;filter:brightness(1);}
-}
-
-/* Lightning */
-.race-n-generator.gen-lightning .gen-lightning-bolt,
-.race-n-generator.gen-lightning .gen-lightning-branch{
-  left:var(--x);
-  top:var(--y);
-  width:var(--w);
-  height:2px;
-  opacity:0;
-  transform-origin:left center;
-  transform:rotate(var(--r)) scaleX(0);
-  border-radius:999px;
-  background:linear-gradient(
-    90deg,
-    rgba(255,255,255,.10),
-    rgba(255,255,255,.98) 38%,
-    rgba(255,105,105,.98) 72%,
-    rgba(215,25,32,.22)
-  );
-  box-shadow:
-    0 0 6px rgba(255,255,255,.82),
-    0 0 24px rgba(215,25,32,1),
-    0 0 52px rgba(215,25,32,.62);
-}
-.race-n-generator.gen-lightning .gen-lightning-bolt{
-  height:4.2px;
-  animation:genLightningBolt .54s cubic-bezier(.12,.82,.18,1) var(--delay) forwards;
-}
-.race-n-generator.gen-lightning .gen-lightning-branch{
-  height:2.2px;
-  filter:blur(.15px);
-  animation:genLightningBranch .48s cubic-bezier(.16,1,.3,1) var(--delay) forwards;
-}
-.race-n-generator.gen-lightning .gen-lightning-impact{
-  left:var(--x);
-  top:var(--y);
-  width:46px;
-  height:46px;
-  margin-left:-23px;
-  margin-top:-23px;
-  opacity:0;
-  background:
-    radial-gradient(circle,
-      rgba(255,255,255,.95) 0,
-      rgba(255,255,255,.45) 10%,
-      rgba(215,25,32,.18) 28%,
-      transparent 62%);
-  position:absolute;
-  pointer-events:none;
-  filter:
-    drop-shadow(0 0 12px rgba(255,255,255,.8))
-    drop-shadow(0 0 24px rgba(215,25,32,.65));
-  animation:genLightningImpact .36s ease-out .20s forwards;
-}
-
-.race-n-generator.gen-lightning .gen-lightning-impact::before,
-.race-n-generator.gen-lightning .gen-lightning-impact::after{
-  content:"";
-  position:absolute;
-  left:50%;
-  top:50%;
-  width:3px;
-  height:28px;
-  margin-left:-1.5px;
-  margin-top:-14px;
-  background:linear-gradient(
-    180deg,
-    transparent,
-    rgba(255,255,255,.95),
-    rgba(215,25,32,.7),
-    transparent
-  );
-  opacity:0;
-  filter:drop-shadow(0 0 8px rgba(255,255,255,.8));
-  animation:genImpactSpark .28s ease-out .22s forwards;
-}
-
-.race-n-generator.gen-lightning .gen-lightning-impact::after{
-  transform:rotate(90deg);
-}
-
-@keyframes genImpactSpark{
-  0%{opacity:0;transform:scaleY(.2);}
-  35%{opacity:1;transform:scaleY(1);}
-  100%{opacity:0;transform:scaleY(1.8);}
-}
-.race-n-generator.gen-lightning::before{
-  content:"";
-  position:absolute;
-  inset:0;
-  opacity:0;
-  pointer-events:none;
-  background:
-    radial-gradient(circle at 60% 46%, rgba(255,255,255,.18), transparent 12%),
-    radial-gradient(circle at 60% 46%, rgba(215,25,32,.14), transparent 24%);
-  mix-blend-mode:screen;
-  animation:genLightningField .70s ease-out .14s forwards;
-}
-.race-n-generator.gen-lightning::after{
-  animation:genLightningN .90s cubic-bezier(.16,1,.3,1) .22s forwards;
-}
-@keyframes genLightningBolt{
-  0%{
-    opacity:0;
-    transform:rotate(var(--r)) scaleX(0);
-    filter:brightness(1.8);
-  }
-  18%{opacity:1;}
-  48%{
-    opacity:1;
-    transform:rotate(var(--r)) scaleX(1);
-    filter:brightness(2.4);
-  }
-  72%{
-    opacity:.84;
-    transform:rotate(var(--r)) scaleX(1);
-    filter:brightness(1.35);
-  }
-  100%{
-    opacity:0;
-    transform:rotate(var(--r)) scaleX(1);
-    filter:brightness(1);
-  }
-}
-@keyframes genLightningBranch{
-  0%{opacity:0;transform:rotate(var(--r)) scaleX(0);}
-  28%{opacity:.88;}
-  66%{opacity:.72;transform:rotate(var(--r)) scaleX(1);}
-  100%{opacity:0;transform:rotate(var(--r)) scaleX(1);}
-}
-@keyframes genLightningImpact{
-  0%{opacity:0;transform:scale(.2);}
-  30%{opacity:1;transform:scale(1.15);}
-  60%{opacity:.8;transform:scale(.85);}
-  100%{opacity:0;transform:scale(1.6);}
-}
-@keyframes genLightningField{
-  0%{opacity:0;}
-  28%{opacity:1;}
-  100%{opacity:0;}
-}
-@keyframes genLightningN{
-  0%{
-    opacity:0;
-    transform:scale(.92);
-    filter:
-      blur(8px)
-      invert(16%) sepia(98%) saturate(5363%)
-      hue-rotate(349deg) brightness(128%) contrast(118%);
-  }
-  36%{
-    opacity:.34;
-    transform:scale(.97);
-    filter:
-      blur(3px)
-      brightness(2.25)
-      contrast(1.14)
-      drop-shadow(0 0 24px rgba(255,255,255,.78))
-      drop-shadow(0 0 34px rgba(215,25,32,.88));
-  }
-  62%{
-    opacity:.96;
-    transform:scale(1.035);
-    filter:
-      blur(0)
-      brightness(2.8)
-      contrast(1.16)
-      drop-shadow(0 0 26px rgba(255,255,255,.90))
-      drop-shadow(0 0 42px rgba(215,25,32,.94));
-  }
-  78%{
-    opacity:.98;
-    transform:scale(1.015);
-    filter:
-      invert(16%) sepia(98%) saturate(5363%)
-      hue-rotate(349deg) brightness(126%) contrast(118%)
-      drop-shadow(0 0 28px rgba(215,25,32,.96));
-  }
-  100%{
-    opacity:.98;
-    transform:scale(1);
-    filter:
-      invert(16%) sepia(98%) saturate(5363%)
-      hue-rotate(349deg) brightness(110%) contrast(112%)
-      drop-shadow(0 0 14px rgba(215,25,32,.58));
-  }
-}
-
-
 /* ==========================
    NEXIT AI N Generation v3.1
    Quality refinement: smoother attraction, depth and handoff.
@@ -2884,34 +2585,6 @@
   44%{opacity:.42;transform:scale(.94);filter:blur(6px) invert(16%) sepia(98%) saturate(5363%) hue-rotate(349deg) brightness(128%) contrast(118%) drop-shadow(0 0 18px rgba(215,25,32,.76));}
   76%{opacity:.94;transform:scale(1.045);filter:blur(0) invert(16%) sepia(98%) saturate(5363%) hue-rotate(349deg) brightness(132%) contrast(120%) drop-shadow(0 0 38px rgba(215,25,32,1)) drop-shadow(0 0 22px rgba(255,255,255,.34));}
   100%{opacity:.98;transform:scale(1);filter:blur(0) invert(16%) sepia(98%) saturate(5363%) hue-rotate(349deg) brightness(110%) contrast(112%) drop-shadow(0 0 14px rgba(215,25,32,.58));}
-}
-
-
-@media(max-width:980px){
-  .hero-bg.lightning-flash{
-    animation:
-      heroLightningFlashMobile .95s cubic-bezier(.16,1,.3,1) forwards !important;
-  }
-
-  .hero.lightning-sky-flash::before{
-    animation:heroSkyFlashMobile .95s ease-out forwards;
-  }
-}
-
-@keyframes heroLightningFlashMobile{
-  0%{filter:brightness(.84) saturate(.90);}
-  10%{filter:brightness(1.65) saturate(.96);}
-  24%{filter:brightness(1.08) saturate(.92);}
-  42%{filter:brightness(1.42) saturate(.94);}
-  100%{filter:brightness(.88) saturate(.90);}
-}
-
-@keyframes heroSkyFlashMobile{
-  0%{opacity:0;}
-  12%{opacity:.42;}
-  24%{opacity:.08;}
-  42%{opacity:.32;}
-  100%{opacity:0;}
 }
 
 </style>
@@ -3750,81 +3423,6 @@ aiChatForm.addEventListener("submit",async(e)=>{
   const tagline=document.querySelector(".lead.tagline");
   const generator=document.getElementById("raceNGenerator");
   const logoAssets=stage.querySelector(".race-logo-assets");
-  const heroBg=document.querySelector(".hero-bg");
-  const nAsset=stage.querySelector(".race-n");
-
-  let nImpactPoint={x:60,y:66};
-  let nImpactReady=false;
-
-  /*
-   * Detect the visible alpha bounds of N.png itself.
-   * The fragment image uses the full logo canvas, so DOM bounds alone are not
-   * enough. Reading the alpha channel lets the strike land on the actual N.
-   */
-  function detectNImpactPoint(){
-    if(!nAsset || !nAsset.complete || !nAsset.naturalWidth) return;
-
-    try{
-      const canvas=document.createElement("canvas");
-      canvas.width=nAsset.naturalWidth;
-      canvas.height=nAsset.naturalHeight;
-      const ctx=canvas.getContext("2d",{willReadFrequently:true});
-      if(!ctx) return;
-
-      ctx.drawImage(nAsset,0,0);
-      const data=ctx.getImageData(0,0,canvas.width,canvas.height).data;
-
-      let minX=canvas.width, minY=canvas.height, maxX=-1, maxY=-1;
-      for(let y=0;y<canvas.height;y++){
-        for(let x=0;x<canvas.width;x++){
-          const alpha=data[(y*canvas.width+x)*4+3];
-          if(alpha>24){
-            if(x<minX)minX=x;
-            if(x>maxX)maxX=x;
-            if(y<minY)minY=y;
-            if(y>maxY)maxY=y;
-          }
-        }
-      }
-
-      if(maxX<minX || maxY<minY) return;
-
-      /*
-       * Aim slightly above the visual center of the N.
-       * This reads as a strike "into" the letter instead of below it.
-       */
-      const impactX=(minX+maxX)/2;
-      const impactY=minY+(maxY-minY)*0.42;
-
-      nImpactPoint={
-        x:(impactX/canvas.width)*100,
-        y:(impactY/canvas.height)*100
-      };
-      nImpactReady=true;
-      syncLightningPageTarget();
-    }catch(err){
-      console.warn("N lightning target detection failed; using fallback.",err);
-    }
-  }
-
-  function syncLightningPageTarget(){
-    if(!generator)return;
-    const hero=document.querySelector(".hero");
-    if(!hero)return;
-
-    const heroRect=hero.getBoundingClientRect();
-    const genRect=generator.getBoundingClientRect();
-    if(!heroRect.width || !genRect.width)return;
-
-    const px=genRect.left + genRect.width*(nImpactPoint.x/100);
-    const pagePercent=((px-heroRect.left)/heroRect.width)*100;
-    hero.style.setProperty("--lightning-impact-page-x",pagePercent.toFixed(3)+"%");
-  }
-
-  if(nAsset){
-    if(nAsset.complete) detectNImpactPoint();
-    else nAsset.addEventListener("load",detectNImpactPoint,{once:true});
-  }
   const GENERATOR_PATTERNS=["stream","particle","circuit","wire","laser","neural","scan"];
   if(!stage||!lines)return;
 
@@ -3851,7 +3449,6 @@ aiChatForm.addEventListener("submit",async(e)=>{
     generatorSyncFrame=requestAnimationFrame(()=>{
       generatorSyncFrame=0;
       syncGeneratorToLogo();
-      syncLightningPageTarget();
     });
   }
 
@@ -3860,8 +3457,8 @@ aiChatForm.addEventListener("submit",async(e)=>{
   window.addEventListener("orientationchange",scheduleGeneratorSync,{passive:true});
 
   const reduceMotion=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const FIRST_START_DELAY=4300;
-  const LOOP_INTERVAL=42000;
+  const FIRST_START_DELAY=3300;
+  const LOOP_INTERVAL=11600;
   let loopTimer=null;
 
   function clearGenerator(){
@@ -3955,86 +3552,6 @@ aiChatForm.addEventListener("submit",async(e)=>{
         edge.style.setProperty("--delay",(Math.random()*.18).toFixed(3)+"s");
         generator.appendChild(edge);
       }
-    }else if(pattern==="lightning"){
-      syncGeneratorToLogo();
-      syncLightningPageTarget();
-
-      const tx=nImpactPoint.x;
-      const ty=nImpactPoint.y;
-
-      /*
-       * Build a jagged path from above the logo canvas to the detected N point.
-       * Each segment is calculated from point-to-point, so the final endpoint is exact.
-       */
-      const points=[
-        {x:tx-16, y:-74},
-        {x:tx+12, y:-50},
-        {x:tx+2,  y:-26},
-        {x:tx+18, y:2},
-        {x:tx+10, y:26},
-        {x:tx+28, y:46},
-        {x:tx+10, y:ty-12},
-        {x:tx,    y:ty}
-      ];
-
-      for(let i=0;i<points.length-1;i++){
-        const a=points[i];
-        const b=points[i+1];
-        const dx=b.x-a.x;
-        const dy=b.y-a.y;
-
-        /*
-         * Percent-space angle needs the generator aspect ratio correction.
-         */
-        const rect=generator.getBoundingClientRect();
-        const pxDx=(dx/100)*rect.width;
-        const pxDy=(dy/100)*rect.height;
-        const lengthPx=Math.hypot(pxDx,pxDy);
-        const widthPercent=(lengthPx/rect.width)*100;
-        const angle=Math.atan2(pxDy,pxDx)*180/Math.PI;
-
-        const bolt=document.createElement("span");
-        bolt.className="gen-lightning-bolt";
-        bolt.style.setProperty("--x",a.x.toFixed(3)+"%");
-        bolt.style.setProperty("--y",a.y.toFixed(3)+"%");
-        bolt.style.setProperty("--w",widthPercent.toFixed(3)+"%");
-        bolt.style.setProperty("--r",angle.toFixed(3)+"deg");
-        bolt.style.setProperty("--delay",(i*.024).toFixed(3)+"s");
-        generator.appendChild(bolt);
-      }
-
-      const branches=[
-        {i:2,dx:-13,dy:6},
-        {i:3,dx:12,dy:8},
-        {i:4,dx:-10,dy:7},
-        {i:5,dx:9,dy:6},
-        {i:6,dx:-7,dy:5}
-      ];
-
-      branches.forEach((branch,index)=>{
-        const p=points[branch.i];
-        const rect=generator.getBoundingClientRect();
-        const pxDx=(branch.dx/100)*rect.width;
-        const pxDy=(branch.dy/100)*rect.height;
-        const lengthPx=Math.hypot(pxDx,pxDy);
-        const widthPercent=(lengthPx/rect.width)*100;
-        const angle=Math.atan2(pxDy,pxDx)*180/Math.PI;
-
-        const el=document.createElement("span");
-        el.className="gen-lightning-branch";
-        el.style.setProperty("--x",p.x.toFixed(3)+"%");
-        el.style.setProperty("--y",p.y.toFixed(3)+"%");
-        el.style.setProperty("--w",widthPercent.toFixed(3)+"%");
-        el.style.setProperty("--r",angle.toFixed(3)+"deg");
-        el.style.setProperty("--delay",(.07+index*.024).toFixed(3)+"s");
-        generator.appendChild(el);
-      });
-
-      const impact=document.createElement("span");
-      impact.className="gen-lightning-impact";
-      impact.style.setProperty("--x",tx.toFixed(3)+"%");
-      impact.style.setProperty("--y",ty.toFixed(3)+"%");
-      generator.appendChild(impact);
     }else if(pattern==="hybrid"){
       for(let i=0;i<12;i++){
         const line=document.createElement("span");
@@ -4084,28 +3601,13 @@ aiChatForm.addEventListener("submit",async(e)=>{
     generator.classList.add("is-active");
   }
 
-  function flashMountain(){
-    if(heroBg){
-      heroBg.classList.remove("lightning-flash");
-      void heroBg.offsetWidth;
-      heroBg.classList.add("lightning-flash");
-      setTimeout(()=>heroBg.classList.remove("lightning-flash"),1120);
-    }
-
-    const hero=document.querySelector(".hero");
-    if(hero){
-      hero.classList.remove("lightning-sky-flash");
-      void hero.offsetWidth;
-      hero.classList.add("lightning-sky-flash");
-      setTimeout(()=>hero.classList.remove("lightning-sky-flash"),1160);
-    }
-  }
-
   function playGenerator(){
     if(!generator)return;
-    if(!nImpactReady)detectNImpactPoint();
-    buildGenerator("lightning");
-    setTimeout(flashMountain,180);
+    const isUltraRare=Math.random()<0.005;
+    const pattern=isUltraRare
+      ? "hybrid"
+      : GENERATOR_PATTERNS[Math.floor(Math.random()*GENERATOR_PATTERNS.length)];
+    buildGenerator(pattern);
   }
 
   function reset(){
