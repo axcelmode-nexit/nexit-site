@@ -4054,15 +4054,23 @@ aiChatForm.addEventListener("submit",async(e)=>{
        * Build a jagged path from above the logo canvas to the detected N point.
        * Each segment is calculated from point-to-point, so the final endpoint is exact.
        */
+      const rand=(min,max)=>min+Math.random()*(max-min);
+      const jitterX=(base,range)=>base+rand(-range,range);
+      const jitterY=(base,range)=>base+rand(-range,range);
+
+      /*
+       * Keep the strike identity consistent, but vary the bends slightly
+       * on every run. The final N impact point remains fixed.
+       */
       const points=[
-        {x:tx-16, y:-74},
-        {x:tx+12, y:-50},
-        {x:tx+2,  y:-26},
-        {x:tx+18, y:2},
-        {x:tx+10, y:26},
-        {x:tx+28, y:46},
-        {x:tx+10, y:ty-12},
-        {x:tx,    y:ty}
+        {x:jitterX(tx-16,4.2), y:jitterY(-74,2.0)},
+        {x:jitterX(tx+12,4.0), y:jitterY(-50,2.2)},
+        {x:jitterX(tx+2, 4.8), y:jitterY(-26,2.5)},
+        {x:jitterX(tx+18,4.5), y:jitterY(2,2.2)},
+        {x:jitterX(tx+10,4.0), y:jitterY(26,2.5)},
+        {x:jitterX(tx+28,4.5), y:jitterY(46,2.2)},
+        {x:jitterX(tx+10,3.2), y:jitterY(ty-12,1.8)},
+        {x:tx, y:ty}
       ];
 
       for(let i=0;i<points.length-1;i++){
@@ -4091,13 +4099,21 @@ aiChatForm.addEventListener("submit",async(e)=>{
         generator.appendChild(bolt);
       }
 
-      const branches=[
+      const baseBranches=[
         {i:2,dx:-5,dy:8},
         {i:3,dx:4,dy:9},
         {i:4,dx:-4,dy:8},
         {i:5,dx:3,dy:7},
         {i:6,dx:-3,dy:6}
       ];
+
+      const branches=baseBranches
+        .filter((_,index)=>index===0 || Math.random()>.18)
+        .map((branch)=>({
+          i:branch.i,
+          dx:branch.dx+rand(-1.8,1.8),
+          dy:branch.dy+rand(-1.2,1.6)
+        }));
 
       branches.forEach((branch,index)=>{
         const p=points[branch.i];
