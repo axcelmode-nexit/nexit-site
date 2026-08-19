@@ -68,6 +68,25 @@
     }
     .nav a { opacity: .9; }
     .nav a:hover { opacity: .55; }
+    .header-instagram {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      opacity: .82 !important;
+      transition: opacity .2s ease, transform .2s ease;
+    }
+    .header-instagram:hover {
+      opacity: 1 !important;
+      transform: translateY(-1px);
+    }
+    .header-instagram img {
+      width: 19px;
+      height: 19px;
+      object-fit: contain;
+      filter: brightness(0) invert(1);
+    }
 
     .hero {
       position: relative;
@@ -3039,6 +3058,9 @@
 <a href="#office">OFFICE</a>
 <a href="#company">COMPANY</a>
 <a href="#contact">CONTACT</a><a href="recruit.html">RECRUIT</a>
+<a aria-label="Instagram" class="header-instagram" href="https://www.instagram.com/axcelmode_nexit/" rel="noopener noreferrer" target="_blank">
+<img alt="Instagram" src="instagram.png"/>
+</a>
 </nav>
 </header>
 <main>
@@ -3271,9 +3293,7 @@
 <a href="#office">OFFICE</a>
 <a href="#company">COMPANY</a>
 <a href="#contact">CONTACT</a><a href="recruit.html">RECRUIT</a>
-<a aria-label="Instagram" class="footer-instagram" href="https://www.instagram.com/axcelmode_nexit/" rel="noopener noreferrer" target="_blank">
-<img alt="Instagram" src="instagram.png"/>
-</a>
+
 </div>
 </footer>
 </div>
