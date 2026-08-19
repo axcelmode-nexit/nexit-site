@@ -197,7 +197,24 @@
     .service-head { text-align: center; margin-bottom: 72px; }
     .service-head h2 { margin: 0; font-size: 34px; letter-spacing: .18em; }
     .service-head p { color: var(--red); font-size: 13px; font-weight: 800; }
-    .business-lead { max-width: 760px; margin: 0 auto 58px; text-align: center; color: #e7e7e7; line-height: 2; font-weight: 700; }
+
+    .business-layout {
+      display: grid;
+      grid-template-columns: 250px minmax(0, 1fr);
+      gap: 8vw;
+      align-items: start;
+    }
+    .business-content {
+      min-width: 0;
+    }
+    .business-lead {
+      max-width: 760px;
+      margin: 0 0 42px;
+      text-align: left;
+      color: #e7e7e7;
+      line-height: 2;
+      font-weight: 700;
+    }
     .business-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -249,7 +266,13 @@
     .message-box { max-width: 920px; }
     .message .name { margin-top: 34px; color: #fff; font-weight: 900; line-height: 1.9; }
 
-    .office { display: block; max-width: 760px; }
+    .office {
+      display: grid;
+      grid-template-columns: 250px 1fr;
+      gap: 8vw;
+      align-items: start;
+      max-width: none;
+    }
     .office-photo {
       margin-top: 32px;
       border-radius: 16px;
@@ -277,6 +300,7 @@
       object-fit: cover;
     }
 
+    .office-content .big-copy { margin-top: 0; }
     .office-list { display: grid; gap: 14px; margin-top: 30px; }
     .office-list div { border-left: 2px solid var(--red); padding-left: 16px; color: #e6e6e6; line-height: 1.8; }
     .photo-grid { display: grid; grid-template-columns: 1.25fr .85fr .85fr; gap: 18px; margin-top: 56px; }
@@ -751,7 +775,8 @@
       .hero-logo { max-width: 360px; }
       .scroll { display: none; }
       section { padding: 84px 6vw; }
-      .two-col, .office { grid-template-columns: 1fr; gap: 36px; }
+      .two-col, .office, .business-layout { grid-template-columns: 1fr; gap: 36px; }
+      .business-lead { margin-bottom: 36px; }
       .recruit-content { grid-template-columns: 1fr; gap: 36px; }
       .vision-steps, .business-grid, .photo-grid { grid-template-columns: 1fr; }
       .office-gallery { grid-template-columns: 1fr; gap: 14px; }
@@ -3126,13 +3151,17 @@
 </div>
 </section>
 <section id="business">
-<div class="service-head"><h2>BUSINESS</h2><p>事業内容</p></div>
+<div class="business-layout">
+<div class="section-title"><div class="bar"></div><h2>BUSINESS</h2><p>事業内容</p></div>
+<div class="business-content">
 <p class="business-lead">私たちは、技術を通じて価値を提供します。</p>
 <div class="business-grid">
 <div class="business-card" data-word="SOFTWARE"><div class="business-no">01</div><div class="business-line"></div><h3>Software Development</h3><p class="jp">ソフトウェア開発</p><p>業務システムやWebシステムの設計・開発を行います。お客様の課題に向き合い、要件定義から設計・開発・運用まで一貫して支援します。</p></div>
 <div class="business-card" data-word="OPERATION"><div class="business-no">02</div><div class="business-line"></div><h3>Maintenance &amp; Operation</h3><p class="jp">保守・運用</p><p>システムの安定稼働を支える保守・運用サービスを提供します。継続的な改善と安定運用により、事業の成長を支えます。</p></div>
 <div class="business-card" data-word="SUPPORT"><div class="business-no">03</div><div class="business-line"></div><h3>IT Support</h3><p class="jp">IT活用支援</p><p>IT導入や活用支援を通じて、お客様の業務改善を支援します。技術だけでなく、実際の業務に寄り添った提案を行います。</p></div>
 <div class="business-card" data-word="DEVELOP"><div class="business-no">04</div><div class="business-line"></div><h3>Human Resource Development</h3><p class="jp">人材育成</p><p>次世代を担うエンジニアの育成に取り組みます。技術力だけでなく、自ら考え挑戦できる人材を育てます。</p></div>
+</div>
+</div>
 </div>
 </section>
 <section class="message" id="message">
@@ -3163,9 +3192,9 @@
 </section>
 <section id="office">
 <div class="office">
-<div>
 <div class="section-title"><div class="bar"></div><h2>OFFICE</h2><p>拠点</p></div>
-<p class="big-copy" id="officeOpenTitle" style="margin-top:34px">2026 Summer Opening</p>
+<div class="office-content">
+<p class="big-copy" id="officeOpenTitle">2026 Summer Opening</p>
 <p class="body-copy" id="officeOpenCopy">上越妙高駅西口 フルサットにてオフィス開設準備中。<br/><br/>技術と挑戦が生まれる場所として、現在準備を進めています。</p>
 <div id="officeOpenMedia"><div class="office-photo"><img alt="上越妙高駅" src="station.jpg"/></div></div>
 </div>
@@ -3225,7 +3254,7 @@
             </p>
 </div>
 <div class="recruit-image">
-<img alt="上越妙高と列車" src="train.jpg"/>
+<img alt="北陸新幹線" src="train.jpg"/>
 </div>
 </div>
 </section>
@@ -3260,6 +3289,7 @@ const __PARALLAX_ENABLED__ =
       ['section:not(.hero) .body-copy', 2, false],
       ['section:not(.hero) .about-small', 2, false],
       ['.service-head', 0, false],
+      ['#business .section-title', 0, false],
       ['.business-lead', 1, false],
       ['.message-box', 1, false],
       ['.office-photo', 2, false],
