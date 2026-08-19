@@ -6,7 +6,7 @@
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
 <title>AXCEL MODE NEXIT | 株式会社アクセル・モード・ネクスト</title>
-<!-- version: v111 racing-line longer + long A glow + white N pulse + NEXIT white flash -->
+<!-- version: v113 startup recruit reveal unified with page motion -->
 <meta content="website" property="og:type"/>
 <meta content="AXCEL MODE NEXIT" property="og:title"/>
 <meta content="上越を拠点にソフトウェア開発・ITソリューションを提供。UIJターン歓迎。" property="og:description"/>
@@ -505,6 +505,27 @@
     }
     .startup-recruit-link:hover .arrow {
       transform: translateX(4px);
+    }
+
+    /* Startup recruit reveal: same visual language as the rest of the page,
+       but with a smaller, calmer movement because it sits directly below the hero. */
+    .startup-recruit .reveal {
+      transform: translateY(22px);
+      filter: blur(4px);
+      transition:
+        opacity .82s cubic-bezier(.16,1,.3,1),
+        transform .82s cubic-bezier(.16,1,.3,1),
+        filter .82s cubic-bezier(.16,1,.3,1);
+    }
+    .startup-recruit .reveal.is-visible {
+      transform: translateY(0);
+      filter: blur(0);
+    }
+    .startup-recruit-link.reveal {
+      transform: translateY(18px);
+    }
+    .startup-recruit-link.reveal.is-visible {
+      transform: translateY(0);
     }
     @media (max-width: 980px) {
       .startup-recruit { padding: 58px 6vw; }
@@ -3186,6 +3207,10 @@ const __PARALLAX_ENABLED__ =
       ['.recruit-cta-link', 3, false],
       ['.recruit-note-small', 4, false],
       ['.recruit-image', 2, false],
+      ['.startup-recruit-label', 0, false],
+      ['.startup-recruit h2', 1, false],
+      ['.startup-recruit-copy', 2, false],
+      ['.startup-recruit-link', 3, true],
       ['.vision-card', 1, true],
       ['.business-card', 1, true],
       ['.news-item', 1, true]
