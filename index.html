@@ -3065,6 +3065,22 @@
 
 
 
+
+/* VISION tagline: one short continuous line */
+.vision-tagline{
+  display:inline-flex;
+  align-items:center;
+  gap:10px;
+}
+.vision-tagline::before{
+  content:"";
+  display:inline-block;
+  width:36px;
+  height:1px;
+  background:#fff;
+  flex:0 0 auto;
+}
+
 </style>
 </meta></head>
 <body class="motion-ready">
@@ -3152,7 +3168,7 @@
 <div class="section-title"><div class="bar"></div><h2>VISION</h2><p>目指す姿</p></div>
 <div>
 <p class="big-copy">挑戦を、<br/>確かな前進に。</p>
-<p class="body-copy"><strong>── 一歩外へ。次の未来へ。</strong><br/><br/>
+<p class="body-copy"><strong class="vision-tagline">一歩外へ。次の未来へ。</strong><br/><br/>
     挑戦とは、今いる場所から一歩外へ踏み出すこと。<br/>
     それは決して派手なものではなく、静かな決意から始まります。<br/><br/>
     私たちは、その一歩を確かな前進へと変えていく存在でありたいと考えています。<br/>
