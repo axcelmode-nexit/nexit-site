@@ -350,7 +350,20 @@
         url('sea.jpg') center center / cover fixed no-repeat;
     }
     .message-box { max-width: 920px; }
-    .message .name { margin-top: 34px; color: #fff; font-weight: 900; line-height: 1.9; }
+    .message-origin {
+      width: min(500px, 100%);
+      margin: 34px 0 10px auto;
+      border: 1px solid var(--line);
+      overflow: hidden;
+      background: #090909;
+      box-shadow: 0 18px 50px rgba(0,0,0,.30);
+    }
+    .message-origin img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+    .message .name { margin-top: 28px; color: #fff; font-weight: 900; line-height: 1.9; }
     .message .signature-image {
       display: inline-block;
       width: min(253px, 56vw);
@@ -3392,6 +3405,7 @@ AXCEL MODE NEXITでは、大手企業・上場企業を含む法人向けのシ�
 <strong>AXCEL MODE NEXIT</strong> は、
       挑戦する人の一歩を支えながら、この地域から新しい未来をつくっていきます。
       </p>
+<div class="message-origin"><img alt="上越の棚田と残雪の山並み" src="message-origin.jpg"/></div>
 <p class="name">株式会社アクセル・モード・ネクスト<br/>代表取締役<img alt="𠮷田 臣男" class="signature-image" src="signature-yoshida-omi-calligraphy.png"/></p>
 </div>
 </div>
@@ -3500,6 +3514,7 @@ const __PARALLAX_ENABLED__ =
       ['.business-lead', 1, false],
       ['.business-visual', 2, false],
       ['.message-box', 1, false],
+      ['.message-origin', 2, false],
       ['.office-photo', 2, false],
       ['.company-table', 1, false],
       ['.recruit .label', 0, false],
