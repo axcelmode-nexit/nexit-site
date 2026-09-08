@@ -235,6 +235,20 @@
       font-size: 24px;
       font-weight: 800;
     }
+    .business-visual {
+      margin: 0 0 38px;
+      border: 1px solid var(--line);
+      overflow: hidden;
+      background: #090909;
+      box-shadow: 0 22px 60px rgba(0,0,0,.28);
+    }
+    .business-visual img {
+      width: 100%;
+      display: block;
+      aspect-ratio: 16 / 9;
+      object-fit: cover;
+    }
+
     .business-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -701,6 +715,7 @@
     .section-title.reveal { transform: translateY(28px); }
     .vision-card.reveal,
     .business-card.reveal,
+    .business-visual.reveal,
     .projects-visual.reveal,
     .project-card.reveal,
     .work-card.reveal,
@@ -790,6 +805,7 @@
     .recruit-cta-link.reveal { transform: translateY(46px) scale(.98); }
     .vision-card.reveal.is-visible,
     .business-card.reveal.is-visible,
+    .business-visual.reveal.is-visible,
     .projects-visual.reveal.is-visible,
     .project-card.reveal.is-visible,
     .news-item.reveal.is-visible,
@@ -3283,6 +3299,9 @@
 <div class="section-title"><div class="bar"></div><h2>BUSINESS</h2><p>事業内容</p></div>
 <div class="business-content">
 <p class="business-lead">私たちは、技術を通じて価値を提供します。</p>
+<div class="business-visual">
+<img alt="AI・クラウド・ワークフロー・データ活用を表現したビジネスイメージ" src="business-visual.png"/>
+</div>
 <div class="business-grid">
 <div class="business-card" data-word="SOFTWARE"><div class="business-no">01</div><div class="business-line"></div><h3>Software Development</h3><p class="jp">ソフトウェア開発</p><p>業務システムやWebシステムの設計・開発を行います。お客様の課題に向き合い、要件定義から設計・開発・運用まで一貫して支援します。</p></div>
 <div class="business-card" data-word="OPERATION"><div class="business-no">02</div><div class="business-line"></div><h3>Maintenance &amp; Operation</h3><p class="jp">保守・運用</p><p>システムの安定稼働を支える保守・運用サービスを提供します。継続的な改善と安定運用により、事業の成長を支えます。</p></div>
@@ -3456,6 +3475,7 @@ const __PARALLAX_ENABLED__ =
       ['.service-head', 0, false],
       ['#business .section-title', 0, false],
       ['.business-lead', 1, false],
+      ['.business-visual', 2, false],
       ['.message-box', 1, false],
       ['.office-photo', 2, false],
       ['.company-table', 1, false],
