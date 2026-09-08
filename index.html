@@ -337,6 +337,22 @@
     }
     .message-box { max-width: 920px; }
     .message .name { margin-top: 34px; color: #fff; font-weight: 900; line-height: 1.9; }
+    .message .signature-name {
+      display: inline-block;
+      margin-left: 10px;
+      font-family: "Klee One", "Yuji Syuku", "Hiragino Mincho ProN", "Yu Mincho", serif;
+      font-size: 30px;
+      font-weight: 400;
+      letter-spacing: .08em;
+      transform: rotate(-2deg);
+      transform-origin: left center;
+    }
+    @media (max-width: 980px) {
+      .message .signature-name {
+        margin-left: 6px;
+        font-size: 26px;
+      }
+    }
 
     .office {
       display: grid;
@@ -3343,7 +3359,7 @@ AXCEL MODE NEXITでは、大手企業・上場企業を含む法人向けのシ�
 <strong>AXCEL MODE NEXIT</strong> は、
       挑戦する人の一歩を支えながら、この地域から新しい未来をつくっていきます。
       </p>
-<p class="name">株式会社アクセル・モード・ネクスト<br/>代表取締役　𠮷田 臣男</p>
+<p class="name">株式会社アクセル・モード・ネクスト<br/>代表取締役 <span class="signature-name">𠮷田 臣男</span></p>
 </div>
 </div>
 </section>
