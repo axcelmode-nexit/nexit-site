@@ -3258,9 +3258,9 @@
 <div class="office">
 <div class="section-title"><div class="bar"></div><h2>OFFICE</h2><p>拠点</p></div>
 <div class="office-content">
-<p class="big-copy" id="officeOpenTitle">2026 Summer Opening</p>
-<p class="body-copy" id="officeOpenCopy">上越妙高駅西口 フルサットにてオフィス開設準備中。<br/><br/>技術と挑戦が生まれる場所として、現在準備を進めています。</p>
-<div id="officeOpenMedia"><div class="office-photo"><img alt="上越妙高駅" src="station.jpg"/></div></div>
+<p class="big-copy" id="officeOpenTitle">2026.08.17 OPEN</p>
+<p class="body-copy" id="officeOpenCopy">2026年8月17日、上越妙高駅西口・フルサットにAXCEL MODE NEXITのオフィスがオープンしました。<br/><br/>開発に集中できるワークスペースと、チームやお客様と気軽に話せるミーティングスペースを備えています。<br/><br/><strong>この場所は、次へ進んできた場所です。</strong><br/>かつて脇野田駅と呼ばれたこの地は、北陸新幹線の開業とともに上越妙高駅へ。<br/>人や仕事の流れが変わり、新しい可能性が生まれました。<br/><br/><strong>AXCEL MODE NEXITも、この場所から新しい仕事と挑戦を生み出し、次の未来をつくっていきます。</strong></p>
+<div id="officeOpenMedia"><div class="office-gallery"><div class="office-photo"><img alt="AXCEL MODE NEXIT 上越オフィス ワークスペース" src="office-main.jpg"/></div><div class="office-photo"><img alt="AXCEL MODE NEXIT 上越オフィス ミーティングスペース" src="office-meeting.jpg"/></div></div></div>
 </div>
 </div>
 </section>
@@ -3282,7 +3282,7 @@
 <div class="two-col">
 <div class="section-title"><div class="bar"></div><h2>NEWS</h2><p>お知らせ</p></div>
 <div class="news-list">
-<div class="news-item" id="officeOpenNews" style="display:none"><time>2026.08.17</time><p>上越妙高駅西口・フルサットにオフィスを開設しました。</p></div>
+<div class="news-item" id="officeOpenNews"><time>2026.08.17</time><p>上越妙高駅西口・フルサットにオフィスを開設しました。</p></div>
 <div class="news-item"><time>2026.06.18</time><p>コーポレートサイトを公開しました。</p></div>
 <div class="news-item"><time>2026.04.23</time><p>株式会社アクセル・モード・ネクストを設立しました。</p></div>
 </div>
@@ -3397,11 +3397,27 @@ const __PARALLAX_ENABLED__ =
     }
   </script>
 <script>
-  document.querySelector('.menu-toggle')
-    .addEventListener('click', () => {
-      document.querySelector('.nav')
-        .classList.toggle('open');
-    });
+  const menuToggle = document.querySelector('.menu-toggle');
+  const nav = document.querySelector('.nav');
+
+  menuToggle.addEventListener('click', (e) => {
+    e.stopPropagation();
+    nav.classList.toggle('open');
+  });
+
+  nav.addEventListener('click', (e) => {
+    if (e.target.closest('a')) {
+      nav.classList.remove('open');
+    }
+  });
+
+  document.addEventListener('click', (e) => {
+    if (nav.classList.contains('open') &&
+        !nav.contains(e.target) &&
+        !menuToggle.contains(e.target)) {
+      nav.classList.remove('open');
+    }
+  });
 </script>
 <div class="ai-chat-panel" id="aiChatPanel">
 <div class="ai-chat-head">
@@ -4389,7 +4405,10 @@ aiChatForm.addEventListener("submit",async(e)=>{
     copy.innerHTML =
       "2026年8月17日、上越妙高駅西口・フルサットにAXCEL MODE NEXITのオフィスがオープンしました。<br/><br/>" +
       "開発に集中できるワークスペースと、チームやお客様と気軽に話せるミーティングスペースを備えています。<br/><br/>" +
-      "上越から、新しい仕事と挑戦を生み出す拠点として、ここから次の一歩をつくっていきます。";
+      "<strong>この場所は、次へ進んできた場所です。</strong><br/>" +
+      "かつて脇野田駅と呼ばれたこの地は、北陸新幹線の開業とともに上越妙高駅へ。<br/>" +
+      "人や仕事の流れが変わり、新しい可能性が生まれました。<br/><br/>" +
+      "<strong>AXCEL MODE NEXITも、この場所から新しい仕事と挑戦を生み出し、次の未来をつくっていきます。</strong>";
 
     media.innerHTML =
       '<div class="office-gallery">' +
