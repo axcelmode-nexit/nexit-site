@@ -277,6 +277,58 @@
     .business-card .jp { position: relative; z-index: 1; color: var(--red); font-weight: 900; margin: 0 0 22px; }
     .business-card p { position: relative; z-index: 1; color: #d8d8d8; line-height: 1.9; font-size: 14px; margin: 0; }
 
+    .projects-visual {
+      margin: 34px 0 38px;
+      border: 1px solid var(--line);
+      overflow: hidden;
+      background: #090909;
+      box-shadow: 0 22px 60px rgba(0,0,0,.28);
+    }
+    .projects-visual img {
+      width: 100%;
+      display: block;
+      aspect-ratio: 16 / 9;
+      object-fit: cover;
+    }
+
+    .projects-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      margin-top: 38px;
+    }
+    .project-card {
+      padding: 30px 26px;
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.015));
+      min-height: 190px;
+    }
+    .project-card .eyebrow {
+      color: var(--red);
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: .16em;
+      margin-bottom: 14px;
+    }
+    .project-card h3 {
+      margin: 0 0 14px;
+      font-size: 19px;
+      line-height: 1.5;
+    }
+    .project-card p {
+      margin: 0;
+      color: #d8d8d8;
+      font-size: 14px;
+      line-height: 1.9;
+    }
+    .projects-note {
+      margin-top: 30px;
+      color: #e7e7e7;
+      font-size: 15px;
+      line-height: 2;
+      font-weight: 700;
+    }
+
     .message {
       background:
         linear-gradient(rgba(0,0,0,.85), rgba(0,0,0,.90)),
@@ -641,6 +693,8 @@
     .section-title.reveal { transform: translateY(28px); }
     .vision-card.reveal,
     .business-card.reveal,
+    .projects-visual.reveal,
+    .project-card.reveal,
     .work-card.reveal,
     .news-item.reveal,
     .btn.reveal,
@@ -723,10 +777,13 @@
     .section-title.reveal { transform: translateY(34px); }
     .vision-card.reveal,
     .business-card.reveal,
+    .project-card.reveal,
     .news-item.reveal,
     .recruit-cta-link.reveal { transform: translateY(46px) scale(.98); }
     .vision-card.reveal.is-visible,
     .business-card.reveal.is-visible,
+    .projects-visual.reveal.is-visible,
+    .project-card.reveal.is-visible,
     .news-item.reveal.is-visible,
     .recruit-cta-link.reveal.is-visible { transform: translateY(0) scale(1); }
 
@@ -820,6 +877,7 @@
       .business-lead { margin-bottom: 36px; }
       .recruit-content { grid-template-columns: 1fr; gap: 36px; }
       .vision-steps, .business-grid, .photo-grid { grid-template-columns: 1fr; }
+      .projects-grid { grid-template-columns: 1fr; }
       .office-gallery { grid-template-columns: 1fr; gap: 14px; }
       .business-grid { border-left: none; }
       .business-card { border-right: none; border-bottom: 1px solid var(--line); padding: 38px 28px; min-height: 320px; }
@@ -3090,14 +3148,12 @@
 <a aria-label="AXCEL MODE NEXIT" class="brand" href="#top"><img alt="AXCEL MODE NEXIT" src="head_logo.png"/></a>
 <button class="menu-toggle">☰</button>
 <nav class="nav">
-<a href="#top">TOP</a>
-<a href="#vision">VISION</a>
 <a href="#about">ABOUT</a>
 <a href="#business">BUSINESS</a>
-<a href="#message">MESSAGE</a>
+<a href="#projects">PROJECTS</a>
 <a href="#office">OFFICE</a>
-<a href="#company">COMPANY</a>
-<a href="#contact">CONTACT</a><a href="recruit.html">RECRUIT</a>
+<a href="recruit.html">RECRUIT</a>
+<a href="#contact">CONTACT</a>
 <a aria-label="Instagram" class="header-instagram" href="https://www.instagram.com/axcelmode_nexit/" rel="noopener noreferrer" target="_blank">
 <img alt="Instagram" src="instagram.png"/>
 </a>
@@ -3228,6 +3284,42 @@
 </div>
 </div>
 </section>
+<section id="projects">
+<div class="two-col">
+<div class="section-title"><div class="bar"></div><h2>PROJECTS</h2><p>プロジェクト</p></div>
+<div>
+<p class="big-copy">上越にいながら、<br/>幅広い企業プロジェクトへ。</p>
+<p class="body-copy">
+AXCEL MODE NEXITでは、大手企業・上場企業を含む法人向けのシステム開発や、AXCEL MODEグループと連携したプロジェクトに取り組んでいます。<br/><br/>
+業務システム、Webシステム、DX、クラウド、AI活用など、企業の事業や業務を支えるプロジェクトが中心です。
+</p>
+<div class="projects-visual">
+<img alt="上越から全国の企業プロジェクトへつながるイメージ" src="projects-network.png"/>
+</div>
+<div class="projects-grid">
+<div class="project-card">
+<div class="eyebrow">ENTERPRISE</div>
+<h3>法人向けシステム開発</h3>
+<p>大手企業・上場企業を含む法人向けに、業務システムやWebシステムの設計・開発に取り組みます。</p>
+</div>
+<div class="project-card">
+<div class="eyebrow">DX / CLOUD / AI</div>
+<h3>DX・クラウド・AI活用</h3>
+<p>業務改善やデジタル化、クラウド活用、AIを取り入れた業務支援など、企業の変革を支えるプロジェクトに関わります。</p>
+</div>
+<div class="project-card">
+<div class="eyebrow">GROUP PROJECT</div>
+<h3>AXCEL MODEグループ連携</h3>
+<p>グループで培ってきた開発経験やノウハウを活かし、さまざまな企業プロジェクトへ参画します。</p>
+</div>
+</div>
+<p class="projects-note">
+要件定義・設計から開発、保守・運用まで。<br/>
+経験や志向に応じて、幅広い工程に関わることができます。
+</p>
+</div>
+</div>
+</section>
 <section class="message" id="message">
 <div class="two-col">
 <div class="section-title"><div class="bar"></div><h2>MESSAGE</h2><p>代表メッセージ</p></div>
@@ -3333,6 +3425,7 @@
 <a href="#vision">VISION</a>
 <a href="#company">ABOUT</a>
 <a href="#business">BUSINESS</a>
+<a href="#projects">PROJECTS</a>
 <a href="#message">MESSAGE</a>
 <a href="#office">OFFICE</a>
 <a href="#company">COMPANY</a>
@@ -3370,6 +3463,8 @@ const __PARALLAX_ENABLED__ =
       ['.startup-recruit-link', 3, true],
       ['.vision-card', 1, true],
       ['.business-card', 1, true],
+      ['.projects-visual', 2, false],
+      ['.project-card', 1, true],
       ['.news-item', 1, true]
     ];
 
