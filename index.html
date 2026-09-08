@@ -3165,7 +3165,30 @@
 }
 
 </style>
-</meta></head>
+</meta>
+<style id="about-joetsu-background">
+  #about { isolation: isolate; }
+  #about::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -2;
+    pointer-events: none;
+    background: url("about-joetsu-bg.png") center right / cover no-repeat;
+    opacity: .30;
+  }
+  #about::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      linear-gradient(180deg, rgba(0,0,0,.35) 0%, transparent 25%, transparent 75%, rgba(0,0,0,.35) 100%),
+      linear-gradient(90deg, rgba(0,0,0,.35) 0%, rgba(0,0,0,.18) 45%, rgba(0,0,0,.02) 100%);
+  }
+</style>
+</head>
 <body class="motion-ready">
 <div class="site">
 <header class="header">
