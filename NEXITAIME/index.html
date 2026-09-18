@@ -971,6 +971,13 @@ main{
 .brand-a{color:#e63746}
 </style>
 
+
+<style id="mood10-wrap">
+#moods{display:flex;flex-wrap:wrap;gap:10px}
+#moods .chip{flex:1 1 calc(50% - 10px);min-width:0}
+#moods .chip[data-mood="any"]{flex-basis:100%}
+</style>
+
 </head>
 <body>
 <div class="app">
@@ -1062,12 +1069,17 @@ main{
 </div></section><section class="card input-group-card"><div class="group-title">3. どう過ごす？</div><div class="group-part">
 <div class="group-subtitle">気分</div>
 <div class="chips" id="moods">
-<button class="chip active" data-mood="any">✨ おまかせ</button>
-<button class="chip" data-mood="食">🍴 食べる</button>
-<button class="chip" data-mood="文化">🎨 見る</button>
-<button class="chip" data-mood="家族">👨‍👩‍👧 家族</button>
-<button class="chip" data-mood="スポーツ">🚲 動く</button>
-</div>
+ <button class="chip active" data-mood="any">✨ おまかせ</button>
+ <button class="chip" data-mood="food">🍴 ごはん</button>
+ <button class="chip" data-mood="cafe">☕ カフェ</button>
+ <button class="chip" data-mood="sightseeing">🏯 観光</button>
+ <button class="chip" data-mood="event">🎪 イベント</button>
+ <button class="chip" data-mood="nature">🌿 自然・景色</button>
+ <button class="chip" data-mood="onsen">♨️ 温泉・サウナ</button>
+ <button class="chip" data-mood="active">🚶 体を動かす</button>
+ <button class="chip" data-mood="rain">🌧️ 雨でもOK</button>
+ <button class="chip" data-mood="relax">😌 のんびり</button>
+ </div>
 </div><div class="group-part group-part-divider">
 <div class="group-subtitle">予算・同行者</div>
 <div class="grid">
@@ -2304,6 +2316,26 @@ function budgetAllows(ev){
   return Number(cost)<=max;
 }
 
+const MOOD_CATEGORY_MAP={
+  food:['食','食べる','ごはん','グルメ','飲食','ランチ','ディナー'],
+  cafe:['カフェ','喫茶','スイーツ','コーヒー'],
+  sightseeing:['観光','見る','文化','歴史','史跡','展示','街歩き'],
+  event:['イベント','祭り','催し','体験','フェス','展示'],
+  nature:['自然','景色','絶景','公園','海','山','花'],
+  onsen:['温泉','サウナ','風呂','入浴'],
+  active:['スポーツ','動く','アクティビティ','歩く','散歩','サイクリング'],
+  rain:['雨OK','雨でもOK','屋内'],
+  relax:['のんびり','癒し','カフェ','温泉','自然','景色']
+};
+
+function moodMatches(ev, selectedMood){
+  if(selectedMood==='any') return true;
+  const cats=(ev.categories||[]).map(v=>String(v));
+  const words=MOOD_CATEGORY_MAP[selectedMood]||[selectedMood];
+  if(selectedMood==='rain' && ev.indoor===true) return true;
+  return words.some(word=>cats.some(cat=>cat===word || cat.includes(word) || word.includes(cat)));
+}
+
 function companionAllows(ev){
   if(companion==='any') return true;
   if(companion==='solo') return ev.solo_friendly!==false;
@@ -2694,7 +2726,7 @@ async function buildPlans(){
 
  let events=EVENTS.filter(ev=>eventIsAvailableAt(ev,planningDate)).filter(budgetAllows).filter(companionAllows);
  if(destinationArea!=='any')events=events.filter(destinationMatchesEvent);
- if(mood!=='any')events=events.filter(ev=>(ev.categories||[]).includes(mood));
+ if(mood!=='any')events=events.filter(ev=>moodMatches(ev,mood));
 
  let scored=[];
  let relaxationLevel=0;
