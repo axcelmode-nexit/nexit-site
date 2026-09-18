@@ -1,4 +1,4 @@
-const CACHE='nexitaime-beta1-0-carshare-rental-merged';
+const CACHE='nexitaime-beta1-0-companion-budget';
 const ASSETS=[
   './',
   './index.html',

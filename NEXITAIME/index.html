@@ -1076,16 +1076,19 @@ main{
 <option value="0">0円</option>
 <option value="1000">〜1,000円</option>
 <option value="3000">〜3,000円</option>
+<option value="5000">〜5,000円</option>
+<option value="10000">〜10,000円</option>
+<option value="20000">〜20,000円</option>
 </select></div>
 <div class="field"><label>同行者</label><select id="companion">
 <option value="any">指定なし</option>
 <option value="solo">ひとり</option>
 <option value="couple">カップル</option>
 <option value="family">家族</option>
-<option value="kids">子連れ</option>
+<option value="group">友人・グループ</option>
 </select></div>
 </div>
-<div class="note" style="margin-top:10px">料金が確認できないイベントは除外せず、結果で「料金要確認」と表示します。</div>
+<div class="note" style="margin-top:10px">予算は施設・イベント費と概算交通費の合計目安で判定します。料金が確認できない候補は除外せず、結果で「料金要確認」と表示します。</div>
 </div><div class="group-part group-part-divider">
 <div class="group-subtitle">移動手段</div>
 <div class="chips wrap" id="transport">
@@ -2305,7 +2308,8 @@ function companionAllows(ev){
   if(companion==='any') return true;
   if(companion==='solo') return ev.solo_friendly!==false;
   if(companion==='couple') return ev.couple_friendly!==false;
-  if(companion==='family' || companion==='kids') return ev.family_friendly===true || (ev.categories||[]).includes('家族') || (ev.categories||[]).includes('子ども');
+  if(companion==='family') return ev.family_friendly===true || (ev.categories||[]).includes('家族') || (ev.categories||[]).includes('子ども');
+  if(companion==='group') return ev.group_friendly!==false;
   return true;
 }
 
@@ -2429,7 +2433,8 @@ async function renderPlanRouteMap(mapId,plan,ctx){
 }
 
 function companionReason(ev){
-  if(companion==='family'||companion==='kids') return '家族・子連れ条件に合う候補';
+  if(companion==='family') return '家族で利用しやすい候補';
+  if(companion==='group') return '友人・グループで利用しやすい候補';
   if(companion==='couple') return 'カップル向け条件を加味';
   if(companion==='solo') return 'ひとりで動きやすい候補';
   return '';
