@@ -1380,18 +1380,28 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
 <div class="group-subtitle">いつ行く？</div>
 <div class="chips wrap" id="timing">
 <button class="chip active" data-timing="now">⚡ 今すぐ</button>
-<button class="chip" data-timing="later">🕒 今日このあと</button>
 <button class="chip" data-timing="custom">📅 日時を指定</button>
 </div>
 <div class="timing-detail" hidden="" id="timingDetail">
-<div class="field" hidden="" id="laterTimeField"><label>出発時刻</label><input id="laterTime" type="time"/></div>
 <div class="field" hidden="" id="customDateTimeField"><label>出発日時</label><input id="customDateTime" type="datetime-local"/></div>
 </div>
-<div class="note" style="margin-top:10px">初期値は「今すぐ」。指定した日時を起点にイベント開催時間・営業時間・公開時刻表を判定します。</div>
+<div class="note" style="margin-top:10px">初期値は「今すぐ」。日時を指定した場合は、その日時を起点にイベント開催時間・営業時間・公開時刻表を判定します。</div>
 </div><div class="group-part group-part-divider">
 <div class="group-subtitle">あとどれくらい？</div>
 <div class="grid">
-<div class="field"><label>空き時間（分）</label><input id="free" max="480" min="30" type="number" value="120"/></div>
+<div class="field"><label>空き時間</label><select id="free">
+<option value="60">60分</option>
+<option value="90">90分</option>
+<option selected="" value="120">120分</option>
+<option value="150">150分</option>
+<option value="180">180分</option>
+<option value="210">210分</option>
+<option value="240">240分</option>
+<option value="270">270分</option>
+<option value="300">300分</option>
+<option value="330">330分</option>
+<option value="360">360分</option>
+</select></div>
 <div class="field"><label>戻りの余裕</label><select id="buffer">
 <option selected="" value="15">15分</option>
 <option value="30">30分</option>
@@ -1635,28 +1645,18 @@ function initTimingInputs(){
   const now=new Date();
   const later=new Date(now.getTime()+60*60*1000);
   later.setMinutes(Math.ceil(later.getMinutes()/30)*30,0,0);
-  document.getElementById('laterTime').value=`${String(later.getHours()).padStart(2,'0')}:${String(later.getMinutes()).padStart(2,'0')}`;
   document.getElementById('customDateTime').value=toLocalInputValue(later);
   document.getElementById('customDateTime').min=toLocalInputValue(now);
 }
 function updateTimingUI(){
   const detail=document.getElementById('timingDetail');
-  const later=document.getElementById('laterTimeField');
   const custom=document.getElementById('customDateTimeField');
   detail.hidden=timingMode==='now';
-  later.hidden=timingMode!=='later';
   custom.hidden=timingMode!=='custom';
 }
 function selectedPlanDate(){
   const now=new Date();
   if(timingMode==='now') return now;
-  if(timingMode==='later'){
-    const v=document.getElementById('laterTime').value;
-    if(!v) return null;
-    const [h,m]=v.split(':').map(Number);
-    const d=new Date(now); d.setHours(h,m,0,0);
-    return d;
-  }
   const v=document.getElementById('customDateTime').value;
   return v?new Date(v):null;
 }
@@ -3998,9 +3998,10 @@ function setMoodChoice(value){
 function setFreeMinutes(value){
   const el=document.getElementById('free');
   if(!el)return;
-  const min=Number(el.min)||30;
-  const max=Number(el.max)||480;
-  el.value=Math.max(min,Math.min(max,Number(value)||120));
+  const raw=Number(value)||120;
+  const rounded=Math.round(raw/30)*30;
+  const clamped=Math.max(60,Math.min(360,rounded));
+  el.value=String(clamped);
 }
 
 function currentFreeMinutes(){
