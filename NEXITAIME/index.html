@@ -1204,9 +1204,21 @@ main{
   background:linear-gradient(180deg,#fbfdff,#f7fbff);
   box-shadow:0 6px 20px rgba(28,64,94,.05);
 }
-.plan-adjust-head{display:flex;justify-content:space-between;gap:10px;margin-bottom:10px}
+.plan-adjust-head{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  width:100%;padding:0;border:0;background:transparent;text-align:left;cursor:pointer;
+}
 .plan-adjust-head strong{display:block;font-size:13px;color:#173f66}
 .plan-adjust-head span{display:block;margin-top:2px;font-size:10px;color:#7b8d9d}
+.plan-adjust-chevron{
+  flex:0 0 auto;width:34px;height:34px;border-radius:999px;
+  display:grid;place-items:center;background:#fff;border:1px solid #d8e4ed;
+  color:#36546d;font-size:17px;font-weight:900;
+  transition:transform .2s ease;
+}
+.plan-adjust-panel.is-open .plan-adjust-chevron{transform:rotate(180deg)}
+.plan-adjust-body{display:none;padding-top:10px}
+.plan-adjust-panel.is-open .plan-adjust-body{display:block}
 .adjust-presets{display:flex;flex-wrap:wrap;gap:7px}
 .adjust-preset{
   min-height:38px;padding:8px 10px;border-radius:999px;
@@ -1507,25 +1519,28 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
 <p>イベント・交通・天気・予算・同行者を組み合わせて、指定した時間から往復できる候補を探します。</p>
 </div>
 <div id="planAdjustPanel" class="plan-adjust-panel" hidden>
-  <div class="plan-adjust-head">
+  <button type="button" class="plan-adjust-head" id="planAdjustToggle" aria-expanded="false" aria-controls="planAdjustBody">
     <div>
       <strong>✨ プランを調整</strong>
       <span>条件を変えて、すぐに再提案します</span>
     </div>
+    <span class="plan-adjust-chevron" aria-hidden="true">⌄</span>
+  </button>
+  <div class="plan-adjust-body" id="planAdjustBody">
+    <div class="adjust-presets">
+      <button type="button" class="adjust-preset" data-adjust="shorter">⏱ 30分短く</button>
+      <button type="button" class="adjust-preset" data-adjust="near">📍 もっと近場</button>
+      <button type="button" class="adjust-preset" data-adjust="rain">🌧 雨でもOK</button>
+      <button type="button" class="adjust-preset" data-adjust="food">🍴 ごはんを入れる</button>
+      <button type="button" class="adjust-preset" data-adjust="public">🚉 公共交通だけ</button>
+    </div>
+    <div class="adjust-freeform">
+      <input id="adjustText" type="text" maxlength="80" placeholder="例：温泉にして、30分短く" />
+      <button type="button" id="adjustRun">再提案する</button>
+    </div>
+    <div id="adjustFeedback" class="adjust-feedback"></div>
+    <div class="adjust-ai-note">NEXITの既存Cloudflare AI基盤で希望を解析します。AI通信に失敗した場合は端末内判定へ自動切替します。</div>
   </div>
-  <div class="adjust-presets">
-    <button type="button" class="adjust-preset" data-adjust="shorter">⏱ 30分短く</button>
-    <button type="button" class="adjust-preset" data-adjust="near">📍 もっと近場</button>
-    <button type="button" class="adjust-preset" data-adjust="rain">🌧 雨でもOK</button>
-    <button type="button" class="adjust-preset" data-adjust="food">🍴 ごはんを入れる</button>
-    <button type="button" class="adjust-preset" data-adjust="public">🚉 公共交通だけ</button>
-  </div>
-  <div class="adjust-freeform">
-    <input id="adjustText" type="text" maxlength="80" placeholder="例：温泉にして、30分短く" />
-    <button type="button" id="adjustRun">再提案する</button>
-  </div>
-  <div id="adjustFeedback" class="adjust-feedback"></div>
-  <div class="adjust-ai-note">NEXITの既存Cloudflare AI基盤で希望を解析します。AI通信に失敗した場合は端末内判定へ自動切替します。</div>
 </div>
 
 <div id="favoriteTray" class="favorite-tray" hidden></div>
@@ -4304,7 +4319,13 @@ async function buildPlans(){
 
  const start=planningDate.getHours()*60+planningDate.getMinutes(), hardEnd=start+free, deadline=hardEnd-buffer;
  summary.innerHTML='<h2>候補を比較中…</h2><p>移動時間・時刻表・戻り余裕を確認しています。</p>';
- const adjustPanel=document.getElementById('planAdjustPanel'); if(adjustPanel) adjustPanel.hidden=true;
+ const adjustPanel=document.getElementById('planAdjustPanel');
+ if(adjustPanel){
+   adjustPanel.hidden=true;
+   adjustPanel.classList.remove('is-open');
+   const toggle=adjustPanel.querySelector('#planAdjustToggle');
+   if(toggle) toggle.setAttribute('aria-expanded','false');
+ }
  box.innerHTML='';
 
  // 「おすすめを見つける」を押したら結果エリアへ移動
@@ -4406,7 +4427,22 @@ async function buildPlans(){
    summary.innerHTML=`<h2>そのエリアでできることを${top.length}案見つけました</h2><p><strong>${routeSummary}</strong><br>指定エリアは変えず、時間調整しやすい候補を提案しています。</p>`;
  }
 
- if(adjustPanel){ adjustPanel.hidden=false; bindPlanAdjustPanel(); }
+ if(adjustPanel){
+   adjustPanel.hidden=false;
+   adjustPanel.classList.remove('is-open');
+   const toggle=adjustPanel.querySelector('#planAdjustToggle');
+   if(toggle){
+     toggle.setAttribute('aria-expanded','false');
+     if(!toggle.dataset.bound){
+       toggle.dataset.bound='1';
+       toggle.addEventListener('click',()=>{
+         const open=adjustPanel.classList.toggle('is-open');
+         toggle.setAttribute('aria-expanded',open?'true':'false');
+       });
+     }
+   }
+   bindPlanAdjustPanel();
+ }
 
  try{ trackNexitaime('search_result',{resultCount:top.length}); }catch(_){}
 
