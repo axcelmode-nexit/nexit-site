@@ -939,6 +939,33 @@ main{
   }
 }
 </style>
+
+<style id="destination-grid-6">
+#destinations.destination-grid{
+  display:grid !important;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:10px;
+}
+#destinations.destination-grid .chip{
+  width:100%;
+  min-width:0;
+  min-height:54px;
+  padding:10px 6px;
+  justify-content:center;
+  white-space:nowrap;
+}
+#destinations.destination-grid .destination-any{
+  grid-column:1 / -1;
+}
+@media (max-width:380px){
+  #destinations.destination-grid{gap:8px}
+  #destinations.destination-grid .chip{
+    font-size:13px;
+    padding:9px 4px;
+  }
+}
+</style>
+
 </head>
 <body>
 <div class="app">
@@ -982,15 +1009,16 @@ main{
 </div>
 </div><div class="group-part group-part-divider">
 <div class="group-subtitle">行きたいエリア</div>
-<div class="chips wrap" id="destinations">
- <button class="chip active" data-dest="any">✨ おまかせ</button>
+<div class="chips wrap destination-grid" id="destinations">
+ <button class="chip active destination-any" data-dest="any">✨ おまかせ</button>
  <button class="chip" data-dest="central">🏯 中心部</button>
  <button class="chip" data-dest="kasugayama">⛰ 春日山</button>
  <button class="chip" data-dest="sea">🌊 海側</button>
+ <button class="chip" data-dest="east">🌾 東部</button>
  <button class="chip" data-dest="mountain">🌿 山側</button>
  <button class="chip" data-dest="myoko">🏔️ 妙高</button>
  </div>
- <div class="note" style="margin-top:10px">エリアを選ぶと、その中から時間・交通・天気・営業時間に合うスポットを自動で探します。春日山は歴史観光エリアとして独立しています。</div>
+ <div class="note" style="margin-top:10px">エリアを選ぶと、その中から時間・交通・天気・営業時間に合うスポットを自動で探します。</div>
 </div><div class="group-part group-part-divider">
 <div class="group-subtitle">どこに戻りたい？</div>
 <div class="chips wrap" id="returns">
@@ -1219,9 +1247,13 @@ const DEST_GROUPS={
     label:'海側',
     areas:['naoetsu','ogata','kakizaki','nadachi']
   },
+  east:{
+    label:'東部',
+    areas:['kubiki','sanwa','uragawara']
+  },
   mountain:{
     label:'山側',
-    areas:['yasuzuka','uragawara','oshima','itakura','kiyosato','maki']
+    areas:['yasuzuka','oshima','itakura','kiyosato','maki']
   },
   myoko:{
     label:'妙高',
@@ -1253,6 +1285,7 @@ const stationOrder=['直江津','春日山','高田','上越妙高','北新井',
 const areaStation={
   takada:'高田',naoetsu:'直江津',joetsumyoko:'上越妙高',kasugayama:'春日山',south:'上越妙高',
   ogata:'直江津',kakizaki:'直江津',nadachi:'直江津',
+  kubiki:'直江津',sanwa:'高田',uragawara:'高田',
   yasuzuka:'高田',uragawara:'高田',oshima:'高田',itakura:'上越妙高',kiyosato:'上越妙高',maki:'高田',
   myoko_arai:'新井',myoko_kogen:'妙高高原',myoko_akakura:'妙高高原',myoko_lotte:'新井',
   wide:null
@@ -2444,6 +2477,32 @@ function renderSimpleItinerary(rows){
 }
 
 const FLEX_ACTIVITIES=[
+
+  {
+    id:'flex-kubiki',
+    title:'頸城エリアを気軽に巡る',
+    area:'kubiki',area_name:'東部',venue:'頸城エリア',
+    categories:['観光','自然','景色','のんびり'],summary:'平野部の景色や立ち寄りスポットを、残り時間に合わせて巡るプラン。',
+    indoor:false,family_friendly:true,couple_friendly:true,solo_friendly:true,
+    estimated_cost_yen:0,daylight_only:true,url:'https://joetsukankonavi.jp/'
+  },
+  {
+    id:'flex-sanwa',
+    title:'三和エリアで里山と食を楽しむ',
+    area:'sanwa',area_name:'東部',venue:'三和エリア',
+    categories:['観光','自然','食','のんびり'],summary:'里山景観や食の立ち寄り候補を、時間に合わせて組み合わせるプラン。',
+    indoor:false,family_friendly:true,couple_friendly:true,solo_friendly:true,
+    estimated_cost_yen:null,daylight_only:true,url:'https://joetsukankonavi.jp/'
+  },
+  {
+    id:'flex-uragawara',
+    title:'浦川原エリアの里山を巡る',
+    area:'uragawara',area_name:'東部',venue:'浦川原エリア',
+    categories:['観光','自然','景色','のんびり'],summary:'東部の里山や地域スポットを、空き時間に合わせて巡るプラン。',
+    indoor:false,family_friendly:true,couple_friendly:true,solo_friendly:true,
+    estimated_cost_yen:0,daylight_only:true,url:'https://joetsukankonavi.jp/'
+  },
+
 
   {
     id:'flex-kasugayama-history',

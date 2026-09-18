@@ -400,3 +400,17 @@ HTTPS配信時に位置情報/PWAが利用できます。
 - Restored bike seasonal condition `month < 3`.
 - Restored North Shinano timetable assignment.
 - Added mobile Safari pageshow/map resize recovery.
+
+
+## Beta1.0 6エリア・3列UI
+- 行きたいエリアを6分類に変更
+  - 中心部
+  - 春日山
+  - 海側
+  - 東部
+  - 山側
+  - 妙高
+- 「おまかせ」は上段に横長で配置
+- 6エリアはモバイルで3列×2段表示
+- 東部に頸城・三和・浦川原を割り当て
+- 東部向けの柔軟候補を追加
