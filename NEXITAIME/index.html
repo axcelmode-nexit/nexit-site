@@ -190,7 +190,7 @@ body{
   position:absolute;
   inset:0;
   background:
-    linear-gradient(90deg,rgba(255,255,255,.84) 0%,rgba(255,255,255,.72) 34%,rgba(255,255,255,.36) 60%,rgba(255,255,255,.06) 100%);
+    linear-gradient(90deg,rgba(255,255,255,.70) 0%,rgba(255,255,255,.56) 34%,rgba(255,255,255,.22) 60%,rgba(255,255,255,.02) 100%);
 }
 
 .hero-content{
@@ -978,6 +978,34 @@ main{
 #moods .chip[data-mood="any"]{flex-basis:100%}
 </style>
 
+
+<style id="hero-darker-tune">
+@media (max-width:700px){
+  .hero.hero-clean .hero-shade{
+    background:
+      linear-gradient(90deg,rgba(255,255,255,.68) 0%,rgba(255,255,255,.54) 42%,rgba(255,255,255,.20) 72%,rgba(255,255,255,.02) 100%) !important;
+  }
+  .hero.hero-clean .brand-lockup{
+    background:rgba(255,255,255,.84);
+  }
+}
+</style>
+
+
+<style id="transport-font-compact">
+#transport .chip{
+  font-size:13px !important;
+  line-height:1.2 !important;
+  padding:8px 10px !important;
+}
+@media (max-width:700px){
+  #transport .chip{
+    font-size:13px !important;
+    min-height:44px !important;
+    padding:8px 10px !important;
+  }
+}
+</style>
 </head>
 <body>
 <div class="app">
@@ -1078,7 +1106,6 @@ main{
  <button class="chip" data-mood="onsen">♨️ 温泉・サウナ</button>
  <button class="chip" data-mood="active">🚶 体を動かす</button>
  <button class="chip" data-mood="rain">🌧️ 雨でもOK</button>
- <button class="chip" data-mood="relax">😌 のんびり</button>
  </div>
 </div><div class="group-part group-part-divider">
 <div class="group-subtitle">予算・同行者</div>
@@ -2324,8 +2351,7 @@ const MOOD_CATEGORY_MAP={
   nature:['自然','景色','絶景','公園','海','山','花'],
   onsen:['温泉','サウナ','風呂','入浴'],
   active:['スポーツ','動く','アクティビティ','歩く','散歩','サイクリング'],
-  rain:['雨OK','雨でもOK','屋内'],
-  relax:['のんびり','癒し','カフェ','温泉','自然','景色']
+  rain:['雨OK','雨でもOK','屋内']
 };
 
 function moodMatches(ev, selectedMood){

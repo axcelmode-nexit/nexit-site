@@ -1,4 +1,4 @@
-const CACHE='nexitaime-beta1-0-companion-budget-mood10';
+const CACHE='nexitaime-beta1-0-transport-font';
 const ASSETS=[
   './',
   './index.html',
