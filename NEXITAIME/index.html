@@ -1313,6 +1313,13 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
 }
 </style>
 
+
+<style id="food-subfilter-style">
+.food-subfilters{margin-top:12px;padding:12px;border:1px solid #e7edf2;border-radius:16px;background:#fbfdff}
+.food-subfilters[hidden]{display:none!important}
+#foodKinds .chip{font-size:11px}
+@media(max-width:700px){#foodKinds .chip{flex:1 1 calc(50% - 10px)!important;justify-content:center}}
+</style>
 </head>
 <body>
 <div class="app">
@@ -1423,7 +1430,21 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
  <button class="chip" data-mood="active">🚶 体を動かす</button>
  <button class="chip" data-mood="rain">🌧️ 雨でもOK</button>
  </div>
-</div><div class="group-part group-part-divider">
+
+<div class="food-subfilters" id="foodSubfilters" hidden>
+  <div class="group-subtitle" style="margin-top:12px">食べたいもの</div>
+  <div class="chips wrap" id="foodKinds">
+    <button class="chip active" data-food-kind="any">✨ おまかせ</button>
+    <button class="chip" data-food-kind="ラーメン">🍜 ラーメン</button>
+    <button class="chip" data-food-kind="定食">🍚 定食・食堂</button>
+    <button class="chip" data-food-kind="海鮮">🐟 海鮮</button>
+    <button class="chip" data-food-kind="寿司">🍣 寿司</button>
+    <button class="chip" data-food-kind="そば">🥢 そば・うどん</button>
+    <button class="chip" data-food-kind="カフェ">☕ カフェ</button>
+    <button class="chip" data-food-kind="中華">🥟 中華</button>
+    <button class="chip" data-food-kind="洋食">🍝 洋食</button>
+  </div>
+</div></div><div class="group-part group-part-divider">
 <div class="group-subtitle">予算・同行者</div>
 <div class="grid">
 <div class="field"><label>予算</label><select id="budget">
@@ -1599,10 +1620,11 @@ const GAS_PRICE_YEN_PER_L=180;      // conservative reference, not a live price
 const REAL_WORLD_KM_PER_L=9;         // short-trip / city-driving assumption
 const SHORT_TRIP_FUEL_ALLOWANCE_YEN=100; // warm-up / idling / detour allowance
 
-let EVENTS=[], TRAIN={up:[],down:[]}, SHINANO={up:[],down:[]}, BUS={trips:[]}, BUS_MAIN={weekday:{},holiday:{}}, BUS_EXT={routes:[]}, PLACES={}, MOBILITY=[], origin='上越妙高', destinationArea='any', returnTarget='same', timingMode='now', planningDate=new Date(), mood='any', transport='auto', budget='any', companion='any', currentPos=null, weather=null, mobilityMap=null, mobilityMarkers=[], currentPosMarker=null, nearestService=null;
+let EVENTS=[], RESTAURANTS=[], TRAIN={up:[],down:[]}, SHINANO={up:[],down:[]}, BUS={trips:[]}, BUS_MAIN={weekday:{},holiday:{}}, BUS_EXT={routes:[]}, PLACES={}, MOBILITY=[], origin='上越妙高', destinationArea='any', returnTarget='same', timingMode='now', planningDate=new Date(), mood='any', foodKind='any', transport='auto', budget='any', companion='any', currentPos=null, weather=null, mobilityMap=null, mobilityMarkers=[], currentPosMarker=null, nearestService=null;
 
 Promise.all([
  fetch('./events_auto.json',{cache:'no-store'}).then(r=>r.ok?r.json():Promise.reject()).catch(()=>fetch('./events.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>[])),
+ fetch('./restaurants.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>[]),
  fetch('./train_timetable.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>({up:[],down:[]})),
  fetch('./north_shinano_timetable.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>({up:[],down:[]})),
  fetch('./bus_timetable.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>({trips:[]})),
@@ -1610,7 +1632,7 @@ Promise.all([
  fetch('./bus_extended.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>({routes:[]})),
  fetch('./places.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>({})),
  fetch('./mobility_services.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>[])
-]).then(([e,t,shinanoData,b,bm,bx,p,m])=>{EVENTS=e;TRAIN=t;SHINANO=shinanoData||{up:[],down:[]};BUS=b;BUS_MAIN=bm;BUS_EXT=bx;PLACES=p;MOBILITY=m;renderMobility(); setTimeout(()=>{initMobilityMap();renderMobility();},250);});
+]).then(([e,r,t,shinanoData,b,bm,bx,p,m])=>{RESTAURANTS=Array.isArray(r)?r:[];EVENTS=[...(Array.isArray(e)?e:[]),...RESTAURANTS];TRAIN=t;SHINANO=shinanoData||{up:[],down:[]};BUS=b;BUS_MAIN=bm;BUS_EXT=bx;PLACES=p;MOBILITY=m;renderMobility(); setTimeout(()=>{initMobilityMap();renderMobility();},250);});
 
 
 window.addEventListener('pageshow',()=>{
@@ -1673,6 +1695,12 @@ updateTimingUI();
 document.querySelectorAll('#moods .chip').forEach(b=>b.onclick=()=>{
  document.querySelectorAll('#moods .chip').forEach(x=>x.classList.remove('active'));
  b.classList.add('active'); mood=b.dataset.mood;
+ const foodBox=document.getElementById('foodSubfilters');
+ if(foodBox) foodBox.hidden=mood!=='food';
+});
+document.querySelectorAll('#foodKinds .chip').forEach(b=>b.onclick=()=>{
+ document.querySelectorAll('#foodKinds .chip').forEach(x=>x.classList.remove('active'));
+ b.classList.add('active'); foodKind=b.dataset.foodKind||'any';
 });
 document.querySelectorAll('#transport .chip').forEach(b=>b.onclick=()=>{
  document.querySelectorAll('#transport .chip').forEach(x=>x.classList.remove('active'));
@@ -3023,6 +3051,14 @@ function moodMatches(ev, selectedMood){
   return words.some(word=>cats.some(cat=>cat===word || cat.includes(word) || word.includes(cat)));
 }
 
+
+function foodKindMatches(ev){
+  if(mood!=='food' || foodKind==='any')return true;
+  const cats=(ev.categories||[]).map(v=>String(v));
+  if(foodKind==='そば')return cats.some(c=>c.includes('そば')||c.includes('うどん'));
+  return cats.some(c=>c===foodKind || c.includes(foodKind));
+}
+
 function companionAllows(ev){
   if(companion==='any') return true;
   if(companion==='solo') return ev.solo_friendly!==false;
@@ -3785,6 +3821,7 @@ function favoritePayload(plan,ctx){
       destinationArea,
       transport,
       mood,
+      foodKind,
       budget,
       companion,
       freeMinutes:Number(document.getElementById('free')?.value)||120,
@@ -3839,6 +3876,15 @@ function setTimingChoice(value='now'){
   updateTimingUI();
 }
 
+function setFoodKindChoice(value){
+  foodKind=value||'any';
+  document.querySelectorAll('#foodKinds .chip').forEach(btn=>{
+    btn.classList.toggle('active', btn.dataset.foodKind===foodKind);
+  });
+  const foodBox=document.getElementById('foodSubfilters');
+  if(foodBox) foodBox.hidden=mood!=='food';
+}
+
 function setSelectChoice(id,value){
   const el=document.getElementById(id);
   if(!el || value==null)return;
@@ -3867,6 +3913,7 @@ async function restoreFavoriteSearch(row,{keepCurrentOrigin=false}={}){
   setDestinationChoice(s.destinationArea||'any');
   setTransportChoice(s.transport||'auto');
   setMoodChoice(s.mood||'any');
+  setFoodKindChoice(s.foodKind||'any');
   setSelectChoice('budget',s.budget||'any');
   setSelectChoice('companion',s.companion||'any');
   setFreeMinutes(s.freeMinutes||120);
@@ -4267,6 +4314,7 @@ async function buildPlans(){
  let events=EVENTS.filter(ev=>eventIsAvailableAt(ev,planningDate)).filter(budgetAllows).filter(companionAllows);
  if(destinationArea!=='any')events=events.filter(destinationMatchesEvent);
  if(mood!=='any')events=events.filter(ev=>moodMatches(ev,mood));
+ events=events.filter(foodKindMatches);
 
  let scored=[];
  let relaxationLevel=0;
@@ -4285,6 +4333,7 @@ async function buildPlans(){
  if(!scored.length && mood!=='any'){
    let relaxed=EVENTS.filter(ev=>eventIsAvailableAt(ev,planningDate)).filter(budgetAllows).filter(companionAllows);
    if(destinationArea!=='any') relaxed=relaxed.filter(destinationMatchesEvent);
+   relaxed=relaxed.filter(foodKindMatches);
    scored=await scoreEventSet(relaxed,requestedModes,start,deadline,searchCtx);
    if(scored.length) relaxationLevel=2;
  }
