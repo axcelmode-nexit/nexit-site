@@ -1,0 +1,11 @@
+{
+  "name": "NEXITAIME 〜上越版〜",
+  "short_name": "NEXITAIME",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f7fbff",
+  "theme_color": "#f7fbff",
+  "description": "上越で、今から本当に行ける候補をイベントと交通から提案するアプリ",
+  "icons": []
+}

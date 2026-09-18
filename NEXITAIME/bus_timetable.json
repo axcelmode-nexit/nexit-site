@@ -1,0 +1,57 @@
+{
+  "source": "上越市 / 頸城自動車 2026 佐渡汽船連絡バス",
+  "route": "路線番号4 佐渡汽船連絡バス",
+  "operation_period": {
+    "start": "2026-03-20",
+    "end": "2026-11-23"
+  },
+  "trips": [
+    {
+      "id": "sado-outbound-1",
+      "direction": "to_port",
+      "stops": [
+        {
+          "name": "上越妙高駅",
+          "time": "12:45"
+        },
+        {
+          "name": "直江津港",
+          "time": "13:17"
+        }
+      ]
+    },
+    {
+      "id": "sado-outbound-2",
+      "direction": "to_port",
+      "stops": [
+        {
+          "name": "直江津駅",
+          "time": "13:15"
+        },
+        {
+          "name": "直江津港",
+          "time": "13:21"
+        }
+      ]
+    },
+    {
+      "id": "sado-return-1",
+      "direction": "from_port",
+      "stops": [
+        {
+          "name": "直江津港",
+          "time": "13:22"
+        },
+        {
+          "name": "直江津駅",
+          "time": "13:28"
+        },
+        {
+          "name": "上越妙高駅",
+          "time": "13:54"
+        }
+      ]
+    }
+  ],
+  "note": "2026年3月20日〜11月23日運行。運休・変更は公式情報を優先。"
+}

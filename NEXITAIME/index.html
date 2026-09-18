@@ -1,0 +1,1110 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>NEXITAIME 〜上越版〜 v20</title>
+<style>
+:root{--ink:#26364b;--muted:#75859a;--line:#e7edf2;--red:#e53935;--sky:#59c7ff;--violet:#7d8dff}
+*{box-sizing:border-box}html,body{margin:0;background:linear-gradient(180deg,#fffdf8,#f6fbff);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans","Noto Sans JP",sans-serif;color:var(--ink)}
+button,select,input{font:inherit}.app{max-width:760px;margin:auto;padding:18px 14px 110px}
+.top{display:flex;justify-content:space-between;align-items:center}.brand{font-weight:1000;letter-spacing:.12em}.a{color:var(--red)}
+.badge{font-size:11px;border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 10px;color:#738399}
+.hero{padding:22px 2px 16px}.hero h1{font-size:clamp(39px,10vw,62px);line-height:1;letter-spacing:-.06em;margin:0 0 10px}.hero p{margin:0;color:var(--muted);line-height:1.65}
+.card{background:#fff;border:1px solid var(--line);border-radius:24px;padding:16px;margin-top:14px;box-shadow:0 18px 50px rgba(70,100,140,.1)}
+.title{font-size:13px;font-weight:900;margin-bottom:10px}.chips{display:flex;gap:8px;overflow:auto}
+.chip{border:1px solid var(--line);border-radius:999px;padding:10px 13px;white-space:nowrap;background:#fff;color:#5d7086;font-weight:900}
+.chip.active{background:#e7f7ff;border-color:#8ad7ff;color:#3d6f8e}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.field{background:#f8fbfe;border:1px solid #e1e8ef;border-radius:15px;padding:10px}
+.field label{display:block;font-size:10px;color:#7d8b9d;margin-bottom:5px}.field select,.field input{width:100%;border:0;background:transparent;outline:none;font-weight:900;color:#33465c}
+.result{border-radius:20px;padding:15px;margin-top:12px;background:linear-gradient(135deg,#eef9ff,#fff8d9);border:1px solid #e5edf2}
+.result h2{font-size:21px;margin:0 0 7px}.result p{font-size:13px;line-height:1.65;color:#5f7085;margin:0}
+.plan{border:1px solid #e7edf2;border-radius:18px;padding:13px;margin-top:10px;background:#fff}
+.plan h3{font-size:15px;margin:0 0 7px}.meta{font-size:11px;color:#8090a3;margin-bottom:7px}.plan p{font-size:12px;line-height:1.55;color:#66768a;margin:0 0 8px}
+.status{display:inline-block;border-radius:999px;padding:6px 9px;font-size:10px;font-weight:900;background:#e9fbef;color:#2f7a46}.status.warn{background:#fff4d3;color:#7a6200}.status.bad{background:#ffe8ed;color:#9f3048}
+.timeline{margin-top:8px;border-top:1px dashed #e8edf2}.leg{display:grid;grid-template-columns:62px 1fr auto;gap:8px;padding:8px 0;border-bottom:1px dashed #e8edf2;font-size:11px}.leg strong{font-size:12px}
+.links{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.links a{text-decoration:none;border-radius:999px;padding:8px 10px;font-size:10px;font-weight:900;background:#edf6ff;color:#3f6f8d}
+.note{font-size:10px;color:#8895a6;line-height:1.5;margin-top:10px}
+.sticky{position:fixed;left:0;right:0;bottom:0;padding:10px 14px;background:linear-gradient(180deg,transparent,#fff 30%);z-index:20}.inner{max-width:760px;margin:auto}
+.primary{width:100%;border:0;border-radius:18px;padding:17px;background:linear-gradient(90deg,var(--sky),var(--violet));color:#fff;font-weight:900;font-size:16px}
+footer{text-align:center;color:#9aa6b5;font-size:10px;padding:26px 0}
+</style>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+integrity="sha256-p4NxAoJBhIINfQ3yn5p6xkvpK7MZ/T2v1gVn7h8h5YM=" crossorigin="">
+<style>
+#mobilityMap{height:320px;border-radius:18px;overflow:hidden;margin-top:12px;border:1px solid #e8edf2}
+.map-note{font-size:12px;color:#64748b;margin-top:8px;line-height:1.6}
+.nearest-line{font-weight:800;color:#0f172a;margin-top:6px}
+.service-distance{font-size:12px;font-weight:700;color:#475569;margin-top:5px}
+</style>
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#f7fbff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="NEXITAIME">
+
+<style>
+:root{
+  --nexit-navy:#0c2c55;
+  --nexit-pink:#d64c9a;
+  --nexit-blue:#2976d2;
+}
+body{
+  background:
+    linear-gradient(180deg,rgba(244,250,255,.92),rgba(255,255,255,.98) 720px),
+    url('./assets/joetsu-hero-clean.png') top center/cover no-repeat fixed;
+}
+.hero{
+  position:relative;
+  overflow:hidden;
+  min-height:460px;
+  border-radius:28px;
+  padding:42px 28px 34px;
+  margin-bottom:18px;
+  background:
+    linear-gradient(90deg,rgba(255,255,255,.96) 0%,rgba(255,255,255,.86) 48%,rgba(255,255,255,.48) 72%,rgba(255,255,255,.20) 100%),
+    url('./assets/joetsu-hero-clean.png') center 24%/cover no-repeat;
+  box-shadow:0 18px 50px rgba(35,76,120,.16);
+}
+.hero::after{
+  content:"";
+  position:absolute;
+  inset:auto 0 0;
+  height:120px;
+  background:linear-gradient(180deg,transparent,rgba(255,255,255,.72));
+  pointer-events:none;
+}
+.hero > *{position:relative;z-index:1}
+.hero h1{
+  max-width:680px;
+  margin:18px 0 14px;
+  font-size:clamp(40px,7vw,76px);
+  line-height:1.05;
+  letter-spacing:-.04em;
+  color:var(--nexit-navy);
+}
+.hero h1 .accent{color:var(--nexit-pink)}
+.hero .hero-lead{
+  max-width:630px;
+  font-size:clamp(16px,2.2vw,22px);
+  font-weight:800;
+  line-height:1.7;
+  color:#183b63;
+}
+.hero .hero-copy{
+  margin-top:14px;
+  font-size:15px;
+  font-weight:800;
+  color:#2f72bd;
+}
+.hero-badges{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-top:24px;
+}
+.hero-badge{
+  padding:9px 13px;
+  border-radius:999px;
+  background:rgba(255,255,255,.86);
+  border:1px solid rgba(20,76,130,.12);
+  font-size:12px;
+  font-weight:800;
+  color:#24486d;
+  backdrop-filter:blur(6px);
+}
+.brand-lockup{
+  display:inline-flex;
+  flex-direction:column;
+  gap:2px;
+  padding:10px 14px;
+  border-radius:16px;
+  background:rgba(255,255,255,.78);
+  backdrop-filter:blur(7px);
+}
+.brand-lockup .brand-name{
+  font-size:22px;
+  font-weight:950;
+  letter-spacing:.09em;
+  color:#112f52;
+}
+.brand-lockup .brand-name .a{color:#e2373f}
+.brand-lockup .powered{
+  font-size:10px;
+  font-weight:800;
+  letter-spacing:.05em;
+  color:#506980;
+}
+.footer-brand{
+  margin-top:24px;
+  padding:28px 18px 34px;
+  text-align:center;
+  border-radius:24px 24px 0 0;
+  background:linear-gradient(180deg,#163e6e,#0a2748);
+  color:white;
+}
+.footer-brand strong{letter-spacing:.11em}
+.footer-brand .powered{margin-top:4px;font-size:11px;opacity:.82}
+@media (max-width:700px){
+  body{background-attachment:scroll}
+  .hero{
+    min-height:400px;
+    padding:28px 18px 26px;
+    background:
+      linear-gradient(180deg,rgba(255,255,255,.94) 0%,rgba(255,255,255,.88) 60%,rgba(255,255,255,.50) 100%),
+      url('./assets/joetsu-hero-clean.png') 50% 20%/cover no-repeat;
+  }
+  .hero h1{font-size:46px;max-width:360px}
+  .hero .hero-lead{font-size:16px;max-width:380px}
+}
+</style>
+
+
+<style id="v20-clean-hero">
+body{
+  background:linear-gradient(180deg,#f4faff 0%,#fff 52%,#f8fbff 100%) !important;
+  background-image:none !important;
+}
+
+.hero.hero-clean{
+  position:relative;
+  overflow:hidden;
+  min-height:420px;
+  border-radius:28px;
+  margin-bottom:18px;
+  padding:0 !important;
+  background:
+    url('./assets/joetsu-hero-clean.png') center 45%/cover no-repeat !important;
+  box-shadow:0 18px 50px rgba(35,76,120,.15);
+}
+
+.hero.hero-clean::before,
+.hero.hero-clean::after{
+  display:none !important;
+  content:none !important;
+}
+
+.hero-shade{
+  position:absolute;
+  inset:0;
+  background:
+    linear-gradient(90deg,rgba(255,255,255,.96) 0%,rgba(255,255,255,.88) 36%,rgba(255,255,255,.54) 58%,rgba(255,255,255,.12) 100%);
+}
+
+.hero-content{
+  position:relative;
+  z-index:1;
+  max-width:620px;
+  padding:42px 34px 38px;
+}
+
+.brand-lockup{
+  display:inline-flex;
+  flex-direction:column;
+  gap:2px;
+  padding:9px 12px;
+  border-radius:14px;
+  background:rgba(255,255,255,.78);
+  backdrop-filter:blur(7px);
+}
+
+.brand-name{
+  color:#112f52;
+  font-size:22px;
+  font-weight:950;
+  letter-spacing:.09em;
+}
+
+.brand-name .a{color:#e2373f}
+
+.powered{
+  color:#526b83;
+  font-size:10px;
+  font-weight:800;
+  letter-spacing:.04em;
+}
+
+.hero h1{
+  margin:22px 0 14px;
+  max-width:600px;
+  color:#0c2c55;
+  font-size:clamp(42px,6vw,76px);
+  line-height:1.03;
+  letter-spacing:-.045em;
+}
+
+.hero h1 .accent{color:#d64c9a}
+
+.hero-lead{
+  margin:0;
+  color:#173b63;
+  font-size:clamp(16px,2vw,21px);
+  font-weight:800;
+  line-height:1.7;
+}
+
+.hero-copy{
+  margin-top:14px;
+  color:#2f72bd;
+  font-size:15px;
+  font-weight:850;
+}
+
+/* Keep the real app UI comfortable on desktop */
+.wrap,
+.container,
+main{
+  width:min(calc(100% - 32px),1180px);
+  margin-left:auto;
+  margin-right:auto;
+}
+
+/* Mobile-first tuning */
+@media (max-width:700px){
+  .wrap,
+  .container,
+  main{
+    width:min(calc(100% - 16px),100%);
+  }
+
+  .hero.hero-clean{
+    min-height:330px;
+    border-radius:20px;
+    background-position:62% 48% !important;
+  }
+
+  .hero-shade{
+    background:
+      linear-gradient(180deg,rgba(255,255,255,.93) 0%,rgba(255,255,255,.84) 50%,rgba(255,255,255,.50) 100%);
+  }
+
+  .hero-content{
+    max-width:100%;
+    padding:24px 18px 26px;
+  }
+
+  .brand-name{font-size:18px}
+  .hero h1{
+    margin-top:18px;
+    max-width:330px;
+    font-size:46px;
+  }
+  .hero-lead{
+    max-width:330px;
+    font-size:15px;
+  }
+  .hero-copy{font-size:13px}
+}
+
+/* Desktop breathing room */
+@media (min-width:1000px){
+  .hero.hero-clean,
+  .card{
+    max-width:1180px;
+    margin-left:auto;
+    margin-right:auto;
+  }
+}
+</style>
+
+<style id="v20-auto-compare">
+#summary h2{margin-bottom:6px}
+.plan .status{display:inline-block;margin-bottom:8px}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="top"><div class="brand">NEXIT<span class="a">A</span>IME</div><div class="badge">〜上越版〜 v20</div></div>
+<section class="hero hero-clean" aria-label="NEXITAIME 上越版">
+  <div class="hero-shade"></div>
+  <div class="hero-content">
+    <div class="brand-lockup">
+      <div class="brand-name">NEXIT<span class="a">A</span>IME</div>
+      <div class="powered">Powered by AXCEL MODE NEXIT</div>
+    </div>
+    <h1>上越で、<span class="accent">何</span>をする？</h1>
+    <p class="hero-lead">
+      イベントと交通を一緒に見て、<br>
+      今から本当に行ける候補だけを提案します。
+    </p>
+    <div class="hero-copy">AIで、次の時間を見つけよう。</div>
+  </div>
+</section>
+
+<section class="card">
+<div class="title">現在地と天気</div>
+<div class="grid">
+  <button id="locateBtn" class="field" style="text-align:left;border:1px solid #e1e8ef">
+    <label>GPS</label>
+    <strong>📍 現在地を使う</strong>
+  </button>
+  <div class="field">
+    <label>現在地</label>
+    <strong id="locationText">未取得</strong>
+  </div>
+</div>
+<div id="weatherBox" class="note" style="margin-top:10px">現在地を取得すると、現在の天気を確認します。</div>
+</section>
+
+<section class="card">
+<div class="title">1. 今いる場所</div>
+<div class="chips" id="origins">
+<button class="chip active" data-station="上越妙高">🚄 上越妙高</button>
+<button class="chip" data-station="高田">🏯 高田</button>
+<button class="chip" data-station="春日山">⛰ 春日山</button>
+<button class="chip" data-station="直江津">🌊 直江津</button>
+</div>
+</section>
+
+<section class="card">
+<div class="title">2. あとどれくらい？</div>
+<div class="grid">
+<div class="field"><label>空き時間（分）</label><input id="free" type="number" value="120" min="30" max="480"></div>
+<div class="field"><label>戻りの余裕（分）</label><input id="buffer" type="number" value="15" min="0" max="60"></div>
+</div>
+</section>
+
+<section class="card">
+<div class="title">3. 気分</div>
+<div class="chips" id="moods">
+<button class="chip active" data-mood="any">✨ おまかせ</button>
+<button class="chip" data-mood="食">🍴 食べる</button>
+<button class="chip" data-mood="文化">🎨 見る</button>
+<button class="chip" data-mood="家族">👨‍👩‍👧 家族</button>
+<button class="chip" data-mood="スポーツ">🚲 動く</button>
+</div>
+</section>
+
+
+<section class="card">
+<div class="title">4. 予算・同行者</div>
+<div class="grid">
+  <div class="field"><label>予算</label><select id="budget">
+    <option value="any">気にしない</option>
+    <option value="0">0円</option>
+    <option value="1000">〜1,000円</option>
+    <option value="3000">〜3,000円</option>
+  </select></div>
+  <div class="field"><label>同行者</label><select id="companion">
+    <option value="any">指定なし</option>
+    <option value="solo">ひとり</option>
+    <option value="couple">カップル</option>
+    <option value="family">家族</option>
+    <option value="kids">子連れ</option>
+  </select></div>
+</div>
+<div class="note" style="margin-top:10px">料金が確認できないイベントは除外せず、結果で「料金要確認」と表示します。</div>
+</section>
+
+<section class="card">
+<div class="title">5. 移動手段</div>
+<div class="chips" id="transport">
+<button class="chip active" data-mode="auto">✨ おまかせ</button>
+<button class="chip" data-mode="privatecar">🚗 自家用車</button>
+<button class="chip" data-mode="carshare">🚙 カーシェア</button>
+<button class="chip" data-mode="rentalcar">🚘 レンタカー</button>
+<button class="chip" data-mode="train">🚃 電車</button>
+<button class="chip" data-mode="bus">🚌 バス</button>
+<button class="chip" data-mode="public">🚉 公共交通全般</button>
+<button class="chip" data-mode="taxi">🚕 タクシー</button>
+<button class="chip" data-mode="walk">🚶 徒歩</button>
+<button class="chip" data-mode="bike">🚲 レンタル自転車</button>
+</div>
+<div class="note" style="margin-top:10px">自家用車・タクシー等は道路所要時間、徒歩・レンタル自転車は距離から概算。公共交通全般は電車とバスを比較します。カーシェア・レンタカー・タクシーは受取/手続き/配車待ち時間を加味する暫定ロジックです。</div>
+<div class="note" style="margin-top:10px">
+🚌 アプリ内の時刻判定は、上越大通り線・佐渡汽船連絡バスに加え、教育大学線・春日山／佐内線・山麓線の主要4エリア間に対応。その他の路線や臨時変更は上越バスロケーションシステムで確認できます。
+</div>
+</section>
+
+<section class="card" id="mobilityPanel">
+<div class="title">近くで使える移動サービス</div>
+<div id="mobilityList" class="list"></div>
+<div id="mobilityMap"></div>
+<div class="map-note">地図：OpenStreetMap。GPSを許可すると現在地と、選択した移動手段の利用拠点を表示します。</div>
+
+<div class="note" style="margin-top:10px">
+空車・配車・貸出台数はリアルタイム連携していません。最終確認は各公式サイト・電話で行ってください。
+</div>
+</section>
+
+<section class="card">
+<div class="title">NEXITAIME PICK</div>
+<div id="summary" class="result">
+<h2>条件を選んでみて</h2>
+<p>イベント・交通・天気・予算・同行者を組み合わせて、今から往復できる候補を探します。</p>
+</div>
+<div id="plans"></div>
+<div class="title" style="margin-top:18px">公式運行情報</div>
+<div class="links">
+<a href="https://www.echigo-tokimeki.co.jp/traininfo/" target="_blank" rel="noopener">🚃 トキ鉄 運行状況</a>
+<a href="https://traininfo.jreast.co.jp/train_info/shinkansen.aspx?hl=ja-JP" target="_blank" rel="noopener">🚄 JR東日本 新幹線</a>
+<a href="https://traininfo.jreast.co.jp/train_info/shinetsu.aspx" target="_blank" rel="noopener">🚆 JR東日本 信越エリア</a>
+<a href="https://www.joetsubusloca.jp/" target="_blank" rel="noopener">🚌 上越バスロケ</a>
+<a href="https://www.city.joetsu.niigata.jp/soshiki/kotsu/bus-jikoku.html" target="_blank" rel="noopener">🗓 上越市 総合時刻表</a>
+</div>
+<div class="note">鉄道は妙高はねうまライン公開時刻表を利用。バスは上越大通り線・佐渡汽船連絡バス・教育大学線・春日山／佐内線・山麓線の主要区間をアプリ内判定します。運休・遅延・臨時変更は上の公式運行情報を優先してください。イベントは events_auto.json があれば自動更新データを優先します。</div>
+</section>
+
+<footer>NEXITAIME 〜上越版〜 · Powered by AXCEL MODE NEXIT</footer>
+</div>
+<div class="sticky"><div class="inner"><button id="go" class="primary">今から行けるプランを出す ✨</button></div></div>
+
+<script>
+let EVENTS=[], TRAIN={up:[],down:[]}, BUS={trips:[]}, BUS_MAIN={weekday:{},holiday:{}}, BUS_EXT={routes:[]}, PLACES={}, MOBILITY=[], origin='上越妙高', mood='any', transport='auto', budget='any', companion='any', currentPos=null, weather=null, mobilityMap=null, mobilityMarkers=[], currentPosMarker=null, nearestService=null;
+
+Promise.all([
+ fetch('./events_auto.json',{cache:'no-store'}).then(r=>r.ok?r.json():Promise.reject()).catch(()=>fetch('./events.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>[])),
+ fetch('./train_timetable.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>({up:[],down:[]})),
+ fetch('./bus_timetable.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>({trips:[]})),
+ fetch('./bus_mainline.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>({weekday:{},holiday:{}})),
+ fetch('./bus_extended.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>({routes:[]})),
+ fetch('./places.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>({})),
+ fetch('./mobility_services.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>[])
+]).then(([e,t,b,bm,bx,p,m])=>{EVENTS=e;TRAIN=t;BUS=b;BUS_MAIN=bm;BUS_EXT=bx;PLACES=p;MOBILITY=m;renderMobility();});
+
+document.querySelectorAll('#origins .chip').forEach(b=>b.onclick=()=>{
+ document.querySelectorAll('#origins .chip').forEach(x=>x.classList.remove('active'));
+ b.classList.add('active'); origin=b.dataset.station; renderMobility();
+});
+document.querySelectorAll('#moods .chip').forEach(b=>b.onclick=()=>{
+ document.querySelectorAll('#moods .chip').forEach(x=>x.classList.remove('active'));
+ b.classList.add('active'); mood=b.dataset.mood;
+});
+document.querySelectorAll('#transport .chip').forEach(b=>b.onclick=()=>{
+ document.querySelectorAll('#transport .chip').forEach(x=>x.classList.remove('active'));
+ b.classList.add('active'); transport=b.dataset.mode; renderMobility();
+});
+document.getElementById('budget').onchange=e=>budget=e.target.value;
+document.getElementById('companion').onchange=e=>companion=e.target.value;
+document.getElementById('locateBtn').onclick=locateMe;
+document.getElementById('go').onclick=buildPlans;
+
+const stationOrder=['直江津','春日山','高田','上越妙高'];
+const areaStation={takada:'高田',naoetsu:'直江津',joetsumyoko:'上越妙高',kasugayama:'春日山',wide:null,south:null};
+function mins(t){if(!t)return null;const [h,m]=t.split(':').map(Number);return h*60+m}
+function nowMinutes(){const d=new Date();return d.getHours()*60+d.getMinutes()}
+function stationIndex(s){return stationOrder.indexOf(s)}
+function findTrain(a,b,after){
+ if(a===b)return {n:'徒歩圏',dep:after,arr:after,[a]:fmt(after),[b]:fmt(after)};
+ const dir=stationIndex(a)<stationIndex(b)?TRAIN.up:TRAIN.down;
+ for(const tr of dir||[]){
+   if(!tr[a]||!tr[b])continue;
+   const dep=mins(tr[a]),arr=mins(tr[b]);
+   if(dep>=after && arr>dep)return {...tr,dep,arr};
+ }
+ return null;
+}
+function fmt(m){return String(Math.floor(m/60)%24).padStart(2,'0')+':'+String(m%60).padStart(2,'0')}
+function inEventRange(ev, now=new Date()){
+ const s=new Date(ev.start_date+'T00:00:00+09:00'),e=new Date(ev.end_date+'T23:59:59+09:00');
+ return now>=s&&now<=e;
+}
+function esc(s=''){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+
+
+
+const JP_HOLIDAYS_2026=new Set([
+  '2026-01-01','2026-01-12','2026-02-11','2026-02-23','2026-03-20','2026-04-29',
+  '2026-05-03','2026-05-04','2026-05-05','2026-05-06','2026-07-20','2026-08-11',
+  '2026-09-21','2026-09-22','2026-09-23','2026-10-12','2026-11-03','2026-11-23'
+]);
+function ymd(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
+function md(d){return `${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
+function isHolidayBusDay(d=new Date()){
+  const day=d.getDay();
+  if(day===0||day===6)return true;
+  if(JP_HOLIDAYS_2026.has(ymd(d)))return true;
+  const m=d.getMonth()+1, date=d.getDate();
+  if(m===8 && date>=13 && date<=16)return true;
+  if((m===12 && date>=29) || (m===1 && date<=3))return true;
+  return false;
+}
+function routeRunsToday(route,d=new Date()){
+  const mmdd=md(d);
+  if((route.closed_dates||[]).includes(mmdd))return false;
+  if(route.service_rule==='weekday_only')return !isHolidayBusDay(d);
+  return true;
+}
+
+function findMainlineBus(a,b,after){
+  const dayKey=isHolidayBusDay()?'holiday':'weekday';
+  let key=null;
+  if(a==='高田' && b==='上越妙高') key='takada_to_joetsumyoko';
+  if(a==='上越妙高' && b==='高田') key='joetsumyoko_to_takada';
+  if(!key)return null;
+
+  const trips=((BUS_MAIN[dayKey]||{})[key]||[]);
+  for(const pair of trips){
+    const dep=mins(pair[0]), arr=mins(pair[1]);
+    if(dep>=after){
+      return {
+        n:'上越大通り線',
+        dep,arr,
+        kind:'bus',
+        [a]:pair[0],
+        [b]:pair[1]
+      };
+    }
+  }
+  return null;
+}
+
+function findExtendedBus(a,b,after){
+  const dayKey=isHolidayBusDay()?'holiday':'weekday';
+  const candidates=[];
+  for(const route of (BUS_EXT.routes||[])){
+    if(!routeRunsToday(route))continue;
+    for(const trip of (route[dayKey]||[])){
+      const si=(trip.stops||[]).findIndex(s=>s.name===a);
+      const di=(trip.stops||[]).findIndex(s=>s.name===b);
+      if(si<0||di<0||di<=si)continue;
+      const dep=mins(trip.stops[si].time),arr=mins(trip.stops[di].time);
+      if(dep>=after)candidates.push({
+        n:`${route.route_name}（${route.route_number}）`,routeName:route.route_name,routeNumber:route.route_number,
+        dep,arr,kind:'bus',[a]:trip.stops[si].time,[b]:trip.stops[di].time
+      });
+    }
+  }
+  candidates.sort((x,y)=>x.arr-y.arr||x.dep-y.dep);
+  return candidates[0]||null;
+}
+
+function findBus(a,b,after){
+  const candidates=[];
+  const mainline=findMainlineBus(a,b,after);
+  if(mainline)candidates.push(mainline);
+  const ext=findExtendedBus(a,b,after);
+  if(ext)candidates.push(ext);
+  const aliases={'上越妙高':'上越妙高駅','直江津':'直江津駅'};
+  const aa=aliases[a]||a, bb=aliases[b]||b;
+  for(const tr of (BUS.trips||[])){
+    const si=tr.stops.findIndex(s=>s.name===aa);
+    const di=tr.stops.findIndex(s=>s.name===bb);
+    if(si<0||di<0||di<=si)continue;
+    const dep=mins(tr.stops[si].time), arr=mins(tr.stops[di].time);
+    if(dep>=after)candidates.push({n:'佐渡汽船連絡バス',dep,arr,kind:'bus',[a]:tr.stops[si].time,[b]:tr.stops[di].time});
+  }
+  candidates.sort((x,y)=>x.arr-y.arr||x.dep-y.dep);
+  return candidates[0]||null;
+}
+
+function chooseTransportMode(a,b,after,mode){
+  const options=[];
+  if(mode==='public'||mode==='train'){
+    const t=findTrain(a,b,after);
+    if(t)options.push({...t,kind:'train',modeLabel:mode==='public'?'公共交通全般':'電車'});
+  }
+  if(mode==='public'||mode==='bus'){
+    const b1=findBus(a,b,after);
+    if(b1)options.push({...b1,kind:'bus',modeLabel:mode==='public'?'公共交通全般':'バス'});
+  }
+  options.sort((x,y)=>x.arr-y.arr);
+  return options[0]||null;
+}
+
+function chooseTransport(a,b,after){
+  const mode=(transport==='auto')?'public':transport;
+  return chooseTransportMode(a,b,after,mode);
+}
+
+
+function haversine(lat1,lon1,lat2,lon2){
+  const R=6371,toRad=x=>x*Math.PI/180;
+  const dlat=toRad(lat2-lat1),dlon=toRad(lon2-lon1);
+  const a=Math.sin(dlat/2)**2+Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dlon/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+function nearestStation(lat,lon){
+  let best=null;
+  for(const [name,p] of Object.entries(PLACES||{})){
+    const d=haversine(lat,lon,p.lat,p.lon);
+    if(!best||d<best.d)best={name,d};
+  }
+  return best;
+}
+
+async function locateMe(){
+  const txt=document.getElementById('locationText');
+  const wbox=document.getElementById('weatherBox');
+  if(!navigator.geolocation){
+    txt.textContent='GPS非対応';
+    return;
+  }
+  txt.textContent='取得中…';
+  navigator.geolocation.getCurrentPosition(async pos=>{
+    currentPos={lat:pos.coords.latitude,lon:pos.coords.longitude};
+    const near=nearestStation(currentPos.lat,currentPos.lon);
+    if(near){
+      txt.textContent=`${near.name}付近（約${near.d.toFixed(1)}km）`;
+      origin=near.name;
+      document.querySelectorAll('#origins .chip').forEach(x=>x.classList.toggle('active',x.dataset.station===origin)); renderMobility();
+    }else txt.textContent='現在地取得済み';
+    try{
+      const url=`https://api.open-meteo.com/v1/forecast?latitude=${currentPos.lat}&longitude=${currentPos.lon}&current=temperature_2m,precipitation,rain,snowfall,weather_code&timezone=Asia%2FTokyo`;
+      const r=await fetch(url);
+      const j=await r.json();
+      weather=j.current||null;
+      if(weather){
+        const state=weather.snowfall>0?'雪':(weather.rain>0||weather.precipitation>0?'雨':'晴れ/くもり');
+        wbox.textContent=`🌤 ${state}・${weather.temperature_2m}℃　降水 ${weather.precipitation ?? 0}mm`; renderMobility();
+      }
+    }catch(e){
+      wbox.textContent='天気取得に失敗しました。プラン判定は続けられます。';
+    }
+  },()=>{
+    txt.textContent='位置情報を許可してください';
+  },{enableHighAccuracy:false,timeout:10000,maximumAge:300000});
+}
+
+async function routeMinutes(mode,a,b){
+  const pa=PLACES[a],pb=PLACES[b];
+  if(!pa||!pb)return null;
+
+  const roadModes=['privatecar','carshare','rentalcar','taxi'];
+  const useRoad=roadModes.includes(mode);
+  const profile=useRoad?'driving':'walking';
+
+  try{
+    const url=`https://router.project-osrm.org/route/v1/${profile}/${pa.lon},${pa.lat};${pb.lon},${pb.lat}?overview=false`;
+    const r=await fetch(url);
+    const j=await r.json();
+    if(j.routes&&j.routes[0]){
+      let min=Math.ceil(j.routes[0].duration/60);
+      if(mode==='carshare') min += 8;
+      if(mode==='rentalcar') min += 20;
+      if(mode==='taxi') min += 5;
+      if(mode==='bike'){
+        const km=haversine(pa.lat,pa.lon,pb.lat,pb.lon);
+        min=Math.ceil(km/15*60);
+      }
+      return min;
+    }
+  }catch(e){}
+
+  const km=haversine(pa.lat,pa.lon,pb.lat,pb.lon);
+  if(mode==='privatecar') return Math.ceil(km/35*60+5);
+  if(mode==='carshare') return Math.ceil(km/35*60+13);
+  if(mode==='rentalcar') return Math.ceil(km/35*60+25);
+  if(mode==='taxi') return Math.ceil(km/35*60+10);
+  if(mode==='bike') return Math.ceil(km/15*60);
+  return Math.ceil(km/4.5*60);
+}
+
+
+
+function mapIconForCategory(cat){
+  return cat==='carshare'?'🚙':cat==='rentalcar'?'🚘':cat==='taxi'?'🚕':cat==='bike'?'🚲':'📍';
+}
+
+function initMobilityMap(){
+  const el=document.getElementById('mobilityMap');
+  if(!el || typeof L==='undefined') return;
+  if(mobilityMap) return;
+  mobilityMap=L.map('mobilityMap',{zoomControl:true}).setView([37.122,138.242],12);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+    maxZoom:19,
+    attribution:'&copy; OpenStreetMap contributors'
+  }).addTo(mobilityMap);
+}
+
+function clearServiceMarkers(){
+  if(!mobilityMap)return;
+  mobilityMarkers.forEach(m=>mobilityMap.removeLayer(m));
+  mobilityMarkers=[];
+}
+
+async function walkingMinutesToService(s){
+  if(!s || !currentPos) return null;
+  try{
+    const url=`https://router.project-osrm.org/route/v1/walking/${currentPos.lon},${currentPos.lat};${s.lon},${s.lat}?overview=false`;
+    const r=await fetch(url);
+    const j=await r.json();
+    if(j.routes&&j.routes[0])return Math.max(1,Math.ceil(j.routes[0].duration/60));
+  }catch(e){}
+  const km=haversine(currentPos.lat,currentPos.lon,s.lat,s.lon);
+  return Math.max(1,Math.ceil(km/4.5*60));
+}
+
+async function getNearestService(rows){
+  if(!rows.length)return null;
+  let ranked=rows.map(s=>{
+    let d;
+    if(currentPos)d=haversine(currentPos.lat,currentPos.lon,s.lat,s.lon);
+    else if(PLACES[origin])d=haversine(PLACES[origin].lat,PLACES[origin].lon,s.lat,s.lon);
+    else d=999;
+    return {s,d};
+  }).sort((a,b)=>a.d-b.d);
+  const best=ranked[0];
+  if(!best)return null;
+  const walk=currentPos ? await walkingMinutesToService(best.s) : Math.max(1,Math.ceil(best.d/4.5*60));
+  return {...best.s,distanceKm:best.d,walkMinutes:walk};
+}
+
+function renderMapRows(rows){
+  initMobilityMap();
+  if(!mobilityMap)return;
+  clearServiceMarkers();
+
+  const bounds=[];
+  rows.forEach(s=>{
+    if(typeof s.lat!=='number'||typeof s.lon!=='number')return;
+    const icon=L.divIcon({
+      html:`<div style="font-size:24px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.25))">${mapIconForCategory(s.category)}</div>`,
+      className:'',
+      iconSize:[28,28],
+      iconAnchor:[14,14]
+    });
+    const m=L.marker([s.lat,s.lon],{icon}).addTo(mobilityMap)
+      .bindPopup(`<strong>${s.name}</strong><br>${s.area}<br>${s.hours||''}`);
+    mobilityMarkers.push(m);
+    bounds.push([s.lat,s.lon]);
+  });
+
+  if(currentPos){
+    if(currentPosMarker)mobilityMap.removeLayer(currentPosMarker);
+    currentPosMarker=L.circleMarker([currentPos.lat,currentPos.lon],{
+      radius:8,weight:3,fillOpacity:.9
+    }).addTo(mobilityMap).bindPopup('現在地');
+    bounds.push([currentPos.lat,currentPos.lon]);
+  }
+
+  if(bounds.length>1) mobilityMap.fitBounds(bounds,{padding:[30,30],maxZoom:15});
+  else if(bounds.length===1) mobilityMap.setView(bounds[0],14);
+
+  setTimeout(()=>mobilityMap.invalidateSize(),100);
+}
+
+async function serviceAccessMinutes(mode){
+  if(!['carshare','rentalcar','taxi','bike'].includes(mode)) return 0;
+  const cats=serviceCategoryForMode(mode);
+  const rows=MOBILITY.filter(s=>cats.includes(s.category) && isLikelyOpen(s));
+  const n=await getNearestService(rows);
+  if(!n)return 0;
+  nearestService=n;
+  return n.walkMinutes||0;
+}
+
+function serviceCategoryForMode(mode){
+  if(mode==='carshare') return ['carshare'];
+  if(mode==='rentalcar') return ['rentalcar'];
+  if(mode==='taxi') return ['taxi'];
+  if(mode==='bike') return ['bike'];
+  if(mode==='auto') return ['carshare','rentalcar','taxi','bike'];
+  return [];
+}
+
+function isLikelyOpen(s, now=new Date()){
+  const h=now.getHours()+now.getMinutes()/60;
+  const month=now.getMonth()+1;
+  const day=now.getDay();
+  const rainy=weather && ((weather.rain||0)>0 || (weather.precipitation||0)>0);
+
+  if(s.id==='bike_takada_sekaikan'){
+    if(month<4 || month>11 || day===2 || rainy) return false;
+    return h>=10 && h<17;
+  }
+  if(s.id==='bike_furusatto'){
+    if(month<=2 || month===12) return false;
+    return h>=9 && h<17;
+  }
+  if(s.id==='bike_iwashima'){
+    if(weather && (weather.snowfall||0)>0) return false;
+    return h>=9 && h<19;
+  }
+  if(s.category==='rentalcar'){
+    const weekend=day===0||day===6;
+    return h>=8.5 && h < (weekend?18:18.5);
+  }
+  if(s.category==='carshare') return true;
+  if(s.category==='taxi') return true;
+  return true;
+}
+
+async function renderMobility(){
+  const box=document.getElementById('mobilityList');
+  if(!box) return;
+  const cats=serviceCategoryForMode(transport);
+
+  if(!cats.length){
+    nearestService=null;
+    box.innerHTML='<div class="note">この移動手段では拠点選択は不要です。</div>';
+    renderMapRows([]);
+    return;
+  }
+
+  let rows=MOBILITY.filter(x=>cats.includes(x.category));
+  if(origin) rows.sort((a,b)=>(a.area===origin?0:1)-(b.area===origin?0:1));
+
+  if(!rows.length){
+    nearestService=null;
+    box.innerHTML='<div class="note">該当する登録拠点はまだありません。</div>';
+    renderMapRows([]);
+    return;
+  }
+
+  nearestService=await getNearestService(rows);
+  renderMapRows(rows);
+
+  const nearestHtml=nearestService
+    ? `<div class="pick" style="margin-bottom:12px;background:#f8fafc">
+        <div class="picktop"><strong>📍 最寄り候補</strong><span class="badge ok">${nearestService.walkMinutes}分</span></div>
+        <div class="nearest-line">${nearestService.name}</div>
+        <div class="service-distance">現在地/基準地点から約 ${nearestService.distanceKm.toFixed(1)}km · 徒歩 約${nearestService.walkMinutes}分</div>
+       </div>`
+    : '';
+
+  box.innerHTML=nearestHtml + rows.slice(0,6).map(s=>{
+    const open=isLikelyOpen(s);
+    let d='';
+    if(currentPos)d=haversine(currentPos.lat,currentPos.lon,s.lat,s.lon);
+    else if(PLACES[origin])d=haversine(PLACES[origin].lat,PLACES[origin].lon,s.lat,s.lon);
+    const phone=s.phone?`<a href="tel:${s.phone}" class="smallbtn">☎ ${s.phone}</a>`:'';
+    return `<div class="pick" style="margin-bottom:10px">
+      <div class="picktop"><strong>${s.name}</strong><span class="badge ${open?'ok':'ng'}">${open?'利用候補':'時間・天候注意'}</span></div>
+      <div class="meta">${s.area} · ${s.hours||''}</div>
+      <div class="meta">${s.address||''}</div>
+      ${d!==''?`<div class="service-distance">基準地点から約 ${d.toFixed(1)}km</div>`:''}
+      ${s.stock?`<div class="meta">${s.stock}</div>`:''}
+      ${s.price?`<div class="meta">${s.price}</div>`:''}
+      ${s.closed_note?`<div class="note">${s.closed_note}</div>`:''}
+      <div class="actions">${phone}<a href="${s.url}" target="_blank" rel="noopener" class="smallbtn">公式確認 ↗</a></div>
+    </div>`;
+  }).join('');
+}
+
+const MODE_LABELS={
+  privatecar:'自家用車',carshare:'カーシェア',rentalcar:'レンタカー',
+  train:'電車',bus:'バス',public:'公共交通全般',taxi:'タクシー',
+  walk:'徒歩',bike:'レンタル自転車'
+};
+const MODE_ICONS={privatecar:'🚗',carshare:'🚙',rentalcar:'🚘',train:'🚃',bus:'🚌',public:'🚉',taxi:'🚕',walk:'🚶',bike:'🚲'};
+const AUTO_MODES=['privatecar','carshare','rentalcar','train','bus','taxi','walk','bike'];
+
+async function getModeService(mode){
+  if(!['carshare','rentalcar','taxi','bike'].includes(mode))return {service:null,access:0};
+  const rows=MOBILITY.filter(s=>serviceCategoryForMode(mode).includes(s.category) && isLikelyOpen(s));
+  if(!rows.length)return null;
+  const service=await getNearestService(rows);
+  if(!service)return null;
+  // Taxi comes to the user; do not make the user walk to the taxi office.
+  const access=mode==='taxi'?0:(service.walkMinutes||0);
+  return {service,access};
+}
+
+function reasonForMode(mode,service){
+  if(mode==='privatecar')return '乗り換えなしで移動できる案';
+  if(mode==='carshare')return service?`${service.name}を利用する案`:'最寄りカーシェアを利用する案';
+  if(mode==='rentalcar')return service?`${service.name}から出発する案`:'レンタカー手続き時間込みの案';
+  if(mode==='train')return '公開時刻表で往復できる電車案';
+  if(mode==='bus')return '公開時刻表で往復できるバス案';
+  if(mode==='public')return '電車とバスを比較した公共交通案';
+  if(mode==='taxi')return service?`${service.name}の配車を想定した案`:'配車待ち時間を見込んだ案';
+  if(mode==='walk')return '徒歩だけで完結する案';
+  if(mode==='bike')return service?`${service.name}のレンタサイクル案`:'レンタサイクルで移動する案';
+  return '時間内に収まる案';
+}
+
+async function evaluateDirectMode(ev,dest,mode,start,deadline){
+  const oneWay=await routeMinutes(mode,origin,dest);
+  if(oneWay==null)return null;
+  const svc=await getModeService(mode);
+  if(['carshare','rentalcar','taxi','bike'].includes(mode) && !svc)return null;
+  const access=svc?.access||0;
+  const returnAccess=(mode==='carshare'||mode==='rentalcar'||mode==='bike')?access:0;
+  const rawArrive=start+access+oneWay;
+  const eventStart=ev.start_time?mins(ev.start_time):null;
+  const eventEnd=ev.end_time?mins(ev.end_time):null;
+  const arrive=eventStart&&rawArrive<eventStart?eventStart:rawArrive;
+  let latestLeave=deadline-oneWay-returnAccess;
+  if(eventEnd!=null)latestLeave=Math.min(latestLeave,eventEnd);
+  const stay=Math.floor(latestLeave-arrive);
+  if(stay<30)return null;
+  const backDep=arrive+stay;
+  const finish=backDep+oneWay+returnAccess;
+  const service=svc?.service||null;
+  return {
+    ev,dest,mode,modeLabel:MODE_LABELS[mode],modeIcon:MODE_ICONS[mode],
+    out:{n:MODE_LABELS[mode]+(access?`（拠点まで徒歩${access}分）`:''),kind:mode,dep:start,arr:rawArrive,[origin]:fmt(start),[dest]:fmt(rawArrive)},
+    back:{n:MODE_LABELS[mode],kind:mode,dep:backDep,arr:finish,[dest]:fmt(backDep),[origin]:fmt(finish)},
+    arrive,finish,spare:deadline-finish,stay,feasible:true,accessMinutes:access,service,
+    reason:reasonForMode(mode,service)
+  };
+}
+
+function findBestTransitReturn(a,b,earliest,deadline,eventEnd,mode){
+  let cursor=earliest,best=null,guard=0;
+  while(guard++<30){
+    const r=chooseTransportMode(a,b,cursor,mode);
+    if(!r)break;
+    if(eventEnd!=null && r.dep>eventEnd)break;
+    if(r.arr>deadline)break;
+    best=r;
+    cursor=r.dep+1;
+  }
+  return best;
+}
+
+async function evaluateTransitMode(ev,dest,mode,start,deadline){
+  const out=chooseTransportMode(origin,dest,start,mode);
+  if(!out)return null;
+  const eventStart=ev.start_time?mins(ev.start_time):null;
+  const eventEnd=ev.end_time?mins(ev.end_time):null;
+  let arrive=out.arr;
+  if(eventStart!=null && arrive<eventStart)arrive=eventStart;
+  const earliestBack=arrive+30;
+  if(eventEnd!=null && earliestBack>eventEnd)return null;
+  const back=findBestTransitReturn(dest,origin,earliestBack,deadline,eventEnd,mode);
+  if(!back)return null;
+  const stay=Math.floor(back.dep-arrive);
+  if(stay<30)return null;
+  const transitReason=out.kind==='bus'
+    ? `公開時刻表で往復できる${out.n}利用案`
+    : (mode==='public'?'電車とバスを比較して選んだ公共交通案':'公開時刻表で往復できる電車案');
+  return {
+    ev,dest,mode,modeLabel:MODE_LABELS[mode],modeIcon:MODE_ICONS[mode],
+    out,back,arrive,finish:back.arr,spare:deadline-back.arr,stay,feasible:true,
+    reason:transitReason
+  };
+}
+
+async function evaluateMode(ev,dest,mode,start,deadline){
+  if(['train','bus','public'].includes(mode))return evaluateTransitMode(ev,dest,mode,start,deadline);
+  return evaluateDirectMode(ev,dest,mode,start,deadline);
+}
+
+function dedupeCandidates(rows){
+  const seen=new Set();
+  return rows.filter(x=>{
+    const actual=x.out?.kind||x.mode;
+    const key=`${x.ev.id||x.ev.title}|${actual}|${x.out?.dep}|${x.back?.dep}`;
+    if(seen.has(key))return false;
+    seen.add(key);return true;
+  });
+}
+
+
+function eventIsOpenNow(ev, now=new Date()){
+  if(!inEventRange(ev,now)) return false;
+  const n=now.getHours()*60+now.getMinutes();
+  const s=ev.start_time?mins(ev.start_time):null;
+  const e=ev.end_time?mins(ev.end_time):null;
+  if(s!=null && n<s) return true; // upcoming today is still a valid plan
+  if(e!=null && n>e) return false;
+  return true;
+}
+
+function budgetAllows(ev){
+  if(budget==='any') return true;
+  const max=Number(budget);
+  const cost=ev.estimated_cost_yen;
+  if(cost==null) return true; // unknown cost: keep, but mark as check required
+  return Number(cost)<=max;
+}
+
+function companionAllows(ev){
+  if(companion==='any') return true;
+  if(companion==='solo') return ev.solo_friendly!==false;
+  if(companion==='couple') return ev.couple_friendly!==false;
+  if(companion==='family' || companion==='kids') return ev.family_friendly===true || (ev.categories||[]).includes('家族') || (ev.categories||[]).includes('子ども');
+  return true;
+}
+
+function weatherAdjustment(ev){
+  if(!weather) return {score:0,reason:''};
+  const rainy=(weather.rain||0)>0 || (weather.precipitation||0)>0;
+  const snowy=(weather.snowfall||0)>0;
+  const indoor=ev.indoor===true || (ev.categories||[]).includes('屋内') || (ev.categories||[]).includes('雨OK');
+  if((rainy||snowy) && indoor) return {score:25,reason:snowy?'雪なので屋内候補を優先':'雨なので屋内候補を優先'};
+  if((rainy||snowy) && !indoor) return {score:-30,reason:snowy?'雪のため屋外候補は優先度低め':'雨のため屋外候補は優先度低め'};
+  if(!rainy && !snowy && !indoor) return {score:8,reason:'天候が落ち着いているので屋外も候補'};
+  return {score:0,reason:''};
+}
+
+function companionReason(ev){
+  if(companion==='family'||companion==='kids') return '家族・子連れ条件に合う候補';
+  if(companion==='couple') return 'カップル向け条件を加味';
+  if(companion==='solo') return 'ひとりで動きやすい候補';
+  return '';
+}
+
+function costLabel(ev){
+  if(ev.estimated_cost_yen==null) return '料金要確認';
+  return ev.estimated_cost_yen===0?'無料候補':`目安 ¥${Number(ev.estimated_cost_yen).toLocaleString()}`;
+}
+
+async function buildPlans(){
+ const free=Number(document.getElementById('free').value)||120;
+ const buffer=Number(document.getElementById('buffer').value)||15;
+ const now=new Date(), start=nowMinutes(), deadline=start+free-buffer;
+ const summary=document.getElementById('summary'),box=document.getElementById('plans');
+ summary.innerHTML='<h2>候補を比較中…</h2><p>移動時間・時刻表・戻り余裕を確認しています。</p>';
+ box.innerHTML='';
+
+ let events=EVENTS.filter(ev=>eventIsOpenNow(ev,now)).filter(budgetAllows).filter(companionAllows);
+ if(mood!=='any')events=events.filter(ev=>(ev.categories||[]).includes(mood));
+
+ let scored=[];
+ const modes=transport==='auto'?AUTO_MODES:[transport];
+ for(const ev of events){
+   const dest=areaStation[ev.area];
+   if(!dest)continue;
+   for(const mode of modes){
+     const c=await evaluateMode(ev,dest,mode,start,deadline);
+     if(c&&c.feasible){ const wa=weatherAdjustment(ev); c.weatherScore=wa.score; c.weatherReason=wa.reason; c.preferenceScore=wa.score + (companion==='any'?0:12) + (budget==='any'?0:8); scored.push(c); }
+   }
+ }
+ scored=dedupeCandidates(scored);
+ scored.sort((a,b)=>{
+   if((b.preferenceScore||0)!==(a.preferenceScore||0))return (b.preferenceScore||0)-(a.preferenceScore||0);
+   if(b.stay!==a.stay)return b.stay-a.stay;
+   if(b.spare!==a.spare)return b.spare-a.spare;
+   return a.arrive-b.arrive;
+ });
+
+ const top=scored.slice(0,3);
+ if(!top.length){
+   const transitOnly=['bus','public','train'].includes(transport);
+   summary.innerHTML=transitOnly
+      ? '<h2>今の条件では公共交通の候補が見つかりません</h2><p>実装済み時刻表の範囲では、30分以上滞在して余裕を持って戻れる往復がありません。</p>'
+      : '<h2>今の条件では行ける候補が見つかりません</h2><p>空き時間を増やすか、気分・移動手段を「おまかせ」にすると候補が広がります。</p>';
+   return;
+ }
+
+ if(transport==='auto'){
+   summary.innerHTML=`<h2>全移動手段から${top.length}案を選びました</h2><p>${origin}から、空き時間${free}分・戻り余裕${buffer}分。天気・予算・同行者も加味して比較しています。</p>`;
+ }else{
+   summary.innerHTML=`<h2>${MODE_LABELS[transport]||transport}で${top.length}案</h2><p>${origin}から、空き時間${free}分・戻り余裕${buffer}分で判定しました。</p>`;
+ }
+
+ box.innerHTML=top.map((p,idx)=>{
+   const rank=idx===0&&transport==='auto'?'<span class="status">おすすめ</span>':'<span class="status">間に合う</span>';
+   const serviceNote=p.service?`<div class="note">利用候補：${esc(p.service.name)}${p.accessMinutes?`（拠点まで徒歩 約${p.accessMinutes}分）`:''}</div>`:'';
+   return `<div class="plan">
+     ${rank}
+     <div class="meta" style="font-weight:900;margin-bottom:6px">${p.modeIcon||''} ${esc(p.modeLabel||'')}</div>
+     <h3>${esc(p.ev.title)}</h3>
+     <div class="meta">📍 ${esc(p.ev.area_name)} · ${esc(p.ev.venue||'')}</div>
+     <p>${esc(p.ev.summary||'')}</p>
+     <div class="note" style="margin-bottom:6px"><strong>この案の理由：</strong>${esc([p.reason,p.weatherReason,companionReason(p.ev)].filter(Boolean).join('・')||'時間内に収まるため')}</div><div class="meta">💴 ${esc(costLabel(p.ev))}${p.ev.indoor?' · 🏠 屋内':''}</div>
+     ${serviceNote}
+     <div class="timeline">
+       <div class="leg"><div>行き</div><div><strong>${p.modeIcon||''} ${esc(p.out.n)}</strong><br>${origin} → ${p.dest}</div><div>${p.out[origin]} → ${p.out[p.dest]}</div></div>
+       <div class="leg"><div>滞在</div><div><strong>${p.dest}周辺</strong></div><div>約${p.stay}分</div></div>
+       <div class="leg"><div>帰り</div><div><strong>${p.modeIcon||''} ${esc(p.back.n)}</strong><br>${p.dest} → ${origin}</div><div>${p.back[p.dest]} → ${p.back[origin]}</div></div>
+     </div>
+     <div class="meta" style="margin-top:8px">戻り余裕：${Math.max(0,p.spare)}分</div>
+     <div class="links"><a href="${p.ev.url}" target="_blank" rel="noopener">イベント詳細を見る</a></div>
+   </div>`;
+ }).join('');
+}
+</script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+}
+</script>
+</body>
+</html>
