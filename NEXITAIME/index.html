@@ -1625,6 +1625,7 @@ let EVENTS=[], RESTAURANTS=[], TRAIN={up:[],down:[]}, SHINANO={up:[],down:[]}, B
 Promise.all([
  fetch('./events_auto.json',{cache:'no-store'}).then(r=>r.ok?r.json():Promise.reject()).catch(()=>fetch('./events.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>[])),
  fetch('./restaurants.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>[]),
+ fetch('./spots.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>[]),
  fetch('./train_timetable.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>({up:[],down:[]})),
  fetch('./north_shinano_timetable.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>({up:[],down:[]})),
  fetch('./bus_timetable.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>({trips:[]})),
@@ -1632,7 +1633,7 @@ Promise.all([
  fetch('./bus_extended.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>({routes:[]})),
  fetch('./places.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>({})),
  fetch('./mobility_services.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>[])
-]).then(([e,r,t,shinanoData,b,bm,bx,p,m])=>{RESTAURANTS=Array.isArray(r)?r:[];EVENTS=[...(Array.isArray(e)?e:[]),...RESTAURANTS];TRAIN=t;SHINANO=shinanoData||{up:[],down:[]};BUS=b;BUS_MAIN=bm;BUS_EXT=bx;PLACES=p;MOBILITY=m;renderMobility(); setTimeout(()=>{initMobilityMap();renderMobility();},250);});
+]).then(([e,r,s,t,shinanoData,b,bm,bx,p,m])=>{RESTAURANTS=Array.isArray(r)?r:[];const SPOTS=Array.isArray(s)?s:[];EVENTS=[...(Array.isArray(e)?e:[]),...RESTAURANTS,...SPOTS];TRAIN=t;SHINANO=shinanoData||{up:[],down:[]};BUS=b;BUS_MAIN=bm;BUS_EXT=bx;PLACES=p;MOBILITY=m;renderMobility(); setTimeout(()=>{initMobilityMap();renderMobility();},250);});
 
 
 window.addEventListener('pageshow',()=>{
