@@ -917,6 +917,19 @@ main{
 .itinerary-travel{margin-left:38px}
 </style>
 
+
+<style id="area5-improvements">
+.area-scope-badge{
+ display:inline-flex;align-items:center;gap:5px;padding:5px 9px;border-radius:999px;
+ background:#eef5fb;color:#214c73;font-size:11px;font-weight:800;margin-top:6px
+}
+</style>
+
+
+<style id="mobility-distance-fix">
+.mobility-section-title{font-size:13px;font-weight:900;color:#17324d;margin:2px 0 8px}
+</style>
+
 </head>
 <body>
 <div class="app">
@@ -963,11 +976,12 @@ main{
 <div class="chips wrap" id="destinations">
  <button class="chip active" data-dest="any">✨ おまかせ</button>
  <button class="chip" data-dest="central">🏯 中心部</button>
+ <button class="chip" data-dest="kasugayama">⛰ 春日山</button>
  <button class="chip" data-dest="sea">🌊 海側</button>
  <button class="chip" data-dest="mountain">🌿 山側</button>
  <button class="chip" data-dest="myoko">🏔️ 妙高</button>
  </div>
- <div class="note" style="margin-top:10px">エリアを大きく選び、その中から時間・交通・天気に合うスポットを自動で探します。</div>
+ <div class="note" style="margin-top:10px">エリアを選ぶと、その中から時間・交通・天気・営業時間に合うスポットを自動で探します。春日山は歴史観光エリアとして独立しています。</div>
 </div><div class="group-part group-part-divider">
 <div class="group-subtitle">どこに戻りたい？</div>
 <div class="chips wrap" id="returns">
@@ -1041,6 +1055,9 @@ main{
 <button class="chip" data-mode="taxi">🚕 タクシー</button>
 <button class="chip" data-mode="walk">🚶 徒歩</button>
 <button class="chip" data-mode="bike">🚲 レンタル自転車</button>
+</div>
+<div class="note" id="railDataNotice" style="margin-top:10px">
+🚉 公共交通は静的時刻表を使用しています。北しなの線は一部列車のみ収録のため、候補が出ない場合でも実際に便がある可能性があります。最終確認は公式時刻表をご利用ください。
 </div>
 <div class="note" style="margin-top:10px">自家用車・タクシー等は道路所要時間、徒歩・レンタル自転車は距離から概算。公共交通全般は電車とバスを比較します。カーシェア・レンタカー・タクシーは受取/手続き/配車待ち時間を加味する暫定ロジックです。</div>
 <div class="note" style="margin-top:10px">
@@ -1176,7 +1193,11 @@ document.getElementById('go').onclick=buildPlans;
 const DEST_GROUPS={
   central:{
     label:'中心部',
-    areas:['takada','kasugayama','joetsumyoko','south']
+    areas:['takada','joetsumyoko','south']
+  },
+  kasugayama:{
+    label:'春日山',
+    areas:['kasugayama']
   },
   sea:{
     label:'海側',
@@ -1195,6 +1216,18 @@ const DEST_GROUPS={
 function destinationGroupLabel(key){
   return key==='any' ? '上越・妙高全体' : (DEST_GROUPS[key]?.label || key);
 }
+
+function publicTransitDataCoverage(a,b){
+  const northStations=['黒姫','古間','牟礼','豊野','三才','北長野','長野','妙高高原'];
+  const usesNorth=northStations.includes(a)||northStations.includes(b);
+  return usesNorth ? 'partial' : 'standard';
+}
+function noTransitMessage(a,b){
+  return publicTransitDataCoverage(a,b)==='partial'
+    ? '収録時刻表では候補を確認できません。北しなの線は一部列車のみ収録のため、公式時刻表も確認してください。'
+    : '収録時刻表では候補を確認できません。';
+}
+
 function destinationMatchesEvent(ev){
   if(destinationArea==='any') return true;
   return (DEST_GROUPS[destinationArea]?.areas||[]).includes(ev.area);
@@ -1716,7 +1749,7 @@ function isLikelyOpen(s, now=new Date()){
   const rainy=weather && ((weather.rain||0)>0 || (weather.precipitation||0)>0);
 
   if(s.id==='bike_takada_sekaikan'){
-    if(month<4 || month>11 || day===2 || rainy) return false;
+    if(month<MOBILITY_NEAR_KM || month>11 || day===2 || rainy) return false;
     return h>=10 && h<17;
   }
   if(s.id==='bike_furusatto'){
@@ -1736,6 +1769,43 @@ function isLikelyOpen(s, now=new Date()){
   return true;
 }
 
+async 
+const MOBILITY_NEAR_KM=1.5;
+const MOBILITY_EXTENDED_KM=2.0;
+
+function mobilityDistanceLabel(km){
+  if(km<=0.5) return 'かなり近い';
+  if(km<=1.0) return '近い';
+  if(km<=1.5) return '徒歩圏';
+  if(km<=2.0) return '少し離れている';
+  return '遠い';
+}
+function mobilityBucket(km){
+  if(km<=MOBILITY_NEAR_KM) return 'near';
+  if(km<=MOBILITY_EXTENDED_KM) return 'extended';
+  return 'far';
+}
+function mobilityBasePoint(){
+  if(currentPos && Number.isFinite(currentPos.lat) && Number.isFinite(currentPos.lon)) return currentPos;
+  return PLACES?.[origin] || null;
+}
+function mobilityDistanceKm(service){
+  const p=mobilityBasePoint();
+  const lat=Number(service?.lat), lon=Number(service?.lon);
+  if(!p || !Number.isFinite(lat) || !Number.isFinite(lon)) return Infinity;
+  return haversine(p.lat,p.lon,lat,lon);
+}
+function mobilityRowsForMode(mode,{includeExtended=false}={}){
+  if(!['carshare','rentalcar','taxi','bike'].includes(mode)) return [];
+  const cats=serviceCategoryForMode(mode);
+  const maxKm=includeExtended?MOBILITY_EXTENDED_KM:MOBILITY_NEAR_KM;
+  return MOBILITY
+    .filter(s=>cats.includes(s.category) && isLikelyOpen(s,planningDate||new Date()))
+    .map(s=>({...s,distanceKm:mobilityDistanceKm(s)}))
+    .filter(s=>Number.isFinite(s.distanceKm) && s.distanceKm<=maxKm)
+    .sort((a,b)=>a.distanceKm-b.distanceKm);
+}
+
 async function renderMobility(){
   const box=document.getElementById('mobilityList');
   if(!box) return;
@@ -1748,44 +1818,58 @@ async function renderMobility(){
     return;
   }
 
-  let rows=MOBILITY.filter(x=>cats.includes(x.category));
-  if(origin) rows.sort((a,b)=>(a.area===origin?0:1)-(b.area===origin?0:1));
+  let rows=MOBILITY
+    .filter(x=>cats.includes(x.category))
+    .map(s=>({...s,distanceKm:mobilityDistanceKm(s)}))
+    .filter(s=>Number.isFinite(s.distanceKm) && s.distanceKm<=MOBILITY_EXTENDED_KM)
+    .sort((a,b)=>a.distanceKm-b.distanceKm);
 
   if(!rows.length){
     nearestService=null;
-    box.innerHTML='<div class="note">該当する登録拠点はまだありません。</div>';
+    box.innerHTML='<div class="note">現在地・基準地点から2km以内に該当する移動サービスは見つかりませんでした。</div>';
     renderMapRows([]);
     return;
   }
 
-  nearestService=await getNearestService(rows);
+  const nearRows=rows.filter(s=>s.distanceKm<=MOBILITY_NEAR_KM);
+  const extendedRows=rows.filter(s=>s.distanceKm>MOBILITY_NEAR_KM && s.distanceKm<=MOBILITY_EXTENDED_KM);
+
+  nearestService=nearRows.length ? await getNearestService(nearRows) : null;
   renderMapRows(rows);
 
-  const nearestHtml=nearestService
-    ? `<div class="pick" style="margin-bottom:12px;background:#f8fafc">
-        <div class="picktop"><strong>📍 最寄り候補</strong><span class="badge ok">${nearestService.walkMinutes}分</span></div>
-        <div class="nearest-line">${nearestService.name}</div>
-        <div class="service-distance">現在地/基準地点から約 ${nearestService.distanceKm.toFixed(1)}km · 徒歩 約${nearestService.walkMinutes}分</div>
-       </div>`
-    : '';
-
-  box.innerHTML=nearestHtml + rows.slice(0,6).map(s=>{
+  const renderCard=s=>{
     const open=isLikelyOpen(s);
-    let d='';
-    if(currentPos)d=haversine(currentPos.lat,currentPos.lon,s.lat,s.lon);
-    else if(PLACES[origin])d=haversine(PLACES[origin].lat,PLACES[origin].lon,s.lat,s.lon);
     const phone=s.phone?`<a href="tel:${s.phone}" class="service-icon-btn" aria-label="電話する" title="${s.phone}">☎︎</a>`:'';
     return `<div class="pick" style="margin-bottom:10px">
       <div class="picktop"><strong>${s.name}</strong><span class="badge ${open?'ok':'ng'}">${open?'利用候補':'時間・天候注意'}</span></div>
       <div class="meta">${s.area} · ${s.hours||''}</div>
       <div class="meta">${s.address||''}</div>
-      ${d!==''?`<div class="service-distance">基準地点から約 ${d.toFixed(1)}km</div>`:''}
+      <div class="service-distance">基準地点から約 ${s.distanceKm.toFixed(1)}km · ${mobilityDistanceLabel(s.distanceKm)}</div>
       ${s.stock?`<div class="meta">${s.stock}</div>`:''}
       ${s.price?`<div class="meta">${s.price}</div>`:''}
       ${s.closed_note?`<div class="note">${s.closed_note}</div>`:''}
       <div class="actions service-actions">${phone}<a href="${s.url}" target="_blank" rel="noopener" class="service-icon-btn" aria-label="公式サイトで確認" title="公式サイトで確認">↗︎</a></div>
     </div>`;
-  }).join('');
+  };
+
+  let out='';
+  if(nearestService){
+    out+=`<div class="pick" style="margin-bottom:12px;background:#f8fafc">
+      <div class="picktop"><strong>📍 最寄り候補</strong><span class="badge ok">${nearestService.walkMinutes}分</span></div>
+      <div class="nearest-line">${nearestService.name}</div>
+      <div class="service-distance">現在地/基準地点から約 ${nearestService.distanceKm.toFixed(1)}km · 徒歩 約${nearestService.walkMinutes}分</div>
+    </div>`;
+  }
+
+  if(nearRows.length){
+    out+=`<div class="mobility-section-title">近くで使える移動サービス</div>${nearRows.slice(0,6).map(renderCard).join('')}`;
+  }
+  if(extendedRows.length){
+    out+=`<div class="mobility-section-title" style="margin-top:12px">少し離れた移動サービス</div>
+      <div class="note" style="margin-bottom:8px">基準地点から1.5〜2km。近場とは分けて表示しています。</div>
+      ${extendedRows.slice(0,4).map(renderCard).join('')}`;
+  }
+  box.innerHTML=out;
 }
 
 const MODE_LABELS={
@@ -1798,13 +1882,20 @@ const AUTO_MODES=['privatecar','carshare','rentalcar','public','multimodal','tax
 
 async function getModeService(mode){
   if(!['carshare','rentalcar','taxi','bike'].includes(mode))return {service:null,access:0};
-  const rows=MOBILITY.filter(s=>serviceCategoryForMode(mode).includes(s.category) && isLikelyOpen(s,planningDate||new Date()));
+
+  // Taxi can come to the user, so office distance is not used as an access constraint.
+  if(mode==='taxi'){
+    const rows=MOBILITY.filter(s=>serviceCategoryForMode(mode).includes(s.category) && isLikelyOpen(s,planningDate||new Date()));
+    if(!rows.length)return null;
+    const service=await getNearestService(rows);
+    return service?{service,access:0}:null;
+  }
+
+  const rows=mobilityRowsForMode(mode,{includeExtended:false});
   if(!rows.length)return null;
   const service=await getNearestService(rows);
-  if(!service)return null;
-  // Taxi comes to the user; do not make the user walk to the taxi office.
-  const access=mode==='taxi'?0:(service.walkMinutes||0);
-  return {service,access};
+  if(!service || service.distanceKm>MOBILITY_NEAR_KM)return null;
+  return {service,access:service.walkMinutes||0};
 }
 
 function resolvedReturnStation(ctx=null){
@@ -2267,6 +2358,11 @@ const ITINERARY_SPOTS=[
   {area:'kasugayama',name:'上杉謙信公銅像',stay:5},
   {area:'kasugayama',name:'春日山神社',stay:20},
   {area:'kasugayama',name:'春日山城跡',stay:35},
+  {area:'kasugayama',name:'林泉寺',stay:20},
+
+  {area:'kasugayama',name:'上杉謙信公銅像',stay:5},
+  {area:'kasugayama',name:'春日山神社',stay:20},
+  {area:'kasugayama',name:'春日山城跡',stay:35},
   {area:'takada',name:'高田城址公園',stay:25},
   {area:'takada',name:'高田の雁木・町家',stay:25},
   {area:'naoetsu',name:'直江津海岸・港周辺',stay:20},
@@ -2299,6 +2395,40 @@ function renderSimpleItinerary(rows){
 }
 
 const FLEX_ACTIVITIES=[
+
+  {
+    id:'flex-kasugayama-history',
+    title:'春日山の歴史スポットを巡る',
+    area:'kasugayama',area_name:'春日山',venue:'春日山城跡・春日山神社周辺',
+    categories:['観光','歴史','文化','自然','景色','歩く'],summary:'謙信公ゆかりの史跡を、残り時間に合わせて組み合わせるプラン。',
+    indoor:false,family_friendly:true,couple_friendly:true,solo_friendly:true,
+    estimated_cost_yen:0,daylight_only:true,url:'https://joetsukankonavi.jp/'
+  },
+  {
+    id:'flex-kakizaki',
+    title:'柿崎・大潟の海側を巡る',
+    area:'kakizaki',area_name:'大潟・柿崎',venue:'柿崎・大潟エリア',
+    categories:['自然','景色','のんびり','観光'],summary:'海沿いの景色や立ち寄りスポットを時間に合わせて巡るプラン。',
+    indoor:false,family_friendly:true,couple_friendly:true,solo_friendly:true,
+    estimated_cost_yen:0,daylight_only:true,url:'https://joetsukankonavi.jp/'
+  },
+  {
+    id:'flex-itakura',
+    title:'板倉・清里・牧の里山を巡る',
+    area:'itakura',area_name:'山側',venue:'板倉・清里・牧エリア',
+    categories:['自然','景色','観光','のんびり'],summary:'上越南東部の里山を、空き時間に合わせて巡るプラン。',
+    indoor:false,family_friendly:true,couple_friendly:true,solo_friendly:true,
+    estimated_cost_yen:0,daylight_only:true,url:'https://joetsukankonavi.jp/'
+  },
+  {
+    id:'flex-myoko-arai',
+    title:'新井エリアを気軽に巡る',
+    area:'myoko_arai',area_name:'妙高',venue:'新井駅周辺',
+    categories:['観光','食','街歩き','のんびり'],summary:'新井駅周辺を起点に、食事や街歩きを時間に合わせて組み合わせるプラン。',
+    indoor:false,family_friendly:true,couple_friendly:true,solo_friendly:true,
+    estimated_cost_yen:null,url:'https://myokotourism.jp/'
+  },
+
   {
     id:'flex-takada-walk',
     title:'高田城址公園まわりを散歩',
