@@ -1,4 +1,4 @@
-const CACHE='nexitaime-beta1-0-area6-brandfix';
+const CACHE='nexitaime-beta1-0-carshare-rental-merged';
 const ASSETS=[
   './',
   './index.html',

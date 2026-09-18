@@ -1091,8 +1091,7 @@ main{
 <div class="chips wrap" id="transport">
 <button class="chip active" data-mode="auto">✨ おまかせ</button>
 <button class="chip" data-mode="privatecar">🚗 自家用車</button>
-<button class="chip" data-mode="carshare">🚙 カーシェア</button>
-<button class="chip" data-mode="rentalcar">🚘 レンタカー</button>
+<button class="chip" data-mode="mobilitycar">🚙 カーシェア・レンタカー</button>
 <button class="chip" data-mode="public">🚉 公共交通</button>
 <button class="chip" data-mode="taxi">🚕 タクシー</button>
 <button class="chip" data-mode="walk">🚶 徒歩</button>
@@ -1101,7 +1100,7 @@ main{
 <div class="note" id="railDataNotice" style="margin-top:10px">
 🚉 公共交通は静的時刻表を使用しています。北しなの線は一部列車のみ収録のため、候補が出ない場合でも実際に便がある可能性があります。最終確認は公式時刻表をご利用ください。
 </div>
-<div class="note" style="margin-top:10px">自家用車・タクシー等は道路所要時間、徒歩・レンタル自転車は距離から概算。公共交通全般は電車とバスを比較します。カーシェア・レンタカー・タクシーは受取/手続き/配車待ち時間を加味する暫定ロジックです。</div>
+<div class="note" style="margin-top:10px">自家用車・タクシー等は道路所要時間、徒歩・レンタル自転車は距離から概算。公共交通全般は電車とバスを比較します。カーシェア・レンタカーはまとめて比較し、利用拠点までの距離や受取・手続き時間を加味します。タクシーは配車待ち時間を加味する暫定ロジックです。</div>
 <div class="note" style="margin-top:10px">
 🚌 アプリ内の時刻判定は、上越大通り線・佐渡汽船連絡バスに加え、教育大学線・春日山／佐内線・山麓線の主要4エリア間に対応。その他の路線や臨時変更は上越バスロケーションシステムで確認できます。
 </div>
@@ -1812,6 +1811,7 @@ async function serviceAccessMinutes(mode){
 }
 
 function serviceCategoryForMode(mode){
+  if(mode==='mobilitycar') return ['carshare','rentalcar'];
   if(mode==='carshare') return ['carshare'];
   if(mode==='rentalcar') return ['rentalcar'];
   if(mode==='taxi') return ['taxi'];
@@ -1950,11 +1950,11 @@ async function renderMobility(){
 }
 
 const MODE_LABELS={
-  privatecar:'自家用車',carshare:'カーシェア',rentalcar:'レンタカー',
+  privatecar:'自家用車',mobilitycar:'カーシェア・レンタカー',carshare:'カーシェア',rentalcar:'レンタカー',
   train:'電車',bus:'バス',public:'公共交通',taxi:'タクシー',
   walk:'徒歩',bike:'レンタル自転車',multimodal:'複合移動'
 };
-const MODE_ICONS={privatecar:'🚗',carshare:'🚙',rentalcar:'🚘',train:'🚃',bus:'🚌',public:'🚉',taxi:'🚕',walk:'🚶',bike:'🚲',multimodal:'🔀'};
+const MODE_ICONS={privatecar:'🚗',mobilitycar:'🚙',carshare:'🚙',rentalcar:'🚘',train:'🚃',bus:'🚌',public:'🚉',taxi:'🚕',walk:'🚶',bike:'🚲',multimodal:'🔀'};
 const AUTO_MODES=['privatecar','carshare','rentalcar','public','multimodal','taxi','walk','bike'];
 
 async function getModeService(mode){
@@ -1990,6 +1990,7 @@ function returnModeAllowed(mode,ctx=null){
 }
 
 function reasonForMode(mode,service){
+  if(mode==='mobilitycar')return 'カーシェアとレンタカーを比較した案';
   if(mode==='privatecar')return '乗り換えなしで移動できる案';
   if(mode==='carshare')return service?`${service.name}を利用する案`:'最寄りカーシェアを利用する案';
   if(mode==='rentalcar')return service?`${service.name}から出発する案`:'レンタカー手続き時間込みの案';
@@ -2692,7 +2693,9 @@ async function buildPlans(){
 
  let scored=[];
  let relaxationLevel=0;
- const requestedModes=transport==='auto'?AUTO_MODES:[transport];
+ const requestedModes=transport==='auto'
+   ? AUTO_MODES
+   : (transport==='mobilitycar' ? ['carshare','rentalcar'] : [transport]);
 
  // 1) Exact requested conditions
  scored=await scoreEventSet(events,requestedModes,start,deadline,searchCtx);
@@ -2716,7 +2719,7 @@ async function buildPlans(){
  if(!scored.length){
    let flex=FLEX_ACTIVITIES.filter(budgetAllows).filter(companionAllows);
    if(searchCtx.destination!=='any'){
-     flex=flex.filter(ev=>areaStation[ev.area]===searchCtx.destination);
+     flex=flex.filter(destinationMatchesEvent);
    }
    scored=await scoreEventSet(flex,['walk','privatecar','taxi','bike'],start,deadline,searchCtx);
    if(scored.length) relaxationLevel=3;
