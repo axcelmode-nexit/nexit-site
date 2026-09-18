@@ -3201,6 +3201,146 @@
       linear-gradient(90deg, rgba(0,0,0,.35) 0%, rgba(0,0,0,.18) 45%, rgba(0,0,0,.02) 100%);
   }
 </style>
+<style id="nexitaime-promo-style">
+  .nexitaime-promo-section{
+    padding:110px 7vw;
+    background:
+      radial-gradient(circle at 88% 20%, rgba(215,25,32,.10), transparent 28%),
+      linear-gradient(180deg,#070707,#050505);
+    border-bottom:1px solid var(--line);
+  }
+  .nexitaime-promo-wrap{
+    max-width:1180px;
+    margin:0 auto;
+    display:grid;
+    grid-template-columns:minmax(0,1.18fr) minmax(300px,.82fr);
+    gap:64px;
+    align-items:center;
+  }
+  .nexitaime-promo-label{
+    margin:0 0 14px;
+    color:var(--red);
+    font-size:12px;
+    font-weight:900;
+    letter-spacing:.20em;
+  }
+  .nexitaime-promo-title{
+    margin:0 0 22px;
+    font-size:clamp(34px,5vw,64px);
+    line-height:1.18;
+    letter-spacing:.02em;
+  }
+  .nexitaime-promo-copy{
+    margin:0;
+    max-width:720px;
+    color:rgba(255,255,255,.82);
+    font-size:16px;
+    line-height:2;
+    font-weight:700;
+  }
+  .nexitaime-promo-points{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    margin:28px 0 0;
+  }
+  .nexitaime-promo-points span{
+    display:inline-flex;
+    align-items:center;
+    min-height:34px;
+    padding:7px 11px;
+    border:1px solid rgba(255,255,255,.16);
+    background:rgba(255,255,255,.035);
+    font-size:11px;
+    font-weight:800;
+    color:#e8e8e8;
+  }
+  .nexitaime-promo-cta{
+    position:relative;
+    display:inline-flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:28px;
+    margin-top:34px;
+    min-width:280px;
+    padding:18px 22px;
+    border:1px solid rgba(215,25,32,.68);
+    background:rgba(215,25,32,.08);
+    font-size:14px;
+    font-weight:900;
+    letter-spacing:.08em;
+    transition:transform .25s ease,border-color .25s ease,background .25s ease;
+  }
+  .nexitaime-promo-cta::after{
+    content:"→";
+    color:var(--red);
+    font-size:24px;
+    line-height:1;
+    transition:transform .25s ease;
+  }
+  .nexitaime-promo-cta:hover{
+    transform:translateY(-3px);
+    border-color:rgba(255,255,255,.48);
+    background:rgba(255,255,255,.05);
+  }
+  .nexitaime-promo-cta:hover::after{transform:translateX(4px);}
+  .nexitaime-promo-card{
+    position:relative;
+    min-height:390px;
+    padding:30px;
+    display:flex;
+    flex-direction:column;
+    justify-content:flex-end;
+    overflow:hidden;
+    border:1px solid rgba(255,255,255,.14);
+    background:
+      linear-gradient(180deg,rgba(0,0,0,.04),rgba(0,0,0,.78)),
+      url("nexitaime/assets/joetsu-hero-clean.png") center / cover no-repeat;
+    box-shadow:0 26px 70px rgba(0,0,0,.42);
+  }
+  .nexitaime-promo-card::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:linear-gradient(135deg,transparent 0 54%,rgba(215,25,32,.55) 54.2% 54.45%,transparent 54.7% 100%);
+    pointer-events:none;
+  }
+  .nexitaime-promo-brand{
+    position:relative;
+    z-index:1;
+    font-size:clamp(34px,4vw,54px);
+    font-weight:950;
+    letter-spacing:-.05em;
+    color:#fff;
+  }
+  .nexitaime-promo-brand .a{color:var(--red);}
+  .nexitaime-promo-tagline{
+    position:relative;
+    z-index:1;
+    margin-top:6px;
+    font-size:13px;
+    font-weight:800;
+    color:rgba(255,255,255,.86);
+    letter-spacing:.08em;
+  }
+  .nexitaime-promo-beta{
+    position:absolute;
+    top:22px;
+    right:22px;
+    z-index:1;
+    padding:7px 10px;
+    border:1px solid rgba(255,255,255,.28);
+    background:rgba(0,0,0,.42);
+    font-size:10px;
+    font-weight:900;
+    letter-spacing:.10em;
+  }
+  @media(max-width:980px){
+    .nexitaime-promo-section{padding:84px 6vw;}
+    .nexitaime-promo-wrap{grid-template-columns:1fr;gap:34px;}
+    .nexitaime-promo-card{min-height:300px;}
+  }
+</style>
 </head>
 <body class="motion-ready">
 <div class="site">
@@ -3211,6 +3351,7 @@
 <a href="#about">ABOUT</a>
 <a href="#business">BUSINESS</a>
 <a href="#projects">PROJECTS</a>
+<a href="#nexitaime">NEXITAIME</a>
 <a href="#office">OFFICE</a>
 <a href="recruit.html">RECRUIT</a>
 <a href="#contact">CONTACT</a>
@@ -3383,6 +3524,33 @@ AXCEL MODE NEXITでは、大手企業・上場企業を含む法人向けのシ�
 </div>
 </div>
 </section>
+<section class="nexitaime-promo-section" id="nexitaime">
+  <div class="nexitaime-promo-wrap">
+    <div class="nexitaime-promo-copybox">
+      <p class="nexitaime-promo-label">NEXIT ORIGINAL PRODUCT</p>
+      <h2 class="nexitaime-promo-title">上越で、何をする？</h2>
+      <p class="nexitaime-promo-copy">
+        NEXITAIME 〜上越版〜 は、イベントと交通、天気や営業時間などを一緒に見ながら、
+        今から本当に行ける候補を提案する地域向けWebアプリです。<br/><br/>
+        空き時間や気分、予算、移動手段に合わせて、上越での「次の時間」を見つけます。
+      </p>
+      <div class="nexitaime-promo-points" aria-label="NEXITAIMEの主な特徴">
+        <span>AIでプラン調整</span>
+        <span>イベント連携</span>
+        <span>交通を考慮</span>
+        <span>営業時間を確認</span>
+        <span>上越・妙高対応</span>
+      </div>
+      <a class="nexitaime-promo-cta" href="/nexitaime/">NEXITAIMEを使ってみる</a>
+    </div>
+    <a class="nexitaime-promo-card" href="/nexitaime/" aria-label="NEXITAIME 〜上越版〜 を開く">
+      <span class="nexitaime-promo-beta">WEB APP</span>
+      <div class="nexitaime-promo-brand">NEXIT<span class="a">A</span>IME</div>
+      <div class="nexitaime-promo-tagline">AIで、次の時間を見つけよう。</div>
+    </a>
+  </div>
+</section>
+
 <section class="message" id="message">
 <div class="two-col">
 <div class="section-title"><div class="bar"></div><h2>MESSAGE</h2><p>代表メッセージ</p></div>
@@ -3490,6 +3658,7 @@ AXCEL MODE NEXITでは、大手企業・上場企業を含む法人向けのシ�
 <a href="#company">ABOUT</a>
 <a href="#business">BUSINESS</a>
 <a href="#projects">PROJECTS</a>
+<a href="#nexitaime">NEXITAIME</a>
 <a href="#message">MESSAGE</a>
 <a href="#office">OFFICE</a>
 <a href="#company">COMPANY</a>
