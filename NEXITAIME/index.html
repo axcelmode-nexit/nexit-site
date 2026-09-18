@@ -1240,6 +1240,7 @@ main{
   .adjust-preset{text-align:left;border-radius:12px}
   .adjust-freeform{grid-template-columns:1fr}
 }
+.stay-guide{font-size:9px;color:#8795a3;font-weight:700}
 </style>
 
 
@@ -2850,8 +2851,9 @@ async function evaluateDirectMode(ev,dest,mode,start,deadline,ctx){
   if(eventEnd!=null)latestLeave=Math.min(latestLeave,eventEnd);
   if(window.close!=null)latestLeave=Math.min(latestLeave,window.close);
 
-  const stay=Math.floor(latestLeave-arrive);
-  if(stay<30)return null;
+  const availableStay=Math.floor(latestLeave-arrive);
+  const stay=choosePlannedStay(ev,availableStay);
+  if(stay==null)return null;
 
   const backDep=arrive+stay;
   const finish=backDep+backWay+returnAccess;
@@ -2873,6 +2875,30 @@ async function evaluateDirectMode(ev,dest,mode,start,deadline,ctx){
     transportCost,availability,
     reason:modeReason
   };
+}
+
+
+function stayPreference(ev){
+  const raw=ev?.stay_minutes||{};
+  const min=Math.max(15,Number(raw.min)||30);
+  const recommended=Math.max(min,Number(raw.recommended)||60);
+  const max=Math.max(recommended,Number(raw.max)||recommended);
+  return {min,recommended,max};
+}
+
+function choosePlannedStay(ev,availableMinutes){
+  const pref=stayPreference(ev);
+  const available=Math.floor(Number(availableMinutes)||0);
+  if(available<pref.min)return null;
+  return Math.max(pref.min,Math.min(pref.recommended,pref.max,available));
+}
+
+function firstTransitReturnAfter(a,b,earliest,deadline,eventEnd,mode){
+  const r=chooseTransportMode(a,b,earliest,mode);
+  if(!r)return null;
+  if(eventEnd!=null && r.dep>eventEnd)return null;
+  if(r.arr>deadline)return null;
+  return r;
 }
 
 function findBestTransitReturn(a,b,earliest,deadline,eventEnd,mode){
@@ -2906,16 +2932,22 @@ async function evaluateTransitMode(ev,dest,mode,start,deadline,ctx){
   const cutoff=arrivalCutoffFor(ev,window);
   if(cutoff!=null && arrive>=cutoff)return null;
 
-  const earliestBack=arrive+30;
+  const pref=stayPreference(ev);
+  const earliestBack=arrive+pref.min;
+  const targetBack=arrive+pref.recommended;
   let effectiveEnd=eventEnd;
   if(window.close!=null)effectiveEnd=effectiveEnd==null ? window.close : Math.min(effectiveEnd,window.close);
   if(effectiveEnd!=null && earliestBack>effectiveEnd)return null;
 
-  const back=findBestTransitReturn(dest,backTo,earliestBack,deadline,effectiveEnd,mode);
+  // Prefer the first public-transport departure after the recommended stay.
+  // If that cannot return before the deadline, fall back to the first departure
+  // after the venue's minimum useful stay.
+  let back=firstTransitReturnAfter(dest,backTo,targetBack,deadline,effectiveEnd,mode);
+  if(!back)back=firstTransitReturnAfter(dest,backTo,earliestBack,deadline,effectiveEnd,mode);
   if(!back)return null;
 
   const stay=Math.floor(back.dep-arrive);
-  if(stay<30)return null;
+  if(stay<pref.min)return null;
 
   const availability=spotAvailability(ev,arrive,back.dep,planningDate);
   if(!availability.ok)return null;
@@ -4495,7 +4527,7 @@ async function buildPlans(){
      </div>
      <div class="timeline">
        <div class="leg"><div>行き</div><div><strong>${p.modeIcon||''} ${esc(p.out.n)}</strong><br>${searchCtx.origin} → ${p.dest}</div><div>${p.out[searchCtx.origin]} → ${p.out[p.dest]}</div></div>
-       <div class="leg"><div>滞在</div><div><strong>${p.dest}周辺</strong></div><div>約${p.stay}分</div></div>
+       <div class="leg"><div>滞在</div><div><strong>${p.dest}周辺</strong><br><span class="stay-guide">目安 ${stayPreference(p.ev).recommended}分</span></div><div>約${p.stay}分</div></div>
        <div class="leg"><div>帰り</div><div><strong>${p.modeIcon||''} ${esc(p.back.n)}</strong><br>${esc(p.destLabel||p.dest)} → ${p.returnTo||origin}</div><div>${p.back[p.dest]} → ${p.back[p.returnTo||origin]}</div></div>
      </div>
      <div class="meta" style="margin-top:8px">ルート：${esc(searchCtx.origin)} → ${p.multimodal?`${esc(p.transferHub)}（乗換） → `:''}${esc(p.dest)} → ${p.multimodal?`${esc(p.transferHub)}（乗換） → `:''}${esc(p.returnTo||searchCtx.returnTo)}<br>帰着後の余裕：${Math.max(0,p.spare+buffer)}分</div>

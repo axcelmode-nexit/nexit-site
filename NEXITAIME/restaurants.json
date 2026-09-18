@@ -29,7 +29,12 @@
     "parking": true,
     "url": "https://joetsukankonavi.jp/restaurant/detail.php?id=66",
     "source_url": "https://joetsukankonavi.jp/restaurant/detail.php?id=66",
-    "source_note": "上越観光Navi"
+    "source_note": "上越観光Navi",
+    "stay_minutes": {
+      "min": 30,
+      "recommended": 45,
+      "max": 60
+    }
   },
   {
     "id": "food-haruki",
@@ -61,7 +66,12 @@
     "parking": true,
     "url": "https://joetsukankonavi.jp/restaurant/detail.php?id=71",
     "source_url": "https://joetsukankonavi.jp/restaurant/detail.php?id=71",
-    "source_note": "上越観光Navi"
+    "source_note": "上越観光Navi",
+    "stay_minutes": {
+      "min": 30,
+      "recommended": 45,
+      "max": 60
+    }
   },
   {
     "id": "food-houraiken",
@@ -93,7 +103,12 @@
     "parking": true,
     "url": "https://joetsukankonavi.jp/restaurant/detail.php?id=68",
     "source_url": "https://joetsukankonavi.jp/restaurant/detail.php?id=68",
-    "source_note": "上越観光Navi・営業時間は昼営業を保守的に登録"
+    "source_note": "上越観光Navi・営業時間は昼営業を保守的に登録",
+    "stay_minutes": {
+      "min": 30,
+      "recommended": 45,
+      "max": 60
+    }
   },
   {
     "id": "food-shoji",
@@ -124,7 +139,12 @@
     "parking": true,
     "url": "https://joetsukankonavi.jp/restaurant/detail.php?id=56",
     "source_url": "https://joetsukankonavi.jp/restaurant/detail.php?id=56",
-    "source_note": "上越観光Navi・営業時間は昼営業を保守的に登録"
+    "source_note": "上越観光Navi・営業時間は昼営業を保守的に登録",
+    "stay_minutes": {
+      "min": 30,
+      "recommended": 45,
+      "max": 60
+    }
   },
   {
     "id": "food-tanpopo",
@@ -155,7 +175,12 @@
     "parking": true,
     "url": "https://joetsukankonavi.jp/restaurant/detail.php?id=60",
     "source_url": "https://joetsukankonavi.jp/restaurant/detail.php?id=60",
-    "source_note": "上越観光Navi・火曜夜休のため昼営業を登録"
+    "source_note": "上越観光Navi・火曜夜休のため昼営業を登録",
+    "stay_minutes": {
+      "min": 30,
+      "recommended": 45,
+      "max": 60
+    }
   },
   {
     "id": "food-tomizushi-kasuga",
@@ -189,7 +214,12 @@
     "parking": true,
     "url": "https://joetsukankonavi.jp/restaurant/detail.php?id=82",
     "source_url": "https://joetsukankonavi.jp/restaurant/detail.php?id=82",
-    "source_note": "上越観光Navi・昼営業を登録"
+    "source_note": "上越観光Navi・昼営業を登録",
+    "stay_minutes": {
+      "min": 45,
+      "recommended": 60,
+      "max": 90
+    }
   },
   {
     "id": "food-tomizushi-takada",
@@ -219,7 +249,12 @@
     "parking": true,
     "url": "https://joetsukankonavi.jp/restaurant/detail.php?id=81",
     "source_url": "https://joetsukankonavi.jp/restaurant/detail.php?id=81",
-    "source_note": "上越観光Navi"
+    "source_note": "上越観光Navi",
+    "stay_minutes": {
+      "min": 45,
+      "recommended": 60,
+      "max": 90
+    }
   },
   {
     "id": "food-tomizushi-kiwami",
@@ -250,7 +285,12 @@
     "parking": true,
     "url": "https://joetsukankonavi.jp/restaurant/detail.php?id=85",
     "source_url": "https://joetsukankonavi.jp/restaurant/detail.php?id=85",
-    "source_note": "上越観光Navi・平日昼営業時間を保守的に登録"
+    "source_note": "上越観光Navi・平日昼営業時間を保守的に登録",
+    "stay_minutes": {
+      "min": 45,
+      "recommended": 60,
+      "max": 90
+    }
   },
   {
     "id": "food-daikokuya",
@@ -280,7 +320,12 @@
     "parking": true,
     "url": "https://joetsukankonavi.jp/restaurant/detail.php?id=25",
     "source_url": "https://joetsukankonavi.jp/restaurant/detail.php?id=25",
-    "source_note": "上越観光Navi"
+    "source_note": "上越観光Navi",
+    "stay_minutes": {
+      "min": 45,
+      "recommended": 60,
+      "max": 90
+    }
   },
   {
     "id": "food-tashichi",
@@ -312,7 +357,12 @@
     "parking": true,
     "url": "https://joetsukankonavi.jp/restaurant/detail.php?id=34",
     "source_url": "https://joetsukankonavi.jp/restaurant/detail.php?id=34",
-    "source_note": "上越観光Navi・昼営業を登録"
+    "source_note": "上越観光Navi・昼営業を登録",
+    "stay_minutes": {
+      "min": 45,
+      "recommended": 60,
+      "max": 90
+    }
   },
   {
     "id": "food-kisuya",
@@ -345,7 +395,12 @@
     "parking": true,
     "url": "https://joetsukankonavi.jp/restaurant/detail.php?id=39",
     "source_url": "https://joetsukankonavi.jp/restaurant/detail.php?id=39",
-    "source_note": "上越観光Navi"
+    "source_note": "上越観光Navi",
+    "stay_minutes": {
+      "min": 45,
+      "recommended": 60,
+      "max": 90
+    }
   },
   {
     "id": "food-umidaidokoya",
@@ -377,7 +432,12 @@
     "parking": true,
     "url": "https://joetsukankonavi.jp/restaurant/detail.php?id=109",
     "source_url": "https://joetsukankonavi.jp/restaurant/detail.php?id=109",
-    "source_note": "上越観光Navi・昼営業を登録。第2水曜等の臨時休館は公式確認"
+    "source_note": "上越観光Navi・昼営業を登録。第2水曜等の臨時休館は公式確認",
+    "stay_minutes": {
+      "min": 45,
+      "recommended": 60,
+      "max": 90
+    }
   },
   {
     "id": "food-nekoji",
@@ -407,7 +467,12 @@
     "parking": true,
     "url": "https://joetsukankonavi.jp/restaurant/detail.php?id=42",
     "source_url": "https://joetsukankonavi.jp/restaurant/detail.php?id=42",
-    "source_note": "上越観光Navi・金土日は19時まで"
+    "source_note": "上越観光Navi・金土日は19時まで",
+    "stay_minutes": {
+      "min": 30,
+      "recommended": 60,
+      "max": 90
+    }
   },
   {
     "id": "food-issaku",
@@ -438,7 +503,12 @@
     "parking": true,
     "url": "https://joetsukankonavi.jp/restaurant/detail.php?id=5",
     "source_url": "https://joetsukankonavi.jp/restaurant/detail.php?id=5",
-    "source_note": "上越観光Navi"
+    "source_note": "上越観光Navi",
+    "stay_minutes": {
+      "min": 45,
+      "recommended": 60,
+      "max": 90
+    }
   },
   {
     "id": "food-misa-arai",
@@ -471,7 +541,12 @@
     "parking": true,
     "url": "https://eki-arai.com/shop-all/",
     "source_url": "https://eki-arai.com/access/",
-    "source_note": "道の駅あらい公式。定休日は月ごとの公式営業スケジュール確認推奨"
+    "source_note": "道の駅あらい公式。定休日は月ごとの公式営業スケジュール確認推奨",
+    "stay_minutes": {
+      "min": 30,
+      "recommended": 45,
+      "max": 60
+    }
   },
   {
     "id": "food-ramen-sho-arai",
@@ -513,7 +588,12 @@
     "parking": true,
     "url": "https://eki-arai.com/shop/ramen_shou/",
     "source_url": "https://eki-arai.com/shop/ramen_shou/",
-    "source_note": "道の駅あらい公式。祝日・夏休み期間の月曜営業等は公式確認"
+    "source_note": "道の駅あらい公式。祝日・夏休み期間の月曜営業等は公式確認",
+    "stay_minutes": {
+      "min": 30,
+      "recommended": 45,
+      "max": 60
+    }
   },
   {
     "id": "food-kitokito-arai",
@@ -548,7 +628,12 @@
     "parking": true,
     "url": "https://eki-arai.com/shop/kitokitozushi/",
     "source_url": "https://eki-arai.com/shop/kitokitozushi/",
-    "source_note": "道の駅あらい公式。平日15:00〜16:00休みは現エンジン未対応のため公式確認表示を推奨"
+    "source_note": "道の駅あらい公式。平日15:00〜16:00休みは現エンジン未対応のため公式確認表示を推奨",
+    "stay_minutes": {
+      "min": 45,
+      "recommended": 60,
+      "max": 90
+    }
   },
   {
     "id": "food-onaka-myoko",
@@ -583,7 +668,12 @@
     "parking": true,
     "url": "https://eki-arai.com/shop/shikisaikan_myoko/",
     "source_url": "https://eki-arai.com/shop/shikisaikan_myoko/",
-    "source_note": "道の駅あらい公式・昼営業を登録。祝祭日月曜や不定休は公式確認"
+    "source_note": "道の駅あらい公式・昼営業を登録。祝祭日月曜や不定休は公式確認",
+    "stay_minutes": {
+      "min": 30,
+      "recommended": 45,
+      "max": 60
+    }
   },
   {
     "id": "food-daiji",
@@ -615,7 +705,12 @@
     "parking": true,
     "url": "https://joetsukankonavi.jp/restaurant/detail.php?id=38",
     "source_url": "https://joetsukankonavi.jp/restaurant/detail.php?id=38",
-    "source_note": "上越観光Navi"
+    "source_note": "上越観光Navi",
+    "stay_minutes": {
+      "min": 30,
+      "recommended": 45,
+      "max": 60
+    }
   },
   {
     "id": "food-agosuke",
@@ -649,7 +744,12 @@
     "parking": true,
     "url": "https://joetsukankonavi.jp/restaurant/detail.php?id=101",
     "source_url": "https://joetsukankonavi.jp/restaurant/detail.php?id=101",
-    "source_note": "上越観光Navi・昼営業を登録"
+    "source_note": "上越観光Navi・昼営業を登録",
+    "stay_minutes": {
+      "min": 30,
+      "recommended": 45,
+      "max": 60
+    }
   },
   {
     "id": "food-ryomaken",
@@ -682,7 +782,12 @@
     "parking": true,
     "url": "https://joetsukankonavi.jp/restaurant/detail.php?id=76",
     "source_url": "https://joetsukankonavi.jp/restaurant/detail.php?id=76",
-    "source_note": "上越観光Navi・昼営業を登録"
+    "source_note": "上越観光Navi・昼営業を登録",
+    "stay_minutes": {
+      "min": 30,
+      "recommended": 45,
+      "max": 60
+    }
   },
   {
     "id": "food-ashita",
@@ -713,7 +818,12 @@
     "parking": true,
     "url": "https://joetsukankonavi.jp/restaurant/detail.php?id=40",
     "source_url": "https://joetsukankonavi.jp/restaurant/detail.php?id=40",
-    "source_note": "上越観光Navi・昼営業を登録。火水夜休などは昼判定に影響しないため省略"
+    "source_note": "上越観光Navi・昼営業を登録。火水夜休などは昼判定に影響しないため省略",
+    "stay_minutes": {
+      "min": 30,
+      "recommended": 45,
+      "max": 60
+    }
   },
   {
     "id": "food-ouka",
@@ -746,7 +856,12 @@
     "parking": true,
     "url": "https://joetsukankonavi.jp/restaurant/detail.php?id=62",
     "source_url": "https://joetsukankonavi.jp/restaurant/detail.php?id=62",
-    "source_note": "上越観光Navi・昼営業を登録"
+    "source_note": "上越観光Navi・昼営業を登録",
+    "stay_minutes": {
+      "min": 30,
+      "recommended": 45,
+      "max": 60
+    }
   },
   {
     "id": "food-bitaban",
@@ -778,7 +893,12 @@
     "parking": true,
     "url": "https://joetsukankonavi.jp/restaurant/detail.php?id=92",
     "source_url": "https://joetsukankonavi.jp/restaurant/detail.php?id=92",
-    "source_note": "上越観光Navi・昼営業を登録。第2・4火曜休はUI側で要確認"
+    "source_note": "上越観光Navi・昼営業を登録。第2・4火曜休はUI側で要確認",
+    "stay_minutes": {
+      "min": 30,
+      "recommended": 45,
+      "max": 60
+    }
   },
   {
     "id": "food-marine-hamanasu",
@@ -808,7 +928,12 @@
     "parking": true,
     "url": "https://joetsukankonavi.jp/restaurant/detail.php?id=28",
     "source_url": "https://joetsukankonavi.jp/restaurant/detail.php?id=28",
-    "source_note": "上越観光Navi・昼営業を登録。不定休"
+    "source_note": "上越観光Navi・昼営業を登録。不定休",
+    "stay_minutes": {
+      "min": 45,
+      "recommended": 60,
+      "max": 90
+    }
   },
   {
     "id": "food-namitose",
@@ -838,7 +963,12 @@
     "parking": true,
     "url": "https://joetsukankonavi.jp/restaurant/detail.php?id=104",
     "source_url": "https://joetsukankonavi.jp/restaurant/detail.php?id=104",
-    "source_note": "上越観光Navi・昼営業を登録。不定休"
+    "source_note": "上越観光Navi・昼営業を登録。不定休",
+    "stay_minutes": {
+      "min": 45,
+      "recommended": 60,
+      "max": 90
+    }
   },
   {
     "id": "food-regina",
@@ -870,7 +1000,12 @@
     "parking": true,
     "url": "https://joetsukankonavi.jp/restaurant/detail.php?id=15",
     "source_url": "https://joetsukankonavi.jp/restaurant/detail.php?id=15",
-    "source_note": "上越観光Navi"
+    "source_note": "上越観光Navi",
+    "stay_minutes": {
+      "min": 30,
+      "recommended": 60,
+      "max": 90
+    }
   },
   {
     "id": "food-sucreplus",
@@ -900,7 +1035,12 @@
     "parking": true,
     "url": "https://joetsukankonavi.jp/restaurant/detail.php?id=44",
     "source_url": "https://joetsukankonavi.jp/restaurant/detail.php?id=44",
-    "source_note": "上越観光Navi・昼〜カフェ営業を登録。不定休"
+    "source_note": "上越観光Navi・昼〜カフェ営業を登録。不定休",
+    "stay_minutes": {
+      "min": 30,
+      "recommended": 60,
+      "max": 90
+    }
   },
   {
     "id": "food-itakuratei",
@@ -935,7 +1075,12 @@
     "parking": true,
     "url": "https://joetsukankonavi.jp/restaurant/detail.php?id=3",
     "source_url": "https://joetsukankonavi.jp/restaurant/detail.php?id=3",
-    "source_note": "上越観光Navi"
+    "source_note": "上越観光Navi",
+    "stay_minutes": {
+      "min": 30,
+      "recommended": 45,
+      "max": 60
+    }
   },
   {
     "id": "food-yukinoka",
@@ -966,7 +1111,12 @@
     "parking": true,
     "url": "https://joetsukankonavi.jp/restaurant/detail.php?id=108",
     "source_url": "https://joetsukankonavi.jp/restaurant/detail.php?id=108",
-    "source_note": "上越観光Navi"
+    "source_note": "上越観光Navi",
+    "stay_minutes": {
+      "min": 30,
+      "recommended": 60,
+      "max": 90
+    }
   },
   {
     "id": "food-komeda-joetsumyoko",
@@ -996,7 +1146,12 @@
     "parking": true,
     "url": "https://joetsukankonavi.jp/restaurant/detail.php?id=107",
     "source_url": "https://joetsukankonavi.jp/restaurant/detail.php?id=107",
-    "source_note": "上越観光Navi・無休"
+    "source_note": "上越観光Navi・無休",
+    "stay_minutes": {
+      "min": 30,
+      "recommended": 60,
+      "max": 90
+    }
   },
   {
     "id": "food-okagesama",
@@ -1026,7 +1181,12 @@
     "parking": true,
     "url": "https://joetsukankonavi.jp/restaurant/detail.php?id=98",
     "source_url": "https://joetsukankonavi.jp/restaurant/detail.php?id=98",
-    "source_note": "上越観光Navi・年末年始休"
+    "source_note": "上越観光Navi・年末年始休",
+    "stay_minutes": {
+      "min": 45,
+      "recommended": 60,
+      "max": 90
+    }
   },
   {
     "id": "food-tonjiru-tachibana",
@@ -1060,7 +1220,12 @@
     "parking": true,
     "url": "https://myokotourism.jp/restaurants/%E3%81%A8%E3%82%93%E6%B1%81%E3%81%AE%E5%BA%97-%E3%81%9F%E3%81%A1%E3%81%B0%E3%81%AA/",
     "source_url": "https://myokotourism.jp/restaurants/%E3%81%A8%E3%82%93%E6%B1%81%E3%81%AE%E5%BA%97-%E3%81%9F%E3%81%A1%E3%81%B0%E3%81%AA/",
-    "source_note": "妙高観光局"
+    "source_note": "妙高観光局",
+    "stay_minutes": {
+      "min": 30,
+      "recommended": 45,
+      "max": 60
+    }
   },
   {
     "id": "food-arakin",
@@ -1089,7 +1254,12 @@
     "parking": true,
     "url": "https://myokotourism.jp/restaurants/%E3%81%82%E3%82%89%E3%81%8D%E3%82%93%E3%83%A9%E3%83%BC%E3%83%A1%E3%83%B3/",
     "source_url": "https://myokotourism.jp/restaurants/%E3%81%82%E3%82%89%E3%81%8D%E3%82%93%E3%83%A9%E3%83%BC%E3%83%A1%E3%83%B3/",
-    "source_note": "妙高観光局・不定休"
+    "source_note": "妙高観光局・不定休",
+    "stay_minutes": {
+      "min": 30,
+      "recommended": 45,
+      "max": 60
+    }
   },
   {
     "id": "food-basho-en",
@@ -1120,7 +1290,12 @@
     "parking": true,
     "url": "https://myokotourism.jp/restaurants/%E8%8A%AD%E8%95%89%E8%8B%91/",
     "source_url": "https://myokotourism.jp/restaurants/%E8%8A%AD%E8%95%89%E8%8B%91/",
-    "source_note": "妙高観光局・冬期休業"
+    "source_note": "妙高観光局・冬期休業",
+    "stay_minutes": {
+      "min": 30,
+      "recommended": 60,
+      "max": 90
+    }
   },
   {
     "id": "food-farm-gelato-sekka",
@@ -1149,7 +1324,12 @@
     "parking": true,
     "url": "https://myokotourism.jp/news/%E9%81%93%E3%81%AE%E9%A7%85%E3%81%82%E3%82%89%E3%81%84-%E3%81%B2%E3%81%A0%E3%81%AA%E3%82%93%E5%86%85%E3%80%80farm-gelato-%E9%9B%AA%E8%8F%93%EF%BC%88%E3%82%BB%E3%83%83%E3%82%AB%E3%82%AA%E3%83%BC/",
     "source_url": "https://myokotourism.jp/news/%E9%81%93%E3%81%AE%E9%A7%85%E3%81%82%E3%82%89%E3%81%84-%E3%81%B2%E3%81%A0%E3%81%AA%E3%82%93%E5%86%85%E3%80%80farm-gelato-%E9%9B%AA%E8%8F%93%EF%BC%88%E3%82%BB%E3%83%83%E3%82%AB%E3%82%AA%E3%83%BC/",
-    "source_note": "妙高観光局・2026年4月8日オープン案内"
+    "source_note": "妙高観光局・2026年4月8日オープン案内",
+    "stay_minutes": {
+      "min": 30,
+      "recommended": 60,
+      "max": 90
+    }
   },
   {
     "id": "food-myoko-tomato",
@@ -1180,6 +1360,11 @@
     "parking": true,
     "url": "https://myokotourism.jp/restaurants/%E5%A6%99%E9%AB%98%E5%B1%B1%E9%BA%93%E7%9B%B4%E5%A3%B2%E3%82%BB%E3%83%B3%E3%82%BF%E3%83%BC%E3%81%A8%E3%81%BE%E3%81%A8/",
     "source_url": "https://myokotourism.jp/restaurants/%E5%A6%99%E9%AB%98%E5%B1%B1%E9%BA%93%E7%9B%B4%E5%A3%B2%E3%82%BB%E3%83%B3%E3%82%BF%E3%83%BC%E3%81%A8%E3%81%BE%E3%81%A8/",
-    "source_note": "妙高観光局・冬季は17時、4〜9月の施設全体は18時まで。食堂の詳細LOは要確認"
+    "source_note": "妙高観光局・冬季は17時、4〜9月の施設全体は18時まで。食堂の詳細LOは要確認",
+    "stay_minutes": {
+      "min": 30,
+      "recommended": 45,
+      "max": 60
+    }
   }
 ]

@@ -25,7 +25,12 @@
     "source_url": "https://joetsukankonavi.jp/spot/search.php",
     "source_note": "上越観光Navi",
     "daylight_only": true,
-    "parking": true
+    "parking": true,
+    "stay_minutes": {
+      "min": 30,
+      "recommended": 60,
+      "max": 90
+    }
   },
   {
     "id": "spot-takada-turret",
@@ -50,7 +55,12 @@
     "url": "https://joetsukankonavi.jp/spot/search.php",
     "source_url": "https://joetsukankonavi.jp/spot/search.php",
     "source_note": "上越観光Navi",
-    "parking": true
+    "parking": true,
+    "stay_minutes": {
+      "min": 45,
+      "recommended": 75,
+      "max": 120
+    }
   },
   {
     "id": "spot-history-museum",
@@ -77,7 +87,12 @@
     "url": "https://joetsukankonavi.jp/spot/search.php",
     "source_url": "https://joetsukankonavi.jp/spot/search.php",
     "source_note": "上越観光Navi",
-    "parking": true
+    "parking": true,
+    "stay_minutes": {
+      "min": 45,
+      "recommended": 75,
+      "max": 120
+    }
   },
   {
     "id": "spot-kokei-museum",
@@ -103,7 +118,12 @@
     "url": "https://joetsukankonavi.jp/spot/search.php",
     "source_url": "https://joetsukankonavi.jp/spot/search.php",
     "source_note": "上越観光Navi",
-    "parking": true
+    "parking": true,
+    "stay_minutes": {
+      "min": 45,
+      "recommended": 75,
+      "max": 120
+    }
   },
   {
     "id": "spot-mimei",
@@ -128,7 +148,12 @@
     "estimated_cost_yen": 0,
     "url": "https://joetsukankonavi.jp/spot/search.php",
     "source_url": "https://joetsukankonavi.jp/spot/search.php",
-    "source_note": "上越観光Navi"
+    "source_note": "上越観光Navi",
+    "stay_minutes": {
+      "min": 45,
+      "recommended": 75,
+      "max": 120
+    }
   },
   {
     "id": "spot-takada-komachi",
@@ -153,7 +178,12 @@
     "estimated_cost_yen": 0,
     "url": "https://joetsukankonavi.jp/spot/search.php",
     "source_url": "https://joetsukankonavi.jp/spot/search.php",
-    "source_note": "上越観光Navi"
+    "source_note": "上越観光Navi",
+    "stay_minutes": {
+      "min": 30,
+      "recommended": 45,
+      "max": 75
+    }
   },
   {
     "id": "spot-gangi",
@@ -178,7 +208,12 @@
     "url": "https://joetsukankonavi.jp/spot/search.php",
     "source_url": "https://joetsukankonavi.jp/spot/search.php",
     "source_note": "上越観光Navi",
-    "daylight_only": true
+    "daylight_only": true,
+    "stay_minutes": {
+      "min": 30,
+      "recommended": 60,
+      "max": 90
+    }
   },
   {
     "id": "spot-takada-sekaikan",
@@ -203,7 +238,12 @@
     "estimated_cost_yen": null,
     "url": "https://joetsukankonavi.jp/spot/search.php",
     "source_url": "https://joetsukankonavi.jp/spot/search.php",
-    "source_note": "上越観光Navi"
+    "source_note": "上越観光Navi",
+    "stay_minutes": {
+      "min": 30,
+      "recommended": 45,
+      "max": 75
+    }
   },
   {
     "id": "spot-ski-memorial",
@@ -229,7 +269,12 @@
     "url": "https://joetsukankonavi.jp/spot/search.php",
     "source_url": "https://joetsukankonavi.jp/spot/search.php",
     "source_note": "上越観光Navi",
-    "parking": true
+    "parking": true,
+    "stay_minutes": {
+      "min": 45,
+      "recommended": 75,
+      "max": 120
+    }
   },
   {
     "id": "spot-kanayasan",
@@ -256,7 +301,12 @@
     "source_url": "https://joetsukankonavi.jp/spot/search.php",
     "source_note": "上越観光Navi",
     "daylight_only": true,
-    "parking": true
+    "parking": true,
+    "stay_minutes": {
+      "min": 60,
+      "recommended": 120,
+      "max": 180
+    }
   },
   {
     "id": "spot-kasugayama-castle",
@@ -283,7 +333,12 @@
     "source_url": "https://joetsukankonavi.jp/spot/search.php",
     "source_note": "上越観光Navi",
     "daylight_only": true,
-    "parking": true
+    "parking": true,
+    "stay_minutes": {
+      "min": 60,
+      "recommended": 90,
+      "max": 150
+    }
   },
   {
     "id": "spot-kenshin-emaki",
@@ -308,7 +363,12 @@
     "url": "https://joetsukankonavi.jp/spot/search.php",
     "source_url": "https://joetsukankonavi.jp/spot/search.php",
     "source_note": "上越観光Navi",
-    "parking": true
+    "parking": true,
+    "stay_minutes": {
+      "min": 45,
+      "recommended": 75,
+      "max": 120
+    }
   },
   {
     "id": "spot-archaeology",
@@ -334,7 +394,12 @@
     "url": "https://joetsukankonavi.jp/spot/search.php",
     "source_url": "https://joetsukankonavi.jp/spot/search.php",
     "source_note": "上越観光Navi",
-    "parking": true
+    "parking": true,
+    "stay_minutes": {
+      "min": 45,
+      "recommended": 75,
+      "max": 120
+    }
   },
   {
     "id": "spot-kasugayama-story",
@@ -359,7 +424,12 @@
     "url": "https://joetsukankonavi.jp/spot/search.php",
     "source_url": "https://joetsukankonavi.jp/spot/search.php",
     "source_note": "上越観光Navi",
-    "parking": true
+    "parking": true,
+    "stay_minutes": {
+      "min": 45,
+      "recommended": 75,
+      "max": 120
+    }
   },
   {
     "id": "spot-science",
@@ -387,7 +457,12 @@
     "url": "https://joetsukankonavi.jp/spot/search.php",
     "source_url": "https://joetsukankonavi.jp/spot/search.php",
     "source_note": "上越観光Navi",
-    "parking": true
+    "parking": true,
+    "stay_minutes": {
+      "min": 45,
+      "recommended": 75,
+      "max": 120
+    }
   },
   {
     "id": "spot-umigatari",
@@ -414,7 +489,12 @@
     "url": "https://joetsukankonavi.jp/spot/search.php",
     "source_url": "https://joetsukankonavi.jp/spot/search.php",
     "source_note": "上越観光Navi",
-    "parking": true
+    "parking": true,
+    "stay_minutes": {
+      "min": 75,
+      "recommended": 120,
+      "max": 150
+    }
   },
   {
     "id": "spot-funami",
@@ -439,7 +519,12 @@
     "url": "https://joetsukankonavi.jp/spot/search.php",
     "source_url": "https://joetsukankonavi.jp/spot/search.php",
     "source_note": "上越観光Navi",
-    "daylight_only": true
+    "daylight_only": true,
+    "stay_minutes": {
+      "min": 30,
+      "recommended": 60,
+      "max": 120
+    }
   },
   {
     "id": "spot-kaihin",
@@ -465,7 +550,12 @@
     "source_url": "https://joetsukankonavi.jp/spot/search.php",
     "source_note": "上越観光Navi",
     "daylight_only": true,
-    "parking": true
+    "parking": true,
+    "stay_minutes": {
+      "min": 30,
+      "recommended": 60,
+      "max": 90
+    }
   },
   {
     "id": "spot-gochi-park",
@@ -491,7 +581,12 @@
     "source_url": "https://joetsukankonavi.jp/spot/search.php",
     "source_note": "上越観光Navi",
     "daylight_only": true,
-    "parking": true
+    "parking": true,
+    "stay_minutes": {
+      "min": 45,
+      "recommended": 75,
+      "max": 120
+    }
   },
   {
     "id": "spot-otate",
@@ -515,7 +610,12 @@
     "url": "https://joetsukankonavi.jp/spot/search.php",
     "source_url": "https://joetsukankonavi.jp/spot/search.php",
     "source_note": "上越観光Navi",
-    "daylight_only": true
+    "daylight_only": true,
+    "stay_minutes": {
+      "min": 30,
+      "recommended": 60,
+      "max": 90
+    }
   },
   {
     "id": "spot-gochi-kokubunji",
@@ -539,7 +639,12 @@
     "url": "https://joetsukankonavi.jp/spot/search.php",
     "source_url": "https://joetsukankonavi.jp/spot/search.php",
     "source_note": "上越観光Navi",
-    "daylight_only": true
+    "daylight_only": true,
+    "stay_minutes": {
+      "min": 30,
+      "recommended": 45,
+      "max": 75
+    }
   },
   {
     "id": "spot-naoetsu-beach",
@@ -565,7 +670,12 @@
     "source_url": "https://joetsukankonavi.jp/spot/search.php",
     "source_note": "上越観光Navi",
     "daylight_only": true,
-    "parking": true
+    "parking": true,
+    "stay_minutes": {
+      "min": 30,
+      "recommended": 60,
+      "max": 120
+    }
   },
   {
     "id": "spot-sanpachi",
@@ -590,7 +700,12 @@
     "url": "https://joetsukankonavi.jp/spot/search.php",
     "source_url": "https://joetsukankonavi.jp/spot/search.php",
     "source_note": "上越観光Navi",
-    "daylight_only": true
+    "daylight_only": true,
+    "stay_minutes": {
+      "min": 20,
+      "recommended": 45,
+      "max": 75
+    }
   },
   {
     "id": "spot-old-bank",
@@ -614,7 +729,12 @@
     "url": "https://joetsukankonavi.jp/spot/search.php",
     "source_url": "https://joetsukankonavi.jp/spot/search.php",
     "source_note": "上越観光Navi",
-    "daylight_only": true
+    "daylight_only": true,
+    "stay_minutes": {
+      "min": 30,
+      "recommended": 45,
+      "max": 75
+    }
   },
   {
     "id": "spot-fuchu-hachimangu",
@@ -638,7 +758,12 @@
     "url": "https://joetsukankonavi.jp/spot/search.php",
     "source_url": "https://joetsukankonavi.jp/spot/search.php",
     "source_note": "上越観光Navi",
-    "daylight_only": true
+    "daylight_only": true,
+    "stay_minutes": {
+      "min": 30,
+      "recommended": 60,
+      "max": 90
+    }
   },
   {
     "id": "spot-ogata-park",
@@ -664,7 +789,12 @@
     "source_url": "https://joetsukankonavi.jp/spot/search.php",
     "source_note": "上越観光Navi",
     "daylight_only": true,
-    "parking": true
+    "parking": true,
+    "stay_minutes": {
+      "min": 30,
+      "recommended": 60,
+      "max": 90
+    }
   },
   {
     "id": "spot-oike",
@@ -690,7 +820,12 @@
     "source_url": "https://joetsukankonavi.jp/spot/search.php",
     "source_note": "上越観光Navi",
     "daylight_only": true,
-    "parking": true
+    "parking": true,
+    "stay_minutes": {
+      "min": 45,
+      "recommended": 75,
+      "max": 120
+    }
   },
   {
     "id": "spot-ogata-sunset",
@@ -714,7 +849,12 @@
     "url": "https://joetsukankonavi.jp/spot/search.php",
     "source_url": "https://joetsukankonavi.jp/spot/search.php",
     "source_note": "上越観光Navi",
-    "daylight_only": true
+    "daylight_only": true,
+    "stay_minutes": {
+      "min": 30,
+      "recommended": 60,
+      "max": 120
+    }
   },
   {
     "id": "spot-unohama-beach",
@@ -740,7 +880,12 @@
     "source_url": "https://joetsukankonavi.jp/spot/search.php",
     "source_note": "上越観光Navi",
     "daylight_only": true,
-    "parking": true
+    "parking": true,
+    "stay_minutes": {
+      "min": 30,
+      "recommended": 60,
+      "max": 120
+    }
   },
   {
     "id": "spot-kakizaki-beach",
@@ -766,7 +911,12 @@
     "source_url": "https://joetsukankonavi.jp/spot/search.php",
     "source_note": "上越観光Navi",
     "daylight_only": true,
-    "parking": true
+    "parking": true,
+    "stay_minutes": {
+      "min": 30,
+      "recommended": 60,
+      "max": 120
+    }
   },
   {
     "id": "spot-umiterasu",
@@ -794,7 +944,12 @@
     "url": "https://joetsukankonavi.jp/spot/search.php",
     "source_url": "https://joetsukankonavi.jp/spot/search.php",
     "source_note": "上越観光Navi",
-    "parking": true
+    "parking": true,
+    "stay_minutes": {
+      "min": 20,
+      "recommended": 45,
+      "max": 75
+    }
   },
   {
     "id": "spot-seaside-nadachi",
@@ -821,7 +976,12 @@
     "source_url": "https://joetsukankonavi.jp/spot/search.php",
     "source_note": "上越観光Navi",
     "daylight_only": true,
-    "parking": true
+    "parking": true,
+    "stay_minutes": {
+      "min": 60,
+      "recommended": 120,
+      "max": 180
+    }
   },
   {
     "id": "spot-torigakubi",
@@ -846,7 +1006,12 @@
     "url": "https://joetsukankonavi.jp/spot/search.php",
     "source_url": "https://joetsukankonavi.jp/spot/search.php",
     "source_note": "上越観光Navi",
-    "daylight_only": true
+    "daylight_only": true,
+    "stay_minutes": {
+      "min": 30,
+      "recommended": 60,
+      "max": 120
+    }
   },
   {
     "id": "spot-shozenji-dam",
@@ -869,7 +1034,12 @@
     "url": "https://joetsukankonavi.jp/spot/search.php",
     "source_url": "https://joetsukankonavi.jp/spot/search.php",
     "source_note": "上越観光Navi",
-    "daylight_only": true
+    "daylight_only": true,
+    "stay_minutes": {
+      "min": 30,
+      "recommended": 60,
+      "max": 90
+    }
   },
   {
     "id": "spot-hikarigahara",
@@ -895,7 +1065,12 @@
     "source_url": "https://joetsukankonavi.jp/spot/search.php",
     "source_note": "上越観光Navi",
     "daylight_only": true,
-    "parking": true
+    "parking": true,
+    "stay_minutes": {
+      "min": 30,
+      "recommended": 60,
+      "max": 90
+    }
   },
   {
     "id": "spot-stars",
@@ -922,7 +1097,12 @@
     "url": "https://joetsukankonavi.jp/spot/search.php",
     "source_url": "https://joetsukankonavi.jp/spot/search.php",
     "source_note": "上越観光Navi",
-    "parking": true
+    "parking": true,
+    "stay_minutes": {
+      "min": 45,
+      "recommended": 75,
+      "max": 120
+    }
   },
   {
     "id": "spot-bogake",
@@ -947,7 +1127,12 @@
     "source_url": "https://joetsukankonavi.jp/spot/search.php",
     "source_note": "上越観光Navi",
     "daylight_only": true,
-    "parking": true
+    "parking": true,
+    "stay_minutes": {
+      "min": 30,
+      "recommended": 60,
+      "max": 90
+    }
   },
   {
     "id": "spot-mushikawa-sugi",
@@ -972,7 +1157,12 @@
     "url": "https://joetsukankonavi.jp/spot/search.php",
     "source_url": "https://joetsukankonavi.jp/spot/search.php",
     "source_note": "上越観光Navi",
-    "daylight_only": true
+    "daylight_only": true,
+    "stay_minutes": {
+      "min": 30,
+      "recommended": 60,
+      "max": 90
+    }
   },
   {
     "id": "spot-cupid-valley",
@@ -997,7 +1187,12 @@
     "url": "https://joetsukankonavi.jp/spot/search.php",
     "source_url": "https://joetsukankonavi.jp/spot/search.php",
     "source_note": "上越観光Navi",
-    "parking": true
+    "parking": true,
+    "stay_minutes": {
+      "min": 60,
+      "recommended": 120,
+      "max": 180
+    }
   },
   {
     "id": "spot-maki-village",
@@ -1023,7 +1218,12 @@
     "source_url": "https://joetsukankonavi.jp/spot/search.php",
     "source_note": "上越観光Navi",
     "daylight_only": true,
-    "parking": true
+    "parking": true,
+    "stay_minutes": {
+      "min": 30,
+      "recommended": 60,
+      "max": 90
+    }
   },
   {
     "id": "spot-miyaguchi",
@@ -1047,7 +1247,12 @@
     "url": "https://joetsukankonavi.jp/spot/search.php",
     "source_url": "https://joetsukankonavi.jp/spot/search.php",
     "source_note": "上越観光Navi",
-    "daylight_only": true
+    "daylight_only": true,
+    "stay_minutes": {
+      "min": 30,
+      "recommended": 45,
+      "max": 75
+    }
   },
   {
     "id": "spot-yukidaruma",
@@ -1073,7 +1278,12 @@
     "url": "https://joetsukankonavi.jp/spot/search.php",
     "source_url": "https://joetsukankonavi.jp/spot/search.php",
     "source_note": "上越観光Navi",
-    "parking": true
+    "parking": true,
+    "stay_minutes": {
+      "min": 20,
+      "recommended": 45,
+      "max": 75
+    }
   },
   {
     "id": "spot-sakura-plaza",
@@ -1098,7 +1308,12 @@
     "estimated_cost_yen": null,
     "url": "https://joetsukankonavi.jp/spot/search.php",
     "source_url": "https://joetsukankonavi.jp/spot/search.php",
-    "source_note": "上越観光Navi"
+    "source_note": "上越観光Navi",
+    "stay_minutes": {
+      "min": 20,
+      "recommended": 45,
+      "max": 75
+    }
   },
   {
     "id": "spot-yoshikawa-sake",
@@ -1124,7 +1339,12 @@
     "url": "https://joetsukankonavi.jp/spot/search.php",
     "source_url": "https://joetsukankonavi.jp/spot/search.php",
     "source_note": "上越観光Navi",
-    "parking": true
+    "parking": true,
+    "stay_minutes": {
+      "min": 20,
+      "recommended": 45,
+      "max": 75
+    }
   },
   {
     "id": "spot-imori",
@@ -1152,7 +1372,12 @@
     "source_url": "https://myokotourism.jp/kanko-spots/",
     "source_note": "妙高観光局",
     "daylight_only": true,
-    "parking": true
+    "parking": true,
+    "stay_minutes": {
+      "min": 45,
+      "recommended": 75,
+      "max": 120
+    }
   },
   {
     "id": "spot-naena",
@@ -1180,7 +1405,12 @@
     "source_url": "https://myokotourism.jp/tourist-spots/%E8%8B%97%E5%90%8D%E6%BB%9D-%EF%BC%88%E6%97%A5%E6%9C%AC%E3%81%AE%E6%BB%9D%E7%99%BE%E9%81%B8%EF%BC%89/",
     "source_note": "妙高観光局",
     "daylight_only": true,
-    "parking": true
+    "parking": true,
+    "stay_minutes": {
+      "min": 60,
+      "recommended": 90,
+      "max": 150
+    }
   },
   {
     "id": "spot-myoko-visitor",
@@ -1206,7 +1436,12 @@
     "url": "https://myokotourism.jp/kanko-spots/",
     "source_url": "https://myokotourism.jp/kanko-spots/",
     "source_note": "妙高観光局",
-    "parking": true
+    "parking": true,
+    "stay_minutes": {
+      "min": 45,
+      "recommended": 75,
+      "max": 120
+    }
   },
   {
     "id": "spot-michi-arai",
@@ -1232,7 +1467,12 @@
     "url": "https://myokotourism.jp/tourist-spots/%E9%81%93%E3%81%AE%E9%A7%85%E3%81%82%E3%82%89%E3%81%84/",
     "source_url": "https://myokotourism.jp/tourist-spots/%E9%81%93%E3%81%AE%E9%A7%85%E3%81%82%E3%82%89%E3%81%84/",
     "source_note": "妙高観光局",
-    "parking": true
+    "parking": true,
+    "stay_minutes": {
+      "min": 20,
+      "recommended": 45,
+      "max": 75
+    }
   },
   {
     "id": "spot-kubikino-info",
@@ -1257,7 +1497,12 @@
     "url": "https://myokotourism.jp/tourist-spots/%E9%81%93%E3%81%AE%E9%A7%85%E3%81%82%E3%82%89%E3%81%84%EF%BC%88%E3%81%8F%E3%81%B3%E3%81%8D%E9%87%8E%E6%83%85%E5%A0%B1%E9%A4%A8%EF%BC%89/",
     "source_url": "https://myokotourism.jp/tourist-spots/%E9%81%93%E3%81%AE%E9%A7%85%E3%81%82%E3%82%89%E3%81%84%EF%BC%88%E3%81%8F%E3%81%B3%E3%81%8D%E9%87%8E%E6%83%85%E5%A0%B1%E9%A4%A8%EF%BC%89/",
     "source_note": "妙高観光局",
-    "parking": true
+    "parking": true,
+    "stay_minutes": {
+      "min": 20,
+      "recommended": 45,
+      "max": 75
+    }
   },
   {
     "id": "spot-sasagamine",
@@ -1284,7 +1529,12 @@
     "source_url": "https://myokotourism.jp/kanko-spots/",
     "source_note": "妙高観光局",
     "daylight_only": true,
-    "parking": true
+    "parking": true,
+    "stay_minutes": {
+      "min": 45,
+      "recommended": 75,
+      "max": 120
+    }
   },
   {
     "id": "spot-sasagamine-pasture",
@@ -1310,7 +1560,12 @@
     "source_url": "https://myokotourism.jp/area/suginosawa-area/",
     "source_note": "妙高観光局",
     "daylight_only": true,
-    "parking": true
+    "parking": true,
+    "stay_minutes": {
+      "min": 30,
+      "recommended": 60,
+      "max": 90
+    }
   },
   {
     "id": "spot-otomi-lake",
@@ -1334,7 +1589,12 @@
     "url": "https://myokotourism.jp/area/suginosawa-area/",
     "source_url": "https://myokotourism.jp/area/suginosawa-area/",
     "source_note": "妙高観光局",
-    "daylight_only": true
+    "daylight_only": true,
+    "stay_minutes": {
+      "min": 30,
+      "recommended": 60,
+      "max": 90
+    }
   },
   {
     "id": "spot-yumemidaira",
@@ -1359,7 +1619,12 @@
     "url": "https://myokotourism.jp/area/suginosawa-area/",
     "source_url": "https://myokotourism.jp/area/suginosawa-area/",
     "source_note": "妙高観光局",
-    "daylight_only": true
+    "daylight_only": true,
+    "stay_minutes": {
+      "min": 60,
+      "recommended": 90,
+      "max": 150
+    }
   },
   {
     "id": "spot-naenanoyu",
@@ -1384,7 +1649,12 @@
     "url": "https://myokotourism.jp/area/suginosawa-area/",
     "source_url": "https://myokotourism.jp/area/suginosawa-area/",
     "source_note": "妙高観光局",
-    "parking": true
+    "parking": true,
+    "stay_minutes": {
+      "min": 60,
+      "recommended": 90,
+      "max": 120
+    }
   },
   {
     "id": "spot-forest-therapy",
@@ -1409,7 +1679,12 @@
     "url": "https://myokotourism.jp/tourist-spots/%E5%A6%99%E9%AB%98%E9%AB%98%E5%8E%9F%E8%87%AA%E7%84%B6%E6%AD%A9%E9%81%93%EF%BC%88%E6%A3%AE%E6%9E%97%E3%82%BB%E3%83%A9%E3%83%94%E3%83%BC%E3%83%AD%E3%83%BC%E3%83%89%EF%BC%89/",
     "source_url": "https://myokotourism.jp/tourist-spots/%E5%A6%99%E9%AB%98%E9%AB%98%E5%8E%9F%E8%87%AA%E7%84%B6%E6%AD%A9%E9%81%93%EF%BC%88%E6%A3%AE%E6%9E%97%E3%82%BB%E3%83%A9%E3%83%94%E3%83%BC%E3%83%AD%E3%83%BC%E3%83%89%EF%BC%89/",
     "source_note": "妙高観光局",
-    "daylight_only": true
+    "daylight_only": true,
+    "stay_minutes": {
+      "min": 45,
+      "recommended": 75,
+      "max": 120
+    }
   },
   {
     "id": "spot-akakura-onsen",
@@ -1433,7 +1708,12 @@
     "estimated_cost_yen": null,
     "url": "https://myokotourism.jp/kanko-spots/",
     "source_url": "https://myokotourism.jp/kanko-spots/",
-    "source_note": "妙高観光局"
+    "source_note": "妙高観光局",
+    "stay_minutes": {
+      "min": 60,
+      "recommended": 90,
+      "max": 120
+    }
   },
   {
     "id": "spot-tsubame-onsen",
@@ -1457,7 +1737,12 @@
     "estimated_cost_yen": null,
     "url": "https://myokotourism.jp/kanko-spots/",
     "source_url": "https://myokotourism.jp/kanko-spots/",
-    "source_note": "妙高観光局"
+    "source_note": "妙高観光局",
+    "stay_minutes": {
+      "min": 60,
+      "recommended": 90,
+      "max": 120
+    }
   },
   {
     "id": "spot-seki-onsen",
@@ -1480,7 +1765,12 @@
     "estimated_cost_yen": null,
     "url": "https://myokotourism.jp/kanko-spots/",
     "source_url": "https://myokotourism.jp/kanko-spots/",
-    "source_note": "妙高観光局"
+    "source_note": "妙高観光局",
+    "stay_minutes": {
+      "min": 60,
+      "recommended": 90,
+      "max": 120
+    }
   },
   {
     "id": "spot-alpenblick-spa",
@@ -1506,7 +1796,12 @@
     "url": "https://myokotourism.jp/kanko-spots/",
     "source_url": "https://myokotourism.jp/kanko-spots/",
     "source_note": "妙高観光局",
-    "parking": true
+    "parking": true,
+    "stay_minutes": {
+      "min": 60,
+      "recommended": 90,
+      "max": 120
+    }
   },
   {
     "id": "spot-hida-history",
@@ -1532,7 +1827,12 @@
     "source_url": "https://myokotourism.jp/kanko-spots/",
     "source_note": "妙高観光局",
     "daylight_only": true,
-    "parking": true
+    "parking": true,
+    "stay_minutes": {
+      "min": 30,
+      "recommended": 60,
+      "max": 90
+    }
   },
   {
     "id": "spot-samegao",
@@ -1557,7 +1857,12 @@
     "url": "https://myokotourism.jp/kanko-spots/",
     "source_url": "https://myokotourism.jp/kanko-spots/",
     "source_note": "妙高観光局",
-    "daylight_only": true
+    "daylight_only": true,
+    "stay_minutes": {
+      "min": 60,
+      "recommended": 90,
+      "max": 150
+    }
   },
   {
     "id": "spot-lotte-arai",
@@ -1583,6 +1888,11 @@
     "url": "https://myokotourism.jp/kanko-spots/",
     "source_url": "https://myokotourism.jp/kanko-spots/",
     "source_note": "妙高観光局",
-    "parking": true
+    "parking": true,
+    "stay_minutes": {
+      "min": 60,
+      "recommended": 120,
+      "max": 180
+    }
   }
 ]
