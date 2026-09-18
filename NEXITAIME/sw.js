@@ -1,9 +1,9 @@
-const CACHE='nexitaime-beta1-0-realistic-travel-time';
+const CACHE='nexitaime-beta1-0-area-myoko';
 const ASSETS=[
   './',
   './index.html',
   './events.json',
-  './train_timetable.json',
+  './train_timetable.json','./north_shinano_timetable.json',
   './bus_timetable.json',
   './bus_mainline.json',
   './bus_extended.json',

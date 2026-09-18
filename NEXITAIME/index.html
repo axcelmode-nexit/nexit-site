@@ -907,6 +907,16 @@ main{
 }
 </style>
 
+
+<style id="area-myoko-itinerary">
+.itinerary{margin-top:14px;padding:14px;border:1px solid #dbe5f0;border-radius:18px;background:#fbfdff}
+.itinerary-title{font-size:15px;font-weight:900;color:#17324d;margin-bottom:8px}
+.itinerary-step{display:grid;grid-template-columns:30px 1fr auto;gap:9px;align-items:start;padding:9px 0;border-top:1px dashed #dce5ee}
+.itinerary-num{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#183b63;color:white;font-weight:900}
+.itinerary-main strong{display:block;font-size:13px}.itinerary-main span,.itinerary-travel{font-size:11px;color:#6c7b8d}.itinerary-time{font-size:11px;font-weight:900}
+.itinerary-travel{margin-left:38px}
+</style>
+
 </head>
 <body>
 <div class="app">
@@ -951,13 +961,13 @@ main{
 </div><div class="group-part group-part-divider">
 <div class="group-subtitle">行きたいエリア</div>
 <div class="chips wrap" id="destinations">
-<button class="chip active" data-dest="any">✨ おまかせ</button>
-<button class="chip" data-dest="上越妙高">🚄 上越妙高</button>
-<button class="chip" data-dest="高田">🏯 高田</button>
-<button class="chip" data-dest="春日山">⛰ 春日山</button>
-<button class="chip" data-dest="直江津">🌊 直江津</button>
-</div>
-<div class="note" style="margin-top:10px">希望エリアを指定すると、そのエリアの候補を優先して探します。「おまかせ」なら上越全体から比較します。</div>
+ <button class="chip active" data-dest="any">✨ おまかせ</button>
+ <button class="chip" data-dest="central">🏯 中心部</button>
+ <button class="chip" data-dest="sea">🌊 海側</button>
+ <button class="chip" data-dest="mountain">🌿 山側</button>
+ <button class="chip" data-dest="myoko">🏔️ 妙高</button>
+ </div>
+ <div class="note" style="margin-top:10px">エリアを大きく選び、その中から時間・交通・天気に合うスポットを自動で探します。</div>
 </div><div class="group-part group-part-divider">
 <div class="group-subtitle">どこに戻りたい？</div>
 <div class="chips wrap" id="returns">
@@ -1075,17 +1085,18 @@ main{
 <div class="sticky"><div class="inner"><button class="primary" id="go">行けるプランを出す ✨</button></div></div>
 <script crossorigin="" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-let EVENTS=[], TRAIN={up:[],down:[]}, BUS={trips:[]}, BUS_MAIN={weekday:{},holiday:{}}, BUS_EXT={routes:[]}, PLACES={}, MOBILITY=[], origin='上越妙高', destinationArea='any', returnTarget='same', timingMode='now', planningDate=new Date(), mood='any', transport='auto', budget='any', companion='any', currentPos=null, weather=null, mobilityMap=null, mobilityMarkers=[], currentPosMarker=null, nearestService=null;
+let EVENTS=[], TRAIN={up:[],down:[]}, SHINANO={up:[],down:[]}, BUS={trips:[]}, BUS_MAIN={weekday:{},holiday:{}}, BUS_EXT={routes:[]}, PLACES={}, MOBILITY=[], origin='上越妙高', destinationArea='any', returnTarget='same', timingMode='now', planningDate=new Date(), mood='any', transport='auto', budget='any', companion='any', currentPos=null, weather=null, mobilityMap=null, mobilityMarkers=[], currentPosMarker=null, nearestService=null;
 
 Promise.all([
  fetch('./events_auto.json',{cache:'no-store'}).then(r=>r.ok?r.json():Promise.reject()).catch(()=>fetch('./events.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>[])),
  fetch('./train_timetable.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>({up:[],down:[]})),
+ fetch('./north_shinano_timetable.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>({up:[],down:[]})),
  fetch('./bus_timetable.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>({trips:[]})),
  fetch('./bus_mainline.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>({weekday:{},holiday:{}})),
  fetch('./bus_extended.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>({routes:[]})),
  fetch('./places.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>({})),
  fetch('./mobility_services.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>[])
-]).then(([e,t,b,bm,bx,p,m])=>{EVENTS=e;TRAIN=t;BUS=b;BUS_MAIN=bm;BUS_EXT=bx;PLACES=p;MOBILITY=m;renderMobility();});
+]).then(([e,t,shinanoData,b,bm,bx,p,m])=>{EVENTS=e;TRAIN=t;BUS=b;BUS_MAIN=bm;BUS_EXT=bx;PLACES=p;MOBILITY=m;renderMobility();});
 
 document.querySelectorAll('#origins .chip').forEach(b=>b.onclick=async ()=>{
  document.querySelectorAll('#origins .chip').forEach(x=>x.classList.remove('active'));
@@ -1161,20 +1172,96 @@ document.getElementById('companion').onchange=e=>companion=e.target.value;
 document.getElementById('locateBtn').onclick=locateMe;
 document.getElementById('go').onclick=buildPlans;
 
-const stationOrder=['直江津','春日山','高田','上越妙高'];
-const areaStation={takada:'高田',naoetsu:'直江津',joetsumyoko:'上越妙高',kasugayama:'春日山',wide:null,south:null};
+
+const DEST_GROUPS={
+  central:{
+    label:'中心部',
+    areas:['takada','kasugayama','joetsumyoko','south']
+  },
+  sea:{
+    label:'海側',
+    areas:['naoetsu','ogata','kakizaki','nadachi']
+  },
+  mountain:{
+    label:'山側',
+    areas:['yasuzuka','uragawara','oshima','itakura','kiyosato','maki']
+  },
+  myoko:{
+    label:'妙高',
+    areas:['myoko_arai','myoko_kogen','myoko_akakura','myoko_lotte']
+  }
+};
+
+function destinationGroupLabel(key){
+  return key==='any' ? '上越・妙高全体' : (DEST_GROUPS[key]?.label || key);
+}
+function destinationMatchesEvent(ev){
+  if(destinationArea==='any') return true;
+  return (DEST_GROUPS[destinationArea]?.areas||[]).includes(ev.area);
+}
+
+const stationOrder=['直江津','春日山','高田','上越妙高','北新井','新井','二本木','関山','妙高高原','黒姫','古間','牟礼','豊野','三才','北長野','長野'];
+const areaStation={
+  takada:'高田',naoetsu:'直江津',joetsumyoko:'上越妙高',kasugayama:'春日山',south:'上越妙高',
+  ogata:'直江津',kakizaki:'直江津',nadachi:'直江津',
+  yasuzuka:'高田',uragawara:'高田',oshima:'高田',itakura:'上越妙高',kiyosato:'上越妙高',maki:'高田',
+  myoko_arai:'新井',myoko_kogen:'妙高高原',myoko_akakura:'妙高高原',myoko_lotte:'新井',
+  wide:null
+};
 function mins(t){if(!t)return null;const [h,m]=t.split(':').map(Number);return h*60+m}
 function nowMinutes(){const d=new Date();return d.getHours()*60+d.getMinutes()}
 function stationIndex(s){return stationOrder.indexOf(s)}
+function findTrainInDataset(dataset,a,b,after,lineName){
+  for(const dirName of ['up','down']){
+    for(const tr of (dataset?.[dirName]||[])){
+      if(!tr[a]||!tr[b])continue;
+      const dep=mins(tr[a]),arr=mins(tr[b]);
+      if(dep>=after && arr>dep)return {...tr,dep,arr,lineName};
+    }
+  }
+  return null;
+}
+
 function findTrain(a,b,after){
- if(a===b)return {n:'徒歩圏',dep:after,arr:after,[a]:fmt(after),[b]:fmt(after)};
- const dir=stationIndex(a)<stationIndex(b)?TRAIN.up:TRAIN.down;
- for(const tr of dir||[]){
-   if(!tr[a]||!tr[b])continue;
-   const dep=mins(tr[a]),arr=mins(tr[b]);
-   if(dep>=after && arr>dep)return {...tr,dep,arr};
- }
- return null;
+  if(a===b)return {n:'徒歩圏',dep:after,arr:after,[a]:fmt(after),[b]:fmt(after),lineName:'徒歩圏'};
+
+  // Same-company direct trains first.
+  let direct=findTrainInDataset(TRAIN,a,b,after,'妙高はねうまライン');
+  if(direct)return direct;
+  direct=findTrainInDataset(SHINANO,a,b,after,'北しなの線');
+  if(direct)return direct;
+
+  // Connection at 妙高高原 between Tokitetsu and North Shinano.
+  const northStations=['黒姫','古間','牟礼','豊野','三才','北長野','長野'];
+  const tokiStations=['直江津','春日山','高田','上越妙高','北新井','新井','二本木','関山'];
+  const aT=tokiStations.includes(a), bT=tokiStations.includes(b);
+  const aN=northStations.includes(a), bN=northStations.includes(b);
+
+  if(aT && bN){
+    const first=findTrainInDataset(TRAIN,a,'妙高高原',after,'妙高はねうまライン');
+    if(!first)return null;
+    const second=findTrainInDataset(SHINANO,'妙高高原',b,first.arr+5,'北しなの線');
+    if(!second)return null;
+    return {
+      n:`${first.n} → ${second.n}`,
+      dep:first.dep,arr:second.arr,kind:'train',
+      [a]:fmt(first.dep),[b]:fmt(second.arr),
+      connection:'妙高高原',lineName:'妙高はねうまライン＋北しなの線'
+    };
+  }
+  if(aN && bT){
+    const first=findTrainInDataset(SHINANO,a,'妙高高原',after,'北しなの線');
+    if(!first)return null;
+    const second=findTrainInDataset(TRAIN,'妙高高原',b,first.arr+5,'妙高はねうまライン');
+    if(!second)return null;
+    return {
+      n:`${first.n} → ${second.n}`,
+      dep:first.dep,arr:second.arr,kind:'train',
+      [a]:fmt(first.dep),[b]:fmt(second.arr),
+      connection:'妙高高原',lineName:'北しなの線＋妙高はねうまライン'
+    };
+  }
+  return null;
 }
 function fmt(m){return String(Math.floor(m/60)%24).padStart(2,'0')+':'+String(m%60).padStart(2,'0')}
 function inEventRange(ev, now=new Date()){
@@ -2175,6 +2262,42 @@ function costLabel(ev){
 }
 
 
+
+const ITINERARY_SPOTS=[
+  {area:'kasugayama',name:'上杉謙信公銅像',stay:5},
+  {area:'kasugayama',name:'春日山神社',stay:20},
+  {area:'kasugayama',name:'春日山城跡',stay:35},
+  {area:'takada',name:'高田城址公園',stay:25},
+  {area:'takada',name:'高田の雁木・町家',stay:25},
+  {area:'naoetsu',name:'直江津海岸・港周辺',stay:20},
+  {area:'nadachi',name:'うみてらす名立',stay:45},
+  {area:'myoko_kogen',name:'いもり池周辺',stay:30},
+  {area:'myoko_kogen',name:'妙高高原の高原散策',stay:30},
+  {area:'myoko_akakura',name:'赤倉温泉街',stay:40}
+];
+
+function buildSimpleItinerary(plan){
+  const area=plan.ev?.area;
+  const pool=ITINERARY_SPOTS.filter(s=>s.area===area);
+  if(!pool.length || !Number.isFinite(plan.stay) || plan.stay<35)return null;
+  let remain=plan.stay, t=plan.arrive, rows=[];
+  for(const s of pool){
+    const move=rows.length?8:0;
+    if(remain < s.stay+move)continue;
+    t+=move;
+    rows.push({...s,arrive:t,leave:t+s.stay,move});
+    t+=s.stay; remain-=s.stay+move;
+    if(rows.length>=4)break;
+  }
+  return rows.length?rows:null;
+}
+function renderSimpleItinerary(rows){
+  if(!rows?.length)return '';
+  return `<div class="itinerary"><div class="itinerary-title">🗺️ この時間で回れる周遊プラン</div>`+
+    rows.map((s,i)=>`${i?`<div class="itinerary-travel">↳ 移動 約${s.move}分</div>`:''}<div class="itinerary-step"><div class="itinerary-num">${i+1}</div><div class="itinerary-main"><strong>${esc(s.name)}</strong><span>${fmt(s.arrive)}〜${fmt(s.leave)} ・ 滞在 ${s.stay}分</span></div><div class="itinerary-time">${s.stay}分</div></div>`).join('')+
+    `</div>`;
+}
+
 const FLEX_ACTIVITIES=[
   {
     id:'flex-takada-walk',
@@ -2199,6 +2322,47 @@ const FLEX_ACTIVITIES=[
     categories:['見る','動く','自然'],summary:'海を眺めながら、空き時間だけ気軽に歩けるプラン。',
     indoor:false,family_friendly:true,couple_friendly:true,solo_friendly:true,
     estimated_cost_yen:0,always_open:true,url:'https://joetsukankonavi.jp/'
+  },
+
+  {
+    id:'flex-nadachi',
+    title:'うみてらす名立で海・温浴を楽しむ',
+    area:'nadachi',area_name:'名立',venue:'うみてらす名立',
+    categories:['食','温泉','サウナ','自然','景色','雨OK'],summary:'日本海を眺めながら食事や温浴を楽しめる立ち寄りプラン。',
+    indoor:true,family_friendly:true,couple_friendly:true,solo_friendly:true,
+    estimated_cost_yen:null,url:'https://joetsukankonavi.jp/spot/detail.php?id=87'
+  },
+  {
+    id:'flex-ogata',
+    title:'大潟エリアで海辺と温浴を楽しむ',
+    area:'ogata',area_name:'大潟・柿崎',venue:'鵜の浜温泉周辺',
+    categories:['温泉','自然','景色','のんびり'],summary:'海側エリアで景色と温浴を組み合わせるプラン。',
+    indoor:false,family_friendly:true,couple_friendly:true,solo_friendly:true,
+    estimated_cost_yen:null,url:'https://joetsukankonavi.jp/'
+  },
+  {
+    id:'flex-yasuzuka',
+    title:'安塚・大島・浦川原の里山を巡る',
+    area:'yasuzuka',area_name:'安塚・大島・浦川原',venue:'安塚エリア',
+    categories:['自然','景色','観光','のんびり'],summary:'山側の里山景観を時間に合わせて巡るプラン。',
+    indoor:false,family_friendly:true,couple_friendly:true,solo_friendly:true,
+    estimated_cost_yen:0,daylight_only:true,url:'https://joetsukankonavi.jp/'
+  },
+  {
+    id:'flex-myoko-kogen',
+    title:'妙高高原・いもり池周辺を巡る',
+    area:'myoko_kogen',area_name:'妙高',venue:'いもり池・妙高高原周辺',
+    categories:['観光','自然','景色','歩く','のんびり'],summary:'妙高山を望む高原エリアを時間に合わせて巡るプラン。',
+    indoor:false,family_friendly:true,couple_friendly:true,solo_friendly:true,
+    estimated_cost_yen:0,daylight_only:true,url:'https://myokotourism.jp/'
+  },
+  {
+    id:'flex-myoko-akakura',
+    title:'赤倉温泉でのんびり過ごす',
+    area:'myoko_akakura',area_name:'妙高',venue:'赤倉温泉周辺',
+    categories:['温泉','サウナ','のんびり','観光'],summary:'妙高高原駅方面から温泉街へ向かうプラン。',
+    indoor:true,family_friendly:true,couple_friendly:true,solo_friendly:true,
+    estimated_cost_yen:null,url:'https://myokotourism.jp/'
   },
   {
     id:'flex-joetsumyoko',
@@ -2280,7 +2444,7 @@ async function buildPlans(){
  });
 
  let events=EVENTS.filter(ev=>eventIsAvailableAt(ev,planningDate)).filter(budgetAllows).filter(companionAllows);
- if(destinationArea!=='any')events=events.filter(ev=>areaStation[ev.area]===destinationArea);
+ if(destinationArea!=='any')events=events.filter(destinationMatchesEvent);
  if(mood!=='any')events=events.filter(ev=>(ev.categories||[]).includes(mood));
 
  let scored=[];
@@ -2299,7 +2463,7 @@ async function buildPlans(){
  // 3) If still none, relax mood while keeping destination/budget/companion
  if(!scored.length && mood!=='any'){
    let relaxed=EVENTS.filter(ev=>eventIsAvailableAt(ev,planningDate)).filter(budgetAllows).filter(companionAllows);
-   if(destinationArea!=='any') relaxed=relaxed.filter(ev=>areaStation[ev.area]===destinationArea);
+   if(destinationArea!=='any') relaxed=relaxed.filter(destinationMatchesEvent);
    scored=await scoreEventSet(relaxed,AUTO_MODES,start,deadline,searchCtx);
    if(scored.length) relaxationLevel=2;
  }
@@ -2336,14 +2500,15 @@ async function buildPlans(){
    uniquePlans.push(row);
  }
  const top=uniquePlans.slice(0,3);
+ top.forEach(p=>p.itinerary=buildSimpleItinerary(p));
 
  if(!top.length){
-   summary.innerHTML=`<h2>この条件では時間内に往復できる候補がありません</h2><p><strong>${searchCtx.origin} → ${searchCtx.destination==='any'?'上越全体':searchCtx.destination} → ${searchCtx.returnTo}</strong><br>場所は勝手に変更していません。空き時間・移動手段・日時を変えると候補が増える可能性があります。</p>`;
+   summary.innerHTML=`<h2>この条件では時間内に往復できる候補がありません</h2><p><strong>${searchCtx.origin} → ${destinationGroupLabel(searchCtx.destination)} → ${searchCtx.returnTo}</strong><br>場所は勝手に変更していません。空き時間・移動手段・日時を変えると候補が増える可能性があります。</p>`;
    box.innerHTML='<div class="plan"><h3>条件を少し調整してください</h3><p>行き先を変更する場合は、上の「行きたいエリア」から明示的に選び直してください。</p></div>';
    return;
  }
 
- const routeSummary=`${searchCtx.origin} → ${searchCtx.destination==='any'?'上越全体':searchCtx.destination} → ${searchCtx.returnTo}`;
+ const routeSummary=`${searchCtx.origin} → ${destinationGroupLabel(searchCtx.destination)} → ${searchCtx.returnTo}`;
  if(relaxationLevel===0){
    if(transport==='auto'){
      summary.innerHTML=`<h2>今の条件で${top.length}案あります</h2><p><strong>${routeSummary}</strong><br>${planStartLabel()}出発・空き時間${free}分・帰着後の余裕${buffer}分を確保します。</p>`;
@@ -2361,6 +2526,7 @@ async function buildPlans(){
  box.innerHTML=top.map((p,idx)=>{
    const rank=idx===0&&transport==='auto'?'<span class="status">おすすめ</span>':'<span class="status">間に合う</span>';
    const serviceNote=p.service?`<div class="note">利用候補：${esc(p.service.name)}${p.accessMinutes?`（拠点まで徒歩 約${p.accessMinutes}分）`:''}</div>`:'';
+   const itineraryHtml=renderSimpleItinerary(p.itinerary);
    const totalCost=totalPlanCost(p);
    const transportCostHtml=p.transportCost
      ? `<div class="cost-row"><strong>🚦 ${esc(p.transportCost.label)}</strong>${p.transportCost.note?`<span>${esc(p.transportCost.note)}</span>`:''}</div>`
@@ -2383,7 +2549,7 @@ async function buildPlans(){
      ${hoursHtml}
      ${transportCostHtml}
      ${totalCostHtml}
-     ${serviceNote}
+     ${serviceNote}${itineraryHtml}
      <div class="plan-map-wrap">
        <div id="${routeMapId}" class="plan-map"></div>
        <div class="route-stop-list">${routeStopChips}</div>
