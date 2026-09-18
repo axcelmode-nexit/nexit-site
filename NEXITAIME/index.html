@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>NEXITAIME 〜上越版〜 v25</title>
+<title>NEXITAIME 〜上越版〜 v26</title>
 <style>
 :root{--ink:#26364b;--muted:#75859a;--line:#e7edf2;--red:#e53935;--sky:#59c7ff;--violet:#7d8dff}
 *{box-sizing:border-box}html,body{margin:0;background:linear-gradient(180deg,#fffdf8,#f6fbff);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans","Noto Sans JP",sans-serif;color:var(--ink)}
@@ -164,7 +164,7 @@ body{
 </style>
 
 
-<style id="v25-clean-hero">
+<style id="v26-clean-hero">
 body{
   background:linear-gradient(180deg,#f4faff 0%,#fff 52%,#f8fbff 100%) !important;
   background-image:none !important;
@@ -311,18 +311,15 @@ main{
 }
 </style>
 
-<style id="v25-auto-compare">
+<style id="v26-auto-compare">
 #summary h2{margin-bottom:6px}
 .plan .status{display:inline-block;margin-bottom:8px}
 </style>
 
-<link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
-<link rel="icon" href="./assets/favicon-32.png" sizes="32x32" type="image/png">
-<link rel="apple-touch-icon" href="./assets/apple-touch-icon.png">
 <meta name="theme-color" content="#15314f">
 
 
-<style id="v25-version-cleanup">
+<style id="v26-version-cleanup">
 .version-badge,
 .edition-badge,
 .header-version,
@@ -332,7 +329,7 @@ main{
 </style>
 
 
-<style id="v25-location-unified">
+<style id="v26-location-unified">
 .unified-location-tools{
   margin:14px 0 16px;
 }
@@ -346,6 +343,101 @@ main{
 }
 </style>
 
+
+<style id="v26-location-ui">
+.location-card{
+  padding:24px 26px !important;
+}
+.location-top{
+  display:grid;
+  grid-template-columns:minmax(220px,.85fr) minmax(280px,1.15fr);
+  gap:14px;
+  margin-top:14px;
+}
+.location-gps,
+.location-status{
+  min-height:92px;
+  border:1px solid #dce7f1;
+  border-radius:20px;
+  background:#f8fbff;
+}
+.location-gps{
+  display:flex;
+  align-items:center;
+  gap:13px;
+  padding:18px 20px;
+  text-align:left;
+  color:#163452;
+  cursor:pointer;
+  font:inherit;
+}
+.location-gps:hover{
+  border-color:#6cc9ff;
+  background:#f3fbff;
+}
+.location-gps-icon{
+  font-size:26px;
+  line-height:1;
+}
+.location-gps small,
+.location-status small{
+  display:block;
+  color:#8294a8;
+  font-size:12px;
+  font-weight:800;
+  margin-bottom:4px;
+}
+.location-gps strong{
+  display:block;
+  font-size:20px;
+}
+.location-status{
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  padding:15px 20px;
+}
+.location-status strong{
+  color:#173653;
+  font-size:20px;
+  margin-bottom:4px;
+}
+.location-status span{
+  color:#607891;
+  font-size:13px;
+  font-weight:650;
+}
+.location-manual-label{
+  margin:17px 2px 10px;
+  color:#778ba0;
+  font-size:13px;
+  font-weight:800;
+}
+@media (max-width:700px){
+  .location-card{
+    padding:18px !important;
+  }
+  .location-top{
+    grid-template-columns:1fr;
+    gap:10px;
+  }
+  .location-gps,
+  .location-status{
+    min-height:78px;
+    border-radius:17px;
+  }
+  .location-gps{
+    padding:15px 16px;
+  }
+  .location-status{
+    padding:14px 16px;
+  }
+}
+</style>
+
+<link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="./assets/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="./assets/apple-touch-icon.png">
 </head>
 <body>
 <div class="app">
@@ -366,29 +458,32 @@ main{
   </div>
 </section>
 
-<section class="card">
+<section class="card location-card">
+  <div class="title">1. 現在地・今いる場所</div>
 
-<div class="grid">
-  <button id="locateBtn" class="field" style="text-align:left;border:1px solid #e1e8ef">
-    <label>GPS</label>
-    <strong>📍 現在地を使う</strong>
-  </button>
-  <div class="field">
-    <label>現在地</label>
-    <strong id="locationText">未取得</strong>
+  <div class="location-top">
+    <button id="locateBtn" class="location-gps">
+      <span class="location-gps-icon">📍</span>
+      <span>
+        <small>GPS</small>
+        <strong>現在地を使う</strong>
+      </span>
+    </button>
+
+    <div class="location-status">
+      <small>現在地・天気</small>
+      <strong id="locationText">未取得</strong>
+      <span id="weatherBox">現在地を取得するか、下から場所を選んでください。</span>
+    </div>
   </div>
-</div>
-<div id="weatherBox" class="note" style="margin-top:10px">現在地を取得すると、現在の天気を確認します。</div>
-</section>
 
-<section class="card">
-<div class="title">1. 現在地・今いる場所</div>
-<div class="chips" id="origins">
-<button class="chip active" data-station="上越妙高">🚄 上越妙高</button>
-<button class="chip" data-station="高田">🏯 高田</button>
-<button class="chip" data-station="春日山">⛰ 春日山</button>
-<button class="chip" data-station="直江津">🌊 直江津</button>
-</div>
+  <div class="location-manual-label">または今いる場所を選択</div>
+  <div class="chips" id="origins">
+    <button class="chip active" data-station="上越妙高">🚄 上越妙高</button>
+    <button class="chip" data-station="高田">🏯 高田</button>
+    <button class="chip" data-station="春日山">⛰ 春日山</button>
+    <button class="chip" data-station="直江津">🌊 直江津</button>
+  </div>
 </section>
 
 <section class="card">
@@ -492,7 +587,7 @@ main{
 <div class="note">鉄道は妙高はねうまライン公開時刻表を利用。バスは上越大通り線・佐渡汽船連絡バス・教育大学線・春日山／佐内線・山麓線の主要区間をアプリ内判定します。運休・遅延・臨時変更は上の公式運行情報を優先してください。イベントは events_auto.json があれば自動更新データを優先します。</div>
 </section>
 
-<footer>NEXITAIME 〜上越版〜 · Powered by AXCEL MODE NEXIT · v25</footer>
+<footer>NEXITAIME 〜上越版〜 · Powered by AXCEL MODE NEXIT · v26</footer>
 </div>
 <div class="sticky"><div class="inner"><button id="go" class="primary">今から行けるプランを出す ✨</button></div></div>
 
@@ -511,9 +606,14 @@ Promise.all([
  fetch('./mobility_services.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>[])
 ]).then(([e,t,b,bm,bx,p,m])=>{EVENTS=e;TRAIN=t;BUS=b;BUS_MAIN=bm;BUS_EXT=bx;PLACES=p;MOBILITY=m;renderMobility();});
 
-document.querySelectorAll('#origins .chip').forEach(b=>b.onclick=()=>{
+document.querySelectorAll('#origins .chip').forEach(b=>b.onclick=async ()=>{
  document.querySelectorAll('#origins .chip').forEach(x=>x.classList.remove('active'));
- b.classList.add('active'); origin=b.dataset.station; renderMobility();
+ b.classList.add('active');
+ origin=b.dataset.station;
+ document.getElementById('locationText').textContent=`${origin}付近`;
+ const p=PLACES[origin];
+ if(p) await updateWeatherFor(p.lat,p.lon,origin);
+ renderMobility();
 });
 document.querySelectorAll('#destinations .chip').forEach(b=>b.onclick=()=>{
  document.querySelectorAll('#destinations .chip').forEach(x=>x.classList.remove('active'));
@@ -677,36 +777,62 @@ function nearestStation(lat,lon){
   return best;
 }
 
+
+function weatherState(w){
+  if(!w) return '';
+  if((w.snowfall||0)>0) return '❄️ 雪';
+  if((w.rain||0)>0 || (w.precipitation||0)>0) return '🌧️ 雨';
+  const code=Number(w.weather_code);
+  if([0,1].includes(code)) return '☀️ 晴れ';
+  if([2,3].includes(code)) return '⛅ くもり';
+  return '🌤️ 天気';
+}
+
+async function updateWeatherFor(lat,lon,label=''){
+  const wbox=document.getElementById('weatherBox');
+  try{
+    wbox.textContent='天気を取得中…';
+    const url=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,precipitation,rain,snowfall,weather_code&timezone=Asia%2FTokyo`;
+    const r=await fetch(url);
+    const j=await r.json();
+    weather=j.current||null;
+    if(weather){
+      const state=weatherState(weather);
+      wbox.textContent=`${state} ${weather.temperature_2m}℃ ・ 降水 ${weather.precipitation ?? 0}mm`;
+      renderMobility();
+    }else{
+      wbox.textContent='天気情報を取得できませんでした。';
+    }
+  }catch(e){
+    wbox.textContent='天気取得に失敗しました。プラン判定は続けられます。';
+  }
+}
+
 async function locateMe(){
   const txt=document.getElementById('locationText');
   const wbox=document.getElementById('weatherBox');
   if(!navigator.geolocation){
     txt.textContent='GPS非対応';
+    wbox.textContent='この端末では位置情報を利用できません。';
     return;
   }
   txt.textContent='取得中…';
+  wbox.textContent='現在地を確認しています…';
   navigator.geolocation.getCurrentPosition(async pos=>{
     currentPos={lat:pos.coords.latitude,lon:pos.coords.longitude};
     const near=nearestStation(currentPos.lat,currentPos.lon);
     if(near){
       txt.textContent=`${near.name}付近（約${near.d.toFixed(1)}km）`;
       origin=near.name;
-      document.querySelectorAll('#origins .chip').forEach(x=>x.classList.toggle('active',x.dataset.station===origin)); renderMobility();
-    }else txt.textContent='現在地取得済み';
-    try{
-      const url=`https://api.open-meteo.com/v1/forecast?latitude=${currentPos.lat}&longitude=${currentPos.lon}&current=temperature_2m,precipitation,rain,snowfall,weather_code&timezone=Asia%2FTokyo`;
-      const r=await fetch(url);
-      const j=await r.json();
-      weather=j.current||null;
-      if(weather){
-        const state=weather.snowfall>0?'雪':(weather.rain>0||weather.precipitation>0?'雨':'晴れ/くもり');
-        wbox.textContent=`🌤 ${state}・${weather.temperature_2m}℃　降水 ${weather.precipitation ?? 0}mm`; renderMobility();
-      }
-    }catch(e){
-      wbox.textContent='天気取得に失敗しました。プラン判定は続けられます。';
+      document.querySelectorAll('#origins .chip').forEach(x=>x.classList.toggle('active',x.dataset.station===origin));
+    }else{
+      txt.textContent='現在地取得済み';
     }
+    await updateWeatherFor(currentPos.lat,currentPos.lon,near?.name||'現在地');
+    renderMobility();
   },()=>{
     txt.textContent='位置情報を許可してください';
+    wbox.textContent='GPSを使わない場合は、下から今いる場所を選べます。';
   },{enableHighAccuracy:false,timeout:10000,maximumAge:300000});
 }
 
