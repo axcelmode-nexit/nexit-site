@@ -1,4 +1,4 @@
-const CACHE='nexitaime-beta1-0-transport-noresult-copy';
+const CACHE='nexitaime-beta1-0-favorites';
 const ASSETS=[
   './',
   './index.html',
