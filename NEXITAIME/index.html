@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>NEXITAIME 〜上越版〜 v27</title>
+<title>NEXITAIME 〜上越版〜 v29</title>
 <style>
 :root{--ink:#26364b;--muted:#75859a;--line:#e7edf2;--red:#e53935;--sky:#59c7ff;--violet:#7d8dff}
 *{box-sizing:border-box}html,body{margin:0;background:linear-gradient(180deg,#fffdf8,#f6fbff);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans","Noto Sans JP",sans-serif;color:var(--ink)}
@@ -164,7 +164,7 @@ body{
 </style>
 
 
-<style id="v27-clean-hero">
+<style id="v29-clean-hero">
 body{
   background:linear-gradient(180deg,#f4faff 0%,#fff 52%,#f8fbff 100%) !important;
   background-image:none !important;
@@ -311,7 +311,7 @@ main{
 }
 </style>
 
-<style id="v27-auto-compare">
+<style id="v29-auto-compare">
 #summary h2{margin-bottom:6px}
 .plan .status{display:inline-block;margin-bottom:8px}
 </style>
@@ -319,7 +319,7 @@ main{
 <meta name="theme-color" content="#15314f">
 
 
-<style id="v27-version-cleanup">
+<style id="v29-version-cleanup">
 .version-badge,
 .edition-badge,
 .header-version,
@@ -329,7 +329,7 @@ main{
 </style>
 
 
-<style id="v27-location-unified">
+<style id="v29-location-unified">
 .unified-location-tools{
   margin:14px 0 16px;
 }
@@ -344,7 +344,7 @@ main{
 </style>
 
 
-<style id="v27-location-ui">
+<style id="v29-location-ui">
 .location-card{
   padding:24px 26px !important;
 }
@@ -439,7 +439,7 @@ main{
 <link rel="icon" href="./assets/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="./assets/apple-touch-icon.png">
 
-<style id="v27-hero-title-fix">
+<style id="v29-hero-title-fix">
 /* Desktop/tablet: keep the main headline on one line */
 @media (min-width: 701px){
   .hero-content{
@@ -531,15 +531,35 @@ main{
 </section>
 
 <section class="card">
-<div class="title">3. あとどれくらい？</div>
+<div class="title">3. どこに戻りたい？</div>
+<div class="chips wrap" id="returns">
+<button class="chip active" data-return="same">↩️ 今いる場所に戻る</button>
+<button class="chip" data-return="上越妙高">🚄 上越妙高</button>
+<button class="chip" data-return="高田">🏯 高田</button>
+<button class="chip" data-return="春日山">⛰ 春日山</button>
+<button class="chip" data-return="直江津">🌊 直江津</button>
+</div>
+<div class="note" style="margin-top:10px">初期値は「今いる場所に戻る」。別の場所を選ぶと、その地点への帰着まで含めて判定します。</div>
+</section>
+
+
+<section class="card">
+<div class="title">4. あとどれくらい？</div>
 <div class="grid">
 <div class="field"><label>空き時間（分）</label><input id="free" type="number" value="120" min="30" max="480"></div>
-<div class="field"><label>戻りの余裕（分）</label><input id="buffer" type="number" value="15" min="0" max="60"></div>
+<div class="field"><label>戻りの余裕</label><select id="buffer">
+  <option value="10">10分</option>
+  <option value="15" selected>15分</option>
+  <option value="30">30分</option>
+  <option value="45">45分</option>
+  <option value="60">60分</option>
+</select></div>
 </div>
+<div class="note" style="margin-top:10px">帰着後にこの時間を残せる候補だけを提案します。</div>
 </section>
 
 <section class="card">
-<div class="title">4. 気分</div>
+<div class="title">5. 気分</div>
 <div class="chips" id="moods">
 <button class="chip active" data-mood="any">✨ おまかせ</button>
 <button class="chip" data-mood="食">🍴 食べる</button>
@@ -551,7 +571,7 @@ main{
 
 
 <section class="card">
-<div class="title">5. 予算・同行者</div>
+<div class="title">6. 予算・同行者</div>
 <div class="grid">
   <div class="field"><label>予算</label><select id="budget">
     <option value="any">気にしない</option>
@@ -571,7 +591,7 @@ main{
 </section>
 
 <section class="card">
-<div class="title">6. 移動手段 <span style="font-size:10px;color:#8a98aa;font-weight:700">全10種類</span></div>
+<div class="title">7. 移動手段 <span style="font-size:10px;color:#8a98aa;font-weight:700">全10種類</span></div>
 <div class="chips wrap" id="transport">
 <button class="chip active" data-mode="auto">✨ おまかせ</button>
 <button class="chip" data-mode="privatecar">🚗 自家用車</button>
@@ -619,14 +639,14 @@ main{
 <div class="note">鉄道は妙高はねうまライン公開時刻表を利用。バスは上越大通り線・佐渡汽船連絡バス・教育大学線・春日山／佐内線・山麓線の主要区間をアプリ内判定します。運休・遅延・臨時変更は上の公式運行情報を優先してください。イベントは events_auto.json があれば自動更新データを優先します。</div>
 </section>
 
-<footer>NEXITAIME 〜上越版〜 · Powered by AXCEL MODE NEXIT · v27</footer>
+<footer>NEXITAIME 〜上越版〜 · Powered by AXCEL MODE NEXIT · v29</footer>
 </div>
 <div class="sticky"><div class="inner"><button id="go" class="primary">今から行けるプランを出す ✨</button></div></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
 integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script>
-let EVENTS=[], TRAIN={up:[],down:[]}, BUS={trips:[]}, BUS_MAIN={weekday:{},holiday:{}}, BUS_EXT={routes:[]}, PLACES={}, MOBILITY=[], origin='上越妙高', destinationArea='any', mood='any', transport='auto', budget='any', companion='any', currentPos=null, weather=null, mobilityMap=null, mobilityMarkers=[], currentPosMarker=null, nearestService=null;
+let EVENTS=[], TRAIN={up:[],down:[]}, BUS={trips:[]}, BUS_MAIN={weekday:{},holiday:{}}, BUS_EXT={routes:[]}, PLACES={}, MOBILITY=[], origin='上越妙高', destinationArea='any', returnTarget='same', mood='any', transport='auto', budget='any', companion='any', currentPos=null, weather=null, mobilityMap=null, mobilityMarkers=[], currentPosMarker=null, nearestService=null;
 
 Promise.all([
  fetch('./events_auto.json',{cache:'no-store'}).then(r=>r.ok?r.json():Promise.reject()).catch(()=>fetch('./events.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>[])),
@@ -650,6 +670,10 @@ document.querySelectorAll('#origins .chip').forEach(b=>b.onclick=async ()=>{
 document.querySelectorAll('#destinations .chip').forEach(b=>b.onclick=()=>{
  document.querySelectorAll('#destinations .chip').forEach(x=>x.classList.remove('active'));
  b.classList.add('active'); destinationArea=b.dataset.dest;
+});
+document.querySelectorAll('#returns .chip').forEach(b=>b.onclick=()=>{
+ document.querySelectorAll('#returns .chip').forEach(x=>x.classList.remove('active'));
+ b.classList.add('active'); returnTarget=b.dataset.return;
 });
 document.querySelectorAll('#moods .chip').forEach(b=>b.onclick=()=>{
  document.querySelectorAll('#moods .chip').forEach(x=>x.classList.remove('active'));
@@ -1113,6 +1137,18 @@ async function getModeService(mode){
   return {service,access};
 }
 
+function resolvedReturnStation(){
+  return returnTarget==='same' ? origin : returnTarget;
+}
+
+function returnModeAllowed(mode){
+  const backTo=resolvedReturnStation();
+  // Carshare and rental bicycle generally require return to the original station.
+  // Without verified one-way availability, do not propose them for a different return point.
+  if(backTo!==origin && ['carshare','bike'].includes(mode)) return false;
+  return true;
+}
+
 function reasonForMode(mode,service){
   if(mode==='privatecar')return '乗り換えなしで移動できる案';
   if(mode==='carshare')return service?`${service.name}を利用する案`:'最寄りカーシェアを利用する案';
@@ -1127,29 +1163,41 @@ function reasonForMode(mode,service){
 }
 
 async function evaluateDirectMode(ev,dest,mode,start,deadline){
+  const backTo=resolvedReturnStation();
+  if(!returnModeAllowed(mode))return null;
+
   const oneWay=await routeMinutes(mode,origin,dest);
-  if(oneWay==null)return null;
+  const backWay=await routeMinutes(mode,dest,backTo);
+  if(oneWay==null || backWay==null)return null;
+
   const svc=await getModeService(mode);
   if(['carshare','rentalcar','taxi','bike'].includes(mode) && !svc)return null;
+
   const access=svc?.access||0;
   const returnAccess=(mode==='carshare'||mode==='rentalcar'||mode==='bike')?access:0;
   const rawArrive=start+access+oneWay;
   const eventStart=ev.start_time?mins(ev.start_time):null;
   const eventEnd=ev.end_time?mins(ev.end_time):null;
   const arrive=eventStart&&rawArrive<eventStart?eventStart:rawArrive;
-  let latestLeave=deadline-oneWay-returnAccess;
+
+  let latestLeave=deadline-backWay-returnAccess;
   if(eventEnd!=null)latestLeave=Math.min(latestLeave,eventEnd);
   const stay=Math.floor(latestLeave-arrive);
   if(stay<30)return null;
+
   const backDep=arrive+stay;
-  const finish=backDep+oneWay+returnAccess;
+  const finish=backDep+backWay+returnAccess;
   const service=svc?.service||null;
+
+  let modeReason=reasonForMode(mode,service);
+  if(backTo!==origin && mode==='rentalcar') modeReason += '（乗り捨て可否・料金は要確認）';
+
   return {
-    ev,dest,mode,modeLabel:MODE_LABELS[mode],modeIcon:MODE_ICONS[mode],
+    ev,dest,returnTo:backTo,mode,modeLabel:MODE_LABELS[mode],modeIcon:MODE_ICONS[mode],
     out:{n:MODE_LABELS[mode]+(access?`（拠点まで徒歩${access}分）`:''),kind:mode,dep:start,arr:rawArrive,[origin]:fmt(start),[dest]:fmt(rawArrive)},
-    back:{n:MODE_LABELS[mode],kind:mode,dep:backDep,arr:finish,[dest]:fmt(backDep),[origin]:fmt(finish)},
+    back:{n:MODE_LABELS[mode],kind:mode,dep:backDep,arr:finish,[dest]:fmt(backDep),[backTo]:fmt(finish)},
     arrive,finish,spare:deadline-finish,stay,feasible:true,accessMinutes:access,service,
-    reason:reasonForMode(mode,service)
+    reason:modeReason
   };
 }
 
@@ -1167,23 +1215,30 @@ function findBestTransitReturn(a,b,earliest,deadline,eventEnd,mode){
 }
 
 async function evaluateTransitMode(ev,dest,mode,start,deadline){
+  const backTo=resolvedReturnStation();
   const out=chooseTransportMode(origin,dest,start,mode);
   if(!out)return null;
+
   const eventStart=ev.start_time?mins(ev.start_time):null;
   const eventEnd=ev.end_time?mins(ev.end_time):null;
   let arrive=out.arr;
   if(eventStart!=null && arrive<eventStart)arrive=eventStart;
+
   const earliestBack=arrive+30;
   if(eventEnd!=null && earliestBack>eventEnd)return null;
-  const back=findBestTransitReturn(dest,origin,earliestBack,deadline,eventEnd,mode);
+
+  const back=findBestTransitReturn(dest,backTo,earliestBack,deadline,eventEnd,mode);
   if(!back)return null;
+
   const stay=Math.floor(back.dep-arrive);
   if(stay<30)return null;
+
   const transitReason=out.kind==='bus'
-    ? `公開時刻表で往復できる${out.n}利用案`
-    : (mode==='public'?'電車とバスを比較して選んだ公共交通案':'公開時刻表で往復できる電車案');
+    ? `公開時刻表で帰着まで確認できる${out.n}利用案`
+    : (mode==='public'?'電車とバスを比較して選んだ公共交通案':'公開時刻表で帰着まで確認できる電車案');
+
   return {
-    ev,dest,mode,modeLabel:MODE_LABELS[mode],modeIcon:MODE_ICONS[mode],
+    ev,dest,returnTo:backTo,mode,modeLabel:MODE_LABELS[mode],modeIcon:MODE_ICONS[mode],
     out,back,arrive,finish:back.arr,spare:deadline-back.arr,stay,feasible:true,
     reason:transitReason
   };
@@ -1254,10 +1309,74 @@ function costLabel(ev){
   return ev.estimated_cost_yen===0?'無料候補':`目安 ¥${Number(ev.estimated_cost_yen).toLocaleString()}`;
 }
 
+
+const FLEX_ACTIVITIES=[
+  {
+    id:'flex-takada-walk',
+    title:'高田城址公園まわりを散歩',
+    area:'takada',area_name:'高田',venue:'高田城址公園周辺',
+    categories:['見る','動く','自然'],summary:'時間に合わせて短くも長くも調整できる散歩プラン。',
+    indoor:false,family_friendly:true,couple_friendly:true,solo_friendly:true,
+    estimated_cost_yen:0,url:'https://www.city.joetsu.niigata.jp/site/takada-park/'
+  },
+  {
+    id:'flex-kasugayama-walk',
+    title:'春日山エリアを気軽に散策',
+    area:'kasugayama',area_name:'春日山',venue:'春日山周辺',
+    categories:['見る','動く','自然'],summary:'残り時間に合わせて周辺散策を楽しむプラン。',
+    indoor:false,family_friendly:true,couple_friendly:true,solo_friendly:true,
+    estimated_cost_yen:0,url:'https://www.city.joetsu.niigata.jp/site/kasugayajou/'
+  },
+  {
+    id:'flex-naoetsu-sea',
+    title:'直江津の海側をぶらっと歩く',
+    area:'naoetsu',area_name:'直江津',venue:'直江津海岸・港周辺',
+    categories:['見る','動く','自然'],summary:'海を眺めながら、空き時間だけ気軽に歩けるプラン。',
+    indoor:false,family_friendly:true,couple_friendly:true,solo_friendly:true,
+    estimated_cost_yen:0,url:'https://joetsukankonavi.jp/'
+  },
+  {
+    id:'flex-joetsumyoko',
+    title:'上越妙高駅まわりを気軽に散策',
+    area:'south',area_name:'上越妙高',venue:'上越妙高駅西口周辺',
+    categories:['見る','食べる','動く'],summary:'駅周辺で、残り時間に合わせて立ち寄り先を探すプラン。',
+    indoor:false,family_friendly:true,couple_friendly:true,solo_friendly:true,
+    estimated_cost_yen:0,url:'https://joetsukankonavi.jp/'
+  }
+];
+
+async function scoreEventSet(events, modes, start, deadline){
+  let rows=[];
+  for(const ev of events){
+    const dest=areaStation[ev.area];
+    if(!dest)continue;
+    for(const mode of modes){
+      const c=await evaluateMode(ev,dest,mode,start,deadline);
+      if(c&&c.feasible){
+        const wa=weatherAdjustment(ev);
+        c.weatherScore=wa.score;
+        c.weatherReason=wa.reason;
+        c.preferenceScore=wa.score + (companion==='any'?0:12) + (budget==='any'?0:8);
+        rows.push(c);
+      }
+    }
+  }
+  return dedupeCandidates(rows);
+}
+
+function sortCandidates(rows){
+  return rows.sort((a,b)=>{
+    if((b.preferenceScore||0)!==(a.preferenceScore||0))return (b.preferenceScore||0)-(a.preferenceScore||0);
+    if(b.stay!==a.stay)return b.stay-a.stay;
+    if(b.spare!==a.spare)return b.spare-a.spare;
+    return a.arrive-b.arrive;
+  });
+}
+
 async function buildPlans(){
  const free=Number(document.getElementById('free').value)||120;
- const buffer=Number(document.getElementById('buffer').value)||15;
- const now=new Date(), start=nowMinutes(), deadline=start+free-buffer;
+ const buffer=Math.max(10,Number(document.getElementById('buffer').value)||15);
+ const now=new Date(), start=nowMinutes(), hardEnd=start+free, deadline=hardEnd-buffer;
  const summary=document.getElementById('summary'),box=document.getElementById('plans');
  summary.innerHTML='<h2>候補を比較中…</h2><p>移動時間・時刻表・戻り余裕を確認しています。</p>';
  box.innerHTML='';
@@ -1267,36 +1386,67 @@ async function buildPlans(){
  if(mood!=='any')events=events.filter(ev=>(ev.categories||[]).includes(mood));
 
  let scored=[];
- const modes=transport==='auto'?AUTO_MODES:[transport];
- for(const ev of events){
-   const dest=areaStation[ev.area];
-   if(!dest)continue;
-   for(const mode of modes){
-     const c=await evaluateMode(ev,dest,mode,start,deadline);
-     if(c&&c.feasible){ const wa=weatherAdjustment(ev); c.weatherScore=wa.score; c.weatherReason=wa.reason; c.preferenceScore=wa.score + (companion==='any'?0:12) + (budget==='any'?0:8); scored.push(c); }
-   }
- }
- scored=dedupeCandidates(scored);
- scored.sort((a,b)=>{
-   if((b.preferenceScore||0)!==(a.preferenceScore||0))return (b.preferenceScore||0)-(a.preferenceScore||0);
-   if(b.stay!==a.stay)return b.stay-a.stay;
-   if(b.spare!==a.spare)return b.spare-a.spare;
-   return a.arrive-b.arrive;
- });
+ let relaxationLevel=0;
+ const requestedModes=transport==='auto'?AUTO_MODES:[transport];
 
+ // 1) Exact requested conditions
+ scored=await scoreEventSet(events,requestedModes,start,deadline);
+
+ // 2) If no result, keep area/mood but widen transport
+ if(!scored.length && transport!=='auto'){
+   scored=await scoreEventSet(events,AUTO_MODES,start,deadline);
+   if(scored.length) relaxationLevel=1;
+ }
+
+ // 3) If still none, relax mood while keeping destination/budget/companion
+ if(!scored.length && mood!=='any'){
+   let relaxed=EVENTS.filter(ev=>eventIsOpenNow(ev,now)).filter(budgetAllows).filter(companionAllows);
+   if(destinationArea!=='any') relaxed=relaxed.filter(ev=>areaStation[ev.area]===destinationArea);
+   scored=await scoreEventSet(relaxed,AUTO_MODES,start,deadline);
+   if(scored.length) relaxationLevel=2;
+ }
+
+ // 4) If still none, relax destination too
+ if(!scored.length){
+   let relaxed=EVENTS.filter(ev=>eventIsOpenNow(ev,now)).filter(budgetAllows).filter(companionAllows);
+   scored=await scoreEventSet(relaxed,AUTO_MODES,start,deadline);
+   if(scored.length) relaxationLevel=3;
+ }
+
+ // 5) Final safety net: flexible activities, so the app never ends with zero ideas
+ if(!scored.length){
+   let flex=FLEX_ACTIVITIES.filter(budgetAllows).filter(companionAllows);
+   if(destinationArea!=='any'){
+     const exact=flex.filter(ev=>areaStation[ev.area]===destinationArea);
+     if(exact.length) flex=exact;
+   }
+   scored=await scoreEventSet(flex,['walk','car','taxi','bike'],start,deadline);
+   if(scored.length) relaxationLevel=4;
+ }
+
+ scored=sortCandidates(scored);
  const top=scored.slice(0,3);
+
  if(!top.length){
-   const transitOnly=['bus','public','train'].includes(transport);
-   summary.innerHTML=transitOnly
-      ? '<h2>今の条件では公共交通の候補が見つかりません</h2><p>実装済み時刻表の範囲では、30分以上滞在して余裕を持って戻れる往復がありません。</p>'
-      : '<h2>今の条件では行ける候補が見つかりません</h2><p>空き時間を増やすか、気分・移動手段を「おまかせ」にすると候補が広がります。</p>';
+   summary.innerHTML='<h2>近場でできることを探しています</h2><p>戻り先・空き時間・移動手段を少し変えると、さらに候補を広げられます。</p>';
+   box.innerHTML='<div class="plan"><h3>まずは現在地を確認してみてください</h3><p>GPSを使うと、近いエリアから候補を探し直せます。</p></div>';
    return;
  }
 
- if(transport==='auto'){
-   summary.innerHTML=`<h2>全移動手段から${top.length}案を選びました</h2><p>${origin}から${destinationArea==='any'?'上越全体':destinationArea+'エリア'}を対象に、空き時間${free}分・戻り余裕${buffer}分。天気・予算・同行者も加味して比較しています。</p>`;
+ if(relaxationLevel===0){
+   if(transport==='auto'){
+     summary.innerHTML=`<h2>今の条件で${top.length}案あります</h2><p>${origin}から${destinationArea==='any'?'上越全体':destinationArea+'エリア'}を対象に、${resolvedReturnStation()}へ戻る条件で比較。空き時間${free}分・帰着後の余裕${buffer}分を確保します。</p>`;
+   }else{
+     summary.innerHTML=`<h2>${MODE_LABELS[transport]||transport}で${top.length}案あります</h2><p>${origin}から${destinationArea==='any'?'上越全体':destinationArea+'エリア'}を対象に判定しました。</p>`;
+   }
+ }else if(relaxationLevel===1){
+   summary.innerHTML=`<h2>移動手段を少し広げると${top.length}案あります</h2><p>指定した条件はそのままに、他の移動手段も含めて「今から行ける」を探しました。</p>`;
+ }else if(relaxationLevel===2){
+   summary.innerHTML=`<h2>気分を少し広げると${top.length}案あります</h2><p>時間内に行って戻れる候補を優先して提案しています。</p>`;
+ }else if(relaxationLevel===3){
+   summary.innerHTML=`<h2>エリアを少し広げると${top.length}案あります</h2><p>今の空き時間で現実的に往復できる候補を、上越全体から探しました。</p>`;
  }else{
-   summary.innerHTML=`<h2>${MODE_LABELS[transport]||transport}で${top.length}案</h2><p>${origin}から${destinationArea==='any'?'上越全体':destinationArea+'エリア'}を対象に、空き時間${free}分・戻り余裕${buffer}分で判定しました。</p>`;
+   summary.innerHTML=`<h2>イベント以外なら、今からできることがあります</h2><p>条件に合うイベントが少ないため、散歩・景色・駅周辺など、時間調整しやすい候補を出しています。</p>`;
  }
 
  box.innerHTML=top.map((p,idx)=>{
@@ -1313,9 +1463,9 @@ async function buildPlans(){
      <div class="timeline">
        <div class="leg"><div>行き</div><div><strong>${p.modeIcon||''} ${esc(p.out.n)}</strong><br>${origin} → ${p.dest}</div><div>${p.out[origin]} → ${p.out[p.dest]}</div></div>
        <div class="leg"><div>滞在</div><div><strong>${p.dest}周辺</strong></div><div>約${p.stay}分</div></div>
-       <div class="leg"><div>帰り</div><div><strong>${p.modeIcon||''} ${esc(p.back.n)}</strong><br>${p.dest} → ${origin}</div><div>${p.back[p.dest]} → ${p.back[origin]}</div></div>
+       <div class="leg"><div>帰り</div><div><strong>${p.modeIcon||''} ${esc(p.back.n)}</strong><br>${p.dest} → ${p.returnTo||origin}</div><div>${p.back[p.dest]} → ${p.back[p.returnTo||origin]}</div></div>
      </div>
-     <div class="meta" style="margin-top:8px">戻り余裕：${Math.max(0,p.spare)}分</div>
+     <div class="meta" style="margin-top:8px">帰着先：${esc(p.returnTo||origin)} ／ 帰着後の余裕：${Math.max(0,p.spare+buffer)}分</div>
      <div class="links"><a href="${p.ev.url}" target="_blank" rel="noopener">イベント詳細を見る</a></div>
    </div>`;
  }).join('');
