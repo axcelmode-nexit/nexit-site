@@ -1,4 +1,4 @@
-const CACHE='nexitaime-beta1-0-transport-font';
+const CACHE='nexitaime-beta1-0-mobility-display-cleanup';
 const ASSETS=[
   './',
   './index.html',

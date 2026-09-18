@@ -1006,6 +1006,14 @@ main{
   }
 }
 </style>
+
+<style id="mobility-display-cleanup">
+.service-badges{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}
+#mobilityList .picktop{align-items:flex-start;gap:8px}
+#mobilityList .picktop strong{min-width:0}
+#mobilityList .badge{white-space:nowrap}
+</style>
+
 </head>
 <body>
 <div class="app">
@@ -1956,11 +1964,27 @@ async function renderMobility(){
   nearestService=nearRows.length ? await getNearestService(nearRows) : null;
   renderMapRows(rows);
 
-  const renderCard=s=>{
+  const categoryLabel=s=>{
+    if(s.category==='carshare') return 'カーシェア';
+    if(s.category==='rentalcar') return 'レンタカー';
+    if(s.category==='taxi') return 'タクシー';
+    if(s.category==='bike') return 'レンタル自転車';
+    return '';
+  };
+
+  const renderCard=(s,{isNearest=false}={})=>{
     const open=isLikelyOpen(s);
     const phone=s.phone?`<a href="tel:${s.phone}" class="service-icon-btn" aria-label="電話する" title="${s.phone}">☎︎</a>`:'';
+    const walkMin=isNearest && nearestService && nearestService.id===s.id ? nearestService.walkMinutes : null;
+    const type=categoryLabel(s);
+    const badges=[
+      type ? `<span class="badge">${type}</span>` : '',
+      isNearest ? `<span class="badge ok">📍 最寄り${walkMin!=null?` ${walkMin}分`:''}</span>` : '',
+      `<span class="badge ${open?'ok':'ng'}">${open?'利用候補':'時間・天候注意'}</span>`
+    ].filter(Boolean).join('');
+
     return `<div class="pick" style="margin-bottom:10px">
-      <div class="picktop"><strong>${s.name}</strong><span class="badge ${open?'ok':'ng'}">${open?'利用候補':'時間・天候注意'}</span></div>
+      <div class="picktop"><strong>${s.name}</strong><span class="service-badges">${badges}</span></div>
       <div class="meta">${s.area} · ${s.hours||''}</div>
       <div class="meta">${s.address||''}</div>
       <div class="service-distance">基準地点から約 ${s.distanceKm.toFixed(1)}km · ${mobilityDistanceLabel(s.distanceKm)}</div>
@@ -1972,22 +1996,19 @@ async function renderMobility(){
   };
 
   let out='';
-  if(nearestService){
-    out+=`<div class="pick" style="margin-bottom:12px;background:#f8fafc">
-      <div class="picktop"><strong>📍 最寄り候補</strong><span class="badge ok">${nearestService.walkMinutes}分</span></div>
-      <div class="nearest-line">${nearestService.name}</div>
-      <div class="service-distance">現在地/基準地点から約 ${nearestService.distanceKm.toFixed(1)}km · 徒歩 約${nearestService.walkMinutes}分</div>
-    </div>`;
+
+  // The list is already distance-sorted, so do not repeat the first item in a separate
+  // "nearest candidate" card. Instead, mark the first near service inline.
+  if(nearRows.length){
+    out+=nearRows.slice(0,6).map((s,i)=>renderCard(s,{isNearest:i===0})).join('');
   }
 
-  if(nearRows.length){
-    out+=`<div class="mobility-section-title">近くで使える移動サービス</div>${nearRows.slice(0,6).map(renderCard).join('')}`;
-  }
   if(extendedRows.length){
     out+=`<div class="mobility-section-title" style="margin-top:12px">少し離れた移動サービス</div>
       <div class="note" style="margin-bottom:8px">基準地点から1.5〜2km。近場とは分けて表示しています。</div>
-      ${extendedRows.slice(0,4).map(renderCard).join('')}`;
+      ${extendedRows.slice(0,4).map(s=>renderCard(s)).join('')}`;
   }
+
   box.innerHTML=out;
 }
 
