@@ -790,6 +790,123 @@ main{
 }
 </style>
 
+
+<style id="beta10-transport-cost">
+.cost-row{
+  margin:8px 0 4px;
+  padding:10px 12px;
+  border-radius:12px;
+  background:#f7fafc;
+  border:1px solid #e4ebf2;
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+}
+.cost-row strong{font-size:13px;color:#193a5a}
+.cost-row span{font-size:10.5px;color:#728195;line-height:1.4}
+.cost-total{
+  margin:5px 0 8px;
+  font-size:14px;
+  font-weight:900;
+  color:#173653;
+}
+.cost-total small{
+  font-size:10px;
+  font-weight:700;
+  color:#7b8797;
+}
+</style>
+
+
+<style id="beta10-opening-hours">
+.hours-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  margin:7px 0 2px;
+  padding:6px 9px;
+  border-radius:999px;
+  font-size:11px;
+  font-weight:800;
+}
+.hours-badge.hours-ok{
+  background:#edf8ef;
+  border:1px solid #c6e3cb;
+  color:#356742;
+}
+.hours-badge.hours-check{
+  background:#fff6df;
+  border:1px solid #ead39a;
+  color:#76570d;
+}
+</style>
+
+
+<style id="beta10-route-map">
+.plan-map-wrap{
+  margin:10px 0 8px;
+}
+.plan-map{
+  width:100%;
+  height:220px;
+  border-radius:14px;
+  overflow:hidden;
+  border:1px solid #dfe7ef;
+  background:#eef3f7;
+}
+.route-stop-list{
+  margin-top:7px;
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+}
+.route-stop-chip{
+  font-size:10.5px;
+  font-weight:800;
+  padding:5px 8px;
+  border-radius:999px;
+  background:#f6f8fb;
+  border:1px solid #dfe6ed;
+  color:#354b5f;
+}
+.route-map-note{
+  margin-top:5px;
+  font-size:10px;
+  color:#7a8794;
+}
+.route-num-icon{
+  width:24px;
+  height:24px;
+  border-radius:50%;
+  background:#173653;
+  color:white;
+  border:2px solid white;
+  box-shadow:0 1px 4px rgba(0,0,0,.25);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:11px;
+  font-weight:900;
+}
+</style>
+
+
+<style id="beta10-auto-multimodal">
+.multimodal-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  margin:6px 0;
+  padding:6px 9px;
+  border-radius:999px;
+  font-size:11px;
+  font-weight:900;
+  background:#eef3ff;
+  border:1px solid #c9d6f5;
+  color:#284b84;
+}
+</style>
+
 </head>
 <body>
 <div class="app">
@@ -910,9 +1027,7 @@ main{
 <button class="chip" data-mode="privatecar">🚗 自家用車</button>
 <button class="chip" data-mode="carshare">🚙 カーシェア</button>
 <button class="chip" data-mode="rentalcar">🚘 レンタカー</button>
-<button class="chip" data-mode="train">🚃 電車</button>
-<button class="chip" data-mode="bus">🚌 バス</button>
-<button class="chip" data-mode="public">🚉 公共交通全般</button>
+<button class="chip" data-mode="public">🚉 公共交通</button>
 <button class="chip" data-mode="taxi">🚕 タクシー</button>
 <button class="chip" data-mode="walk">🚶 徒歩</button>
 <button class="chip" data-mode="bike">🚲 レンタル自転車</button>
@@ -1159,11 +1274,11 @@ function chooseTransportMode(a,b,after,mode){
   const options=[];
   if(mode==='public'||mode==='train'){
     const t=findTrain(a,b,after);
-    if(t)options.push({...t,kind:'train',modeLabel:mode==='public'?'公共交通全般':'電車'});
+    if(t)options.push({...t,kind:'train',modeLabel:mode==='public'?'公共交通':'電車'});
   }
   if(mode==='public'||mode==='bus'){
     const b1=findBus(a,b,after);
-    if(b1)options.push({...b1,kind:'bus',modeLabel:mode==='public'?'公共交通全般':'バス'});
+    if(b1)options.push({...b1,kind:'bus',modeLabel:mode==='public'?'公共交通':'バス'});
   }
   options.sort((x,y)=>x.arr-y.arr);
   return options[0]||null;
@@ -1253,13 +1368,32 @@ async function locateMe(){
 async function routeMinutes(mode,a,b){
   const pa=PLACES[a],pb=PLACES[b];
   if(!pa||!pb)return null;
+  if(a===b)return 0;
 
-  const roadModes=['privatecar','carshare','rentalcar','taxi'];
-  const useRoad=roadModes.includes(mode);
-  const profile=useRoad?'driving':'walking';
+  const straightKm=haversine(pa.lat,pa.lon,pb.lat,pb.lon);
 
+  // Public OSRM is primarily a driving router. Do not use its duration as walking time.
+  // For walk/bike, use OSRM road distance when available and convert distance by mode speed.
+  if(mode==='walk' || mode==='bike'){
+    let routeKm=null;
+    try{
+      const url=`https://router.project-osrm.org/route/v1/driving/${pa.lon},${pa.lat};${pb.lon},${pb.lat}?overview=false`;
+      const r=await fetch(url);
+      const j=await r.json();
+      if(j.routes&&j.routes[0]&&Number.isFinite(j.routes[0].distance)){
+        routeKm=j.routes[0].distance/1000;
+      }
+    }catch(e){}
+
+    // If route distance cannot be obtained, use straight-line distance with a road/path correction.
+    const km=routeKm ?? (straightKm*1.2);
+    if(mode==='bike') return Math.max(1,Math.ceil(km/15*60));   // approx. 15 km/h
+    return Math.max(1,Math.ceil(km/4.8*60));                   // approx. 4.8 km/h
+  }
+
+  // Vehicle modes use OSRM driving duration.
   try{
-    const url=`https://router.project-osrm.org/route/v1/${profile}/${pa.lon},${pa.lat};${pb.lon},${pb.lat}?overview=false`;
+    const url=`https://router.project-osrm.org/route/v1/driving/${pa.lon},${pa.lat};${pb.lon},${pb.lat}?overview=false`;
     const r=await fetch(url);
     const j=await r.json();
     if(j.routes&&j.routes[0]){
@@ -1267,22 +1401,111 @@ async function routeMinutes(mode,a,b){
       if(mode==='carshare') min += 8;
       if(mode==='rentalcar') min += 20;
       if(mode==='taxi') min += 5;
-      if(mode==='bike'){
-        const km=haversine(pa.lat,pa.lon,pb.lat,pb.lon);
-        min=Math.ceil(km/15*60);
-      }
       return min;
     }
   }catch(e){}
 
-  const km=haversine(pa.lat,pa.lon,pb.lat,pb.lon);
-  if(mode==='privatecar') return Math.ceil(km/35*60+5);
-  if(mode==='carshare') return Math.ceil(km/35*60+13);
-  if(mode==='rentalcar') return Math.ceil(km/35*60+25);
-  if(mode==='taxi') return Math.ceil(km/35*60+10);
-  if(mode==='bike') return Math.ceil(km/15*60);
-  return Math.ceil(km/4.5*60);
+  if(mode==='privatecar') return Math.ceil(straightKm/35*60+5);
+  if(mode==='carshare') return Math.ceil(straightKm/35*60+13);
+  if(mode==='rentalcar') return Math.ceil(straightKm/35*60+25);
+  if(mode==='taxi') return Math.ceil(straightKm/35*60+10);
+  return null;
 }
+
+
+async function routeDistanceKm(a,b){
+  const pa=PLACES[a],pb=PLACES[b];
+  if(!pa||!pb)return null;
+  if(a===b)return 0;
+  try{
+    const url=`https://router.project-osrm.org/route/v1/driving/${pa.lon},${pa.lat};${pb.lon},${pb.lat}?overview=false`;
+    const r=await fetch(url);
+    const j=await r.json();
+    if(j.routes&&j.routes[0]&&Number.isFinite(j.routes[0].distance)){
+      return j.routes[0].distance/1000;
+    }
+  }catch(e){}
+  return haversine(pa.lat,pa.lon,pb.lat,pb.lon)*1.2;
+}
+
+function parseRentalPrice(service){
+  if(!service?.price)return null;
+  const nums=[...service.price.matchAll(/([0-9,]+)円/g)]
+    .map(m=>Number(m[1].replace(/,/g,'')))
+    .filter(Number.isFinite);
+  return nums.length?Math.min(...nums):null;
+}
+
+function fareByDistance(kind,km){
+  if(km==null)return null;
+  if(kind==='train'){
+    if(km<=5)return 200;
+    if(km<=10)return 300;
+    if(km<=20)return 450;
+    return 600;
+  }
+  if(kind==='bus'){
+    if(km<=5)return 250;
+    if(km<=10)return 400;
+    if(km<=20)return 600;
+    return 800;
+  }
+  return null;
+}
+
+async function estimateTransportCost(mode,from,dest,backTo,service,outKind=null,backKind=null){
+  const outKm=await routeDistanceKm(from,dest);
+  const backKm=await routeDistanceKm(dest,backTo);
+  const totalKm=(outKm||0)+(backKm||0);
+
+  if(mode==='walk'){
+    return {amount:0,label:'交通費 0円',note:'徒歩'};
+  }
+  if(mode==='bike'){
+    const rental=parseRentalPrice(service);
+    if(rental!=null)return {amount:rental,label:`交通費 約¥${rental.toLocaleString()}`,note:'レンタサイクル料金の最安目安'};
+    return {amount:null,label:'交通費：レンタル料金要確認',note:'貸出拠点の公式料金を確認'};
+  }
+  if(mode==='privatecar'){
+    const fuel=Math.max(0,Math.ceil(totalKm*20/10)*10);
+    return {amount:fuel,label:`交通費 約¥${fuel.toLocaleString()}`,note:'燃料代概算・駐車料金別'};
+  }
+  if(mode==='taxi'){
+    const calc=km=>Math.max(700,Math.round((700+km*350)/100)*100);
+    const amt=calc(outKm||0)+calc(backKm||0);
+    return {amount:amt,label:`交通費 約¥${amt.toLocaleString()}`,note:'タクシー概算・実際の運賃は配車/経路で変動'};
+  }
+  if(mode==='carshare'){
+    const base=1000;
+    const distance=Math.ceil(totalKm*20/10)*10;
+    const amt=base+distance;
+    return {amount:amt,label:`交通費 約¥${amt.toLocaleString()}〜`,note:'短時間利用の概算。実料金はプラン・距離料金を公式確認'};
+  }
+  if(mode==='rentalcar'){
+    const amt=3000+Math.ceil(totalKm*20/10)*10;
+    return {amount:amt,label:`交通費 約¥${amt.toLocaleString()}〜`,note:'短時間レンタル＋燃料の概算。実料金は公式確認'};
+  }
+  if(['train','bus','public'].includes(mode)){
+    const ok=outKind==='bus'?'bus':'train';
+    const bk=backKind==='bus'?'bus':'train';
+    const a=fareByDistance(ok,outKm);
+    const b=fareByDistance(bk,backKm);
+    if(a!=null && b!=null){
+      const amt=a+b;
+      return {amount:amt,label:`交通費 約¥${amt.toLocaleString()}`,note:'距離ベースの概算。実際の運賃は公式時刻表・運賃表を確認'};
+    }
+    return {amount:null,label:'交通費：運賃要確認',note:'公式運賃表を確認'};
+  }
+  return {amount:null,label:'交通費：要確認',note:''};
+}
+
+function totalPlanCost(plan){
+  const eventCost=plan.ev?.estimated_cost_yen;
+  const transportCost=plan.transportCost?.amount;
+  if(eventCost==null && transportCost==null)return null;
+  return (Number(eventCost)||0)+(Number(transportCost)||0);
+}
+
 
 
 
@@ -1381,7 +1604,7 @@ function renderMapRows(rows){
 async function serviceAccessMinutes(mode){
   if(!['carshare','rentalcar','taxi','bike'].includes(mode)) return 0;
   const cats=serviceCategoryForMode(mode);
-  const rows=MOBILITY.filter(s=>cats.includes(s.category) && isLikelyOpen(s));
+  const rows=MOBILITY.filter(s=>cats.includes(s.category) && isLikelyOpen(s,planningDate||new Date()));
   const n=await getNearestService(rows);
   if(!n)return 0;
   nearestService=n;
@@ -1478,15 +1701,15 @@ async function renderMobility(){
 
 const MODE_LABELS={
   privatecar:'自家用車',carshare:'カーシェア',rentalcar:'レンタカー',
-  train:'電車',bus:'バス',public:'公共交通全般',taxi:'タクシー',
-  walk:'徒歩',bike:'レンタル自転車'
+  train:'電車',bus:'バス',public:'公共交通',taxi:'タクシー',
+  walk:'徒歩',bike:'レンタル自転車',multimodal:'複合移動'
 };
-const MODE_ICONS={privatecar:'🚗',carshare:'🚙',rentalcar:'🚘',train:'🚃',bus:'🚌',public:'🚉',taxi:'🚕',walk:'🚶',bike:'🚲'};
-const AUTO_MODES=['privatecar','carshare','rentalcar','train','bus','taxi','walk','bike'];
+const MODE_ICONS={privatecar:'🚗',carshare:'🚙',rentalcar:'🚘',train:'🚃',bus:'🚌',public:'🚉',taxi:'🚕',walk:'🚶',bike:'🚲',multimodal:'🔀'};
+const AUTO_MODES=['privatecar','carshare','rentalcar','public','multimodal','taxi','walk','bike'];
 
 async function getModeService(mode){
   if(!['carshare','rentalcar','taxi','bike'].includes(mode))return {service:null,access:0};
-  const rows=MOBILITY.filter(s=>serviceCategoryForMode(mode).includes(s.category) && isLikelyOpen(s));
+  const rows=MOBILITY.filter(s=>serviceCategoryForMode(mode).includes(s.category) && isLikelyOpen(s,planningDate||new Date()));
   if(!rows.length)return null;
   const service=await getNearestService(rows);
   if(!service)return null;
@@ -1515,11 +1738,96 @@ function reasonForMode(mode,service){
   if(mode==='rentalcar')return service?`${service.name}から出発する案`:'レンタカー手続き時間込みの案';
   if(mode==='train')return '公開時刻表で往復できる電車案';
   if(mode==='bus')return '公開時刻表で往復できるバス案';
-  if(mode==='public')return '電車とバスを比較した公共交通案';
+  if(mode==='public')return '電車とバスを比較して選んだ公共交通案';
   if(mode==='taxi')return service?`${service.name}の配車を想定した案`:'配車待ち時間を見込んだ案';
   if(mode==='walk')return '徒歩だけで完結する案';
   if(mode==='bike')return service?`${service.name}のレンタサイクル案`:'レンタサイクルで移動する案';
   return '時間内に収まる案';
+}
+
+
+function weekdayKey(d){
+  return ['sun','mon','tue','wed','thu','fri','sat'][d.getDay()];
+}
+
+function seasonalDaylightEndMinutes(d){
+  const m=d.getMonth()+1;
+  // Conservative local sightseeing cutoff, not an astronomical sunset time.
+  if(m<=2 || m===12) return 16*60+30;
+  if(m===3 || m===11) return 17*60;
+  if(m===4 || m===10) return 17*60+30;
+  if(m===5 || m===9) return 18*60;
+  return 18*60+30;
+}
+
+function spotAvailability(ev, arrive, leave, baseDate){
+  const result={ok:true,label:'',reason:'',verified:false};
+
+  if(ev.always_open===true){
+    result.verified=true;
+    result.label='屋外・常時見学可';
+  }
+
+  if(ev.daylight_only===true){
+    const end=seasonalDaylightEndMinutes(baseDate);
+    if(arrive>=end || leave>end){
+      return {
+        ok:false,verified:true,
+        label:'日中推奨',
+        reason:`日没前の見学を推奨するため、${fmt(end)}までに見学を終えられない候補は除外`
+      };
+    }
+    result.verified=true;
+    result.label=`屋外・${fmt(end)}頃まで推奨`;
+  }
+
+  const closed=(ev.closed_weekdays||[]);
+  const wd=weekdayKey(baseDate);
+  if(closed.includes(wd)){
+    return {ok:false,verified:true,label:'休業日',reason:'指定日は休業日のため除外'};
+  }
+
+  const hours=ev.opening_hours;
+  if(hours){
+    const spec=(typeof hours==='string') ? hours : (hours[wd] ?? hours.default ?? null);
+    if(spec==='closed'){
+      return {ok:false,verified:true,label:'休業日',reason:'指定日は休業日のため除外'};
+    }
+    if(spec){
+      const parts=String(spec).split('-');
+      if(parts.length===2){
+        const open=mins(parts[0]), close=mins(parts[1]);
+        const last=ev.last_entry ? mins(ev.last_entry) : close;
+        if(arrive<open || arrive>=last || leave>close){
+          return {
+            ok:false,verified:true,
+            label:`営業時間 ${parts[0]}〜${parts[1]}`,
+            reason:`到着・滞在が営業時間（${parts[0]}〜${parts[1]}）に収まらないため除外`
+          };
+        }
+        result.verified=true;
+        result.label=`営業時間 ${parts[0]}〜${parts[1]}`;
+      }
+    }
+  }
+
+  if(!result.verified){
+    if(ev.indoor===true){
+      result.label='営業時間要確認';
+      result.reason='施設の営業時間データが未登録のため、公式情報の確認が必要';
+    }else{
+      result.label='利用時間要確認';
+      result.reason='見学可能時間のデータが未登録';
+    }
+  }
+  return result;
+}
+
+function availabilityBadge(plan){
+  const a=plan.availability;
+  if(!a?.label) return '';
+  const cls=a.verified?'hours-ok':'hours-check';
+  return `<div class="hours-badge ${cls}">🕒 ${esc(a.label)}</div>`;
 }
 
 async function evaluateDirectMode(ev,dest,mode,start,deadline,ctx){
@@ -1550,14 +1858,20 @@ async function evaluateDirectMode(ev,dest,mode,start,deadline,ctx){
   const finish=backDep+backWay+returnAccess;
   const service=svc?.service||null;
 
+  const availability=spotAvailability(ev,arrive,backDep,planningDate);
+  if(!availability.ok)return null;
+
   let modeReason=reasonForMode(mode,service);
   if(backTo!==from && mode==='rentalcar') modeReason += '（乗り捨て可否・料金は要確認）';
+
+  const transportCost=await estimateTransportCost(mode,from,dest,backTo,service);
 
   return {
     ev,dest,returnTo:backTo,mode,modeLabel:MODE_LABELS[mode],modeIcon:MODE_ICONS[mode],
     out:{n:MODE_LABELS[mode]+(access?`（拠点まで徒歩${access}分）`:''),kind:mode,dep:start,arr:rawArrive,[from]:fmt(start),[dest]:fmt(rawArrive)},
     back:{n:MODE_LABELS[mode],kind:mode,dep:backDep,arr:finish,[dest]:fmt(backDep),[backTo]:fmt(finish)},
     arrive,finish,spare:deadline-finish,stay,feasible:true,accessMinutes:access,service,
+    transportCost,availability,
     reason:modeReason
   };
 }
@@ -1595,18 +1909,106 @@ async function evaluateTransitMode(ev,dest,mode,start,deadline,ctx){
   const stay=Math.floor(back.dep-arrive);
   if(stay<30)return null;
 
+  const availability=spotAvailability(ev,arrive,back.dep,planningDate);
+  if(!availability.ok)return null;
+
   const transitReason=out.kind==='bus'
     ? `公開時刻表で帰着まで確認できる${out.n}利用案`
     : (mode==='public'?'電車とバスを比較して選んだ公共交通案':'公開時刻表で帰着まで確認できる電車案');
 
+  const transportCost=await estimateTransportCost(mode,from,dest,backTo,null,out.kind,back.kind);
+
   return {
     ev,dest,returnTo:backTo,mode,modeLabel:MODE_LABELS[mode],modeIcon:MODE_ICONS[mode],
     out,back,arrive,finish:back.arr,spare:deadline-back.arr,stay,feasible:true,
+    transportCost,availability,
     reason:transitReason
   };
 }
 
+
+function multimodalHubs(){
+  // Transfer candidates are intentionally limited to major station areas
+  // where the app already has public-transport and mobility data.
+  return ['上越妙高','高田','春日山','直江津'];
+}
+
+function mobilityModesForHub(){
+  return ['carshare','rentalcar','taxi'];
+}
+
+async function evaluateAutoMultimodal(ev,dest,start,deadline,ctx){
+  const from=ctx.origin;
+  const backTo=ctx.returnTo;
+  const rows=[];
+
+  for(const hub of multimodalHubs()){
+    if(hub===from || hub===dest) continue;
+
+    // 1) Public transport from origin to transfer hub
+    const first=chooseTransportMode(from,hub,start,'public');
+    if(!first) continue;
+
+    for(const lastMode of mobilityModesForHub()){
+      if(!returnModeAllowed(lastMode,{origin:hub,returnTo:hub}) && lastMode!=='taxi') continue;
+
+      // For carshare/rental car we require a service near the transfer hub.
+      const svc = lastMode==='taxi' ? null : getModeService(lastMode,hub);
+      if(lastMode!=='taxi' && !svc?.service) continue;
+
+      const transferBuffer = lastMode==='taxi' ? 8 : (lastMode==='carshare' ? 12 : 18);
+      const localStart = first.arr + transferBuffer;
+
+      // Last-mile to destination.
+      const localCtx={origin:hub,returnTo:hub};
+      const localOut=await evaluateDirectMode(ev,dest,lastMode,localStart,deadline,localCtx);
+      if(!localOut) continue;
+
+      // localOut currently includes hub -> dest -> hub.
+      // After coming back to the hub, use public transport back to requested return point.
+      const second=chooseTransportMode(hub,backTo,localOut.finish,'public');
+      if(!second || second.arr>deadline) continue;
+
+      const publicOutCost=await estimateTransportCost('public',from,hub,hub,null,first.kind,first.kind);
+      const publicBackCost=await estimateTransportCost('public',hub,backTo,backTo,null,second.kind,second.kind);
+      const localCost=localOut.transportCost?.amount ?? 0;
+      const totalTransportCost=(publicOutCost?.amount ?? 0)+(publicBackCost?.amount ?? 0)+localCost;
+
+      rows.push({
+        ev,
+        dest,
+        returnTo:backTo,
+        mode:'multimodal',
+        modeLabel:'公共交通＋'+MODE_LABELS[lastMode],
+        modeIcon:'🔀',
+        multimodal:true,
+        transferHub:hub,
+        lastMode,
+        out:first,
+        local:localOut,
+        back:second,
+        arrive:localOut.arrive,
+        finish:second.arr,
+        stay:localOut.stay,
+        spare:deadline-second.arr,
+        feasible:true,
+        availability:localOut.availability,
+        transportCost:{
+          amount:totalTransportCost,
+          label:`交通費 約¥${Number(totalTransportCost).toLocaleString()}`,
+          note:`${MODE_LABELS[first.kind]||'公共交通'}＋${MODE_LABELS[lastMode]}＋${MODE_LABELS[second.kind]||'公共交通'}の概算`
+        },
+        reason:`${from}から${hub}まで公共交通、${hub}から${dest}は${MODE_LABELS[lastMode]}を使う複合移動案`
+      });
+    }
+  }
+
+  rows.sort((a,b)=>a.finish-b.finish || (a.transportCost?.amount??999999)-(b.transportCost?.amount??999999));
+  return rows[0]||null;
+}
+
 async function evaluateMode(ev,dest,mode,start,deadline,ctx){
+  if(mode==='multimodal') return evaluateAutoMultimodal(ev,dest,start,deadline,ctx);
   if(['train','bus','public'].includes(mode))return evaluateTransitMode(ev,dest,mode,start,deadline,ctx);
   return evaluateDirectMode(ev,dest,mode,start,deadline,ctx);
 }
@@ -1658,6 +2060,97 @@ function weatherAdjustment(ev){
   return {score:0,reason:''};
 }
 
+
+const SPOT_COORDS={
+  '高田城址公園':{lat:37.1107,lon:138.2432},
+  '高田本町・雁木通り周辺':{lat:37.1157,lon:138.2421},
+  '春日山城跡周辺':{lat:37.1468,lon:138.2052},
+  '春日山神社周辺':{lat:37.1476,lon:138.2072},
+  '直江津海岸・港周辺':{lat:37.1835,lon:138.2293},
+  '直江津駅周辺':{lat:37.1706,lon:138.2427},
+  '上越妙高駅・釜蓋遺跡周辺':{lat:37.0816,lon:138.2486},
+  '上越妙高駅周辺':{lat:37.0810,lon:138.2482}
+};
+
+function placeCoord(name){
+  if(!name)return null;
+  if(PLACES?.[name]) return {lat:PLACES[name].lat,lon:PLACES[name].lon};
+  if(SPOT_COORDS[name]) return SPOT_COORDS[name];
+  return null;
+}
+
+function planStops(plan,ctx){
+  const stops=[];
+  const originName=ctx?.origin||origin;
+  const returnName=ctx?.returnTo||resolvedReturnStation();
+  const destLabel=plan.ev?.venue||plan.dest;
+  const a=placeCoord(originName);
+  const b=placeCoord(destLabel)||placeCoord(plan.dest);
+  const c=placeCoord(returnName);
+  const h=plan.multimodal?placeCoord(plan.transferHub):null;
+  if(a)stops.push({name:originName,kind:'start',...a});
+  if(h)stops.push({name:`${plan.transferHub}（乗換）`,kind:'transfer',...h});
+  if(b)stops.push({name:destLabel||plan.dest,kind:'spot',...b});
+  if(h)stops.push({name:`${plan.transferHub}（乗換）`,kind:'transfer',...h});
+  if(c)stops.push({name:returnName,kind:'return',...c});
+  return stops;
+}
+
+async function fetchRouteGeometry(stops){
+  if(!stops || stops.length<2)return null;
+  try{
+    const coords=stops.map(s=>`${s.lon},${s.lat}`).join(';');
+    const url=`https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson`;
+    const r=await fetch(url);
+    const j=await r.json();
+    if(j.routes?.[0]?.geometry?.coordinates){
+      return j.routes[0].geometry.coordinates.map(([lon,lat])=>[lat,lon]);
+    }
+  }catch(e){}
+  return stops.map(s=>[s.lat,s.lon]);
+}
+
+const renderedPlanMaps=new Set();
+
+async function renderPlanRouteMap(mapId,plan,ctx){
+  if(renderedPlanMaps.has(mapId))return;
+  const el=document.getElementById(mapId);
+  if(!el || typeof L==='undefined')return;
+  renderedPlanMaps.add(mapId);
+
+  const stops=planStops(plan,ctx);
+  if(stops.length<2){
+    el.innerHTML='<div style="padding:14px;font-size:12px;color:#6f7c89">ルートを表示できる位置情報が不足しています。</div>';
+    return;
+  }
+
+  const map=L.map(mapId,{scrollWheelZoom:false,zoomControl:true});
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+    maxZoom:19,
+    attribution:'&copy; OpenStreetMap contributors'
+  }).addTo(map);
+
+  stops.forEach((s,i)=>{
+    const icon=L.divIcon({
+      className:'',
+      html:`<div class="route-num-icon">${i+1}</div>`,
+      iconSize:[24,24],
+      iconAnchor:[12,12]
+    });
+    L.marker([s.lat,s.lon],{icon}).addTo(map).bindPopup(`${i+1}. ${esc(s.name)}`);
+  });
+
+  const geometry=await fetchRouteGeometry(stops);
+  if(geometry?.length){
+    const line=L.polyline(geometry,{weight:5,opacity:.75}).addTo(map);
+    map.fitBounds(line.getBounds(),{padding:[22,22]});
+  }else{
+    map.fitBounds(L.latLngBounds(stops.map(s=>[s.lat,s.lon])),{padding:[22,22]});
+  }
+
+  setTimeout(()=>map.invalidateSize(),150);
+}
+
 function companionReason(ev){
   if(companion==='family'||companion==='kids') return '家族・子連れ条件に合う候補';
   if(companion==='couple') return 'カップル向け条件を加味';
@@ -1678,7 +2171,7 @@ const FLEX_ACTIVITIES=[
     area:'takada',area_name:'高田',venue:'高田城址公園周辺',
     categories:['見る','動く','自然'],summary:'時間に合わせて短くも長くも調整できる散歩プラン。',
     indoor:false,family_friendly:true,couple_friendly:true,solo_friendly:true,
-    estimated_cost_yen:0,url:'https://www.city.joetsu.niigata.jp/site/takada-park/'
+    estimated_cost_yen:0,always_open:true,url:'https://www.city.joetsu.niigata.jp/site/takada-park/'
   },
   {
     id:'flex-kasugayama-walk',
@@ -1686,7 +2179,7 @@ const FLEX_ACTIVITIES=[
     area:'kasugayama',area_name:'春日山',venue:'春日山周辺',
     categories:['見る','動く','自然'],summary:'残り時間に合わせて周辺散策を楽しむプラン。',
     indoor:false,family_friendly:true,couple_friendly:true,solo_friendly:true,
-    estimated_cost_yen:0,url:'https://www.city.joetsu.niigata.jp/site/kasugayajou/'
+    estimated_cost_yen:0,daylight_only:true,url:'https://www.city.joetsu.niigata.jp/site/kasugayajou/'
   },
   {
     id:'flex-naoetsu-sea',
@@ -1694,7 +2187,7 @@ const FLEX_ACTIVITIES=[
     area:'naoetsu',area_name:'直江津',venue:'直江津海岸・港周辺',
     categories:['見る','動く','自然'],summary:'海を眺めながら、空き時間だけ気軽に歩けるプラン。',
     indoor:false,family_friendly:true,couple_friendly:true,solo_friendly:true,
-    estimated_cost_yen:0,url:'https://joetsukankonavi.jp/'
+    estimated_cost_yen:0,always_open:true,url:'https://joetsukankonavi.jp/'
   },
   {
     id:'flex-joetsumyoko',
@@ -1702,7 +2195,7 @@ const FLEX_ACTIVITIES=[
     area:'south',area_name:'上越妙高',venue:'上越妙高駅西口周辺',
     categories:['見る','食べる','動く'],summary:'駅周辺で、残り時間に合わせて立ち寄り先を探すプラン。',
     indoor:false,family_friendly:true,couple_friendly:true,solo_friendly:true,
-    estimated_cost_yen:0,url:'https://joetsukankonavi.jp/'
+    estimated_cost_yen:0,always_open:true,url:'https://joetsukankonavi.jp/'
   }
 ];
 
@@ -1772,7 +2265,8 @@ async function buildPlans(){
 
  // 「行けるプランを出す」を押したら結果エリアへ移動
  requestAnimationFrame(()=>{
-   summary.scrollIntoView({behavior:'smooth', block:'start'});
+   setTimeout(()=>{ top.forEach((p,idx)=>{ const el=[...document.querySelectorAll('.plan-map')][idx]; if(el) renderPlanRouteMap(el.id,p,searchCtx); }); },0);
+  summary.scrollIntoView({behavior:'smooth', block:'start'});
  });
 
  let events=EVENTS.filter(ev=>eventIsAvailableAt(ev,planningDate)).filter(budgetAllows).filter(companionAllows);
@@ -1812,6 +2306,16 @@ async function buildPlans(){
  }
 
  scored=sortCandidates(scored);
+
+ // Budget is judged against event/spot cost + estimated transport cost when both are known.
+ if(budget!=='any'){
+   const maxBudget=Number(budget);
+   scored=scored.filter(row=>{
+     const total=totalPlanCost(row);
+     return total==null || total<=maxBudget;
+   });
+ }
+
  // Same event/place shown with different transport is one plan, not multiple plans.
  const uniquePlans=[];
  const seenPlan=new Set();
@@ -1847,20 +2351,40 @@ async function buildPlans(){
  box.innerHTML=top.map((p,idx)=>{
    const rank=idx===0&&transport==='auto'?'<span class="status">おすすめ</span>':'<span class="status">間に合う</span>';
    const serviceNote=p.service?`<div class="note">利用候補：${esc(p.service.name)}${p.accessMinutes?`（拠点まで徒歩 約${p.accessMinutes}分）`:''}</div>`:'';
-   return `<div class="plan">
+   const totalCost=totalPlanCost(p);
+   const transportCostHtml=p.transportCost
+     ? `<div class="cost-row"><strong>🚦 ${esc(p.transportCost.label)}</strong>${p.transportCost.note?`<span>${esc(p.transportCost.note)}</span>`:''}</div>`
+     : '';
+   const totalCostHtml=totalCost!=null
+     ? `<div class="cost-total">合計目安：約¥${Number(totalCost).toLocaleString()} <small>（施設・イベント＋交通）</small></div>`
+     : '';
+   const hoursHtml=availabilityBadge(p);
+   const routeMapId=`plan-route-map-${Date.now()}-${idx}-${Math.random().toString(36).slice(2,7)}`;
+   const stopsForPlan=planStops(p,searchCtx);
+   const routeStopChips=stopsForPlan.map((s,i)=>`<span class="route-stop-chip">${i+1}. ${esc(s.name)}</span>`).join('');
+   return `<div class="plan">${p.multimodal?`<div class="multimodal-badge">🔀 おまかせ複合移動：公共交通＋${esc(MODE_LABELS[p.lastMode]||p.lastMode)}</div>`:''}
      ${rank}
      <div class="meta" style="font-weight:900;margin-bottom:6px">${p.modeIcon||''} ${esc(p.modeLabel||'')}</div>
      <h3>${esc(p.ev.title)}</h3>
      <div class="meta">📍 ${esc(p.ev.area_name)} · ${esc(p.ev.venue||'')}</div>
      <p>${esc(p.ev.summary||'')}</p>
-     <div class="note" style="margin-bottom:6px"><strong>この案の理由：</strong>${esc([p.reason,p.weatherReason,companionReason(p.ev)].filter(Boolean).join('・')||'時間内に収まるため')}</div><div class="meta">💴 ${esc(costLabel(p.ev))}${p.ev.indoor?' · 🏠 屋内':''}</div>
+     <div class="note" style="margin-bottom:6px"><strong>この案の理由：</strong>${esc([p.reason,p.weatherReason,companionReason(p.ev)].filter(Boolean).join('・')||'時間内に収まるため')}</div>
+     <div class="meta">🎫 ${esc(costLabel(p.ev))}${p.ev.indoor?' · 🏠 屋内':''}</div>
+     ${hoursHtml}
+     ${transportCostHtml}
+     ${totalCostHtml}
      ${serviceNote}
+     <div class="plan-map-wrap">
+       <div id="${routeMapId}" class="plan-map"></div>
+       <div class="route-stop-list">${routeStopChips}</div>
+       <div class="route-map-note">地図は移動ルートの目安です。徒歩・自転車・公共交通では実際の経路が異なる場合があります。</div>
+     </div>
      <div class="timeline">
        <div class="leg"><div>行き</div><div><strong>${p.modeIcon||''} ${esc(p.out.n)}</strong><br>${searchCtx.origin} → ${p.dest}</div><div>${p.out[searchCtx.origin]} → ${p.out[p.dest]}</div></div>
        <div class="leg"><div>滞在</div><div><strong>${p.dest}周辺</strong></div><div>約${p.stay}分</div></div>
        <div class="leg"><div>帰り</div><div><strong>${p.modeIcon||''} ${esc(p.back.n)}</strong><br>${p.dest} → ${p.returnTo||origin}</div><div>${p.back[p.dest]} → ${p.back[p.returnTo||origin]}</div></div>
      </div>
-     <div class="meta" style="margin-top:8px">ルート：${esc(searchCtx.origin)} → ${esc(p.dest)} → ${esc(p.returnTo||searchCtx.returnTo)}<br>帰着後の余裕：${Math.max(0,p.spare+buffer)}分</div>
+     <div class="meta" style="margin-top:8px">ルート：${esc(searchCtx.origin)} → ${p.multimodal?`${esc(p.transferHub)}（乗換） → `:''}${esc(p.dest)} → ${p.multimodal?`${esc(p.transferHub)}（乗換） → `:''}${esc(p.returnTo||searchCtx.returnTo)}<br>帰着後の余裕：${Math.max(0,p.spare+buffer)}分</div>
      <div class="links"><a href="${p.ev.url}" target="_blank" rel="noopener">イベント詳細を見る</a></div>
    </div>`;
  }).join('');
