@@ -1,4 +1,4 @@
-const CACHE='nexitaime-beta1-0-mobility-display-cleanup';
+const CACHE='nexitaime-beta1-0-cta-reword';
 const ASSETS=[
   './',
   './index.html',

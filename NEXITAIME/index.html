@@ -1014,6 +1014,21 @@ main{
 #mobilityList .badge{white-space:nowrap}
 </style>
 
+
+<style id="sticky-over-leaflet-fix">
+.sticky{
+  z-index:2000 !important;
+}
+#mobilityMap{
+  position:relative;
+  z-index:1;
+}
+#mobilityMap .leaflet-pane,
+#mobilityMap .leaflet-control{
+  z-index:auto;
+}
+</style>
+
 </head>
 <body>
 <div class="app">
@@ -1190,7 +1205,7 @@ main{
 </section>
 <footer>NEXITAIME 〜上越版〜 · Powered by AXCEL MODE NEXIT · Beta1.0</footer>
 </div>
-<div class="sticky"><div class="inner"><button class="primary" id="go">行けるプランを出す ✨</button></div></div>
+<div class="sticky"><div class="inner"><button class="primary" id="go">おすすめを見つける ✨</button></div></div>
 <script crossorigin="" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" onerror="this.onerror=null;this.removeAttribute('integrity');this.src='https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js';"></script>
 <script>
 let EVENTS=[], TRAIN={up:[],down:[]}, SHINANO={up:[],down:[]}, BUS={trips:[]}, BUS_MAIN={weekday:{},holiday:{}}, BUS_EXT={routes:[]}, PLACES={}, MOBILITY=[], origin='上越妙高', destinationArea='any', returnTarget='same', timingMode='now', planningDate=new Date(), mood='any', transport='auto', budget='any', companion='any', currentPos=null, weather=null, mobilityMap=null, mobilityMarkers=[], currentPosMarker=null, nearestService=null;
@@ -2766,7 +2781,7 @@ async function buildPlans(){
  summary.innerHTML='<h2>候補を比較中…</h2><p>移動時間・時刻表・戻り余裕を確認しています。</p>';
  box.innerHTML='';
 
- // 「行けるプランを出す」を押したら結果エリアへ移動
+ // 「おすすめを見つける」を押したら結果エリアへ移動
  requestAnimationFrame(()=>{
    summary.scrollIntoView({behavior:'smooth', block:'start'});
  });
