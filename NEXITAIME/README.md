@@ -123,3 +123,17 @@ HTTPS配信時に位置情報/PWAが利用できます。
 - 移動手段10種類を横スクロールではなく折り返し表示
 - 移動手段: おまかせ / 自家用車 / カーシェア / レンタカー / 電車 / バス / 公共交通全般 / タクシー / 徒歩 / レンタル自転車
 - 結果サマリーに対象エリアを表示
+
+
+## v23: favicon / PWA icons
+- NEXITAIME専用faviconを追加
+- ブラウザ用 SVG / 32px PNG
+- iPhone/iPadホーム画面用 apple-touch-icon
+- PWA用 192px / 512px アイコン
+- manifest.json / theme-color 更新
+
+
+## v24: version display cleanup
+- ヘッダー右上の「〜上越版〜 vXX」表示を削除
+- バージョン表記をフッターのみに集約
+- フッター: NEXITAIME 〜上越版〜 · Powered by AXCEL MODE NEXIT · v24

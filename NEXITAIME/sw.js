@@ -1,4 +1,4 @@
-const CACHE='nexitaime-v22';
+const CACHE='nexitaime-v24';
 const ASSETS=[
   './',
   './index.html',
@@ -10,6 +10,11 @@ const ASSETS=[
   './places.json',
   './mobility_services.json','./bus_routes.json',
   './manifest.json',
+  './assets/favicon.svg',
+  './assets/favicon-32.png',
+  './assets/apple-touch-icon.png',
+  './assets/icon-192.png',
+  './assets/icon-512.png',
   './assets/joetsu-hero-clean.png'
 ];
 self.addEventListener('install',e=>{
