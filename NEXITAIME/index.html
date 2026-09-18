@@ -1365,51 +1365,53 @@ async function locateMe(){
   },{enableHighAccuracy:false,timeout:10000,maximumAge:300000});
 }
 
-async function routeMinutes(mode,a,b){
-  const pa=PLACES[a],pb=PLACES[b];
+
+async function routeMinutesCoords(mode,pa,pb){
   if(!pa||!pb)return null;
-  if(a===b)return 0;
-
   const straightKm=haversine(pa.lat,pa.lon,pb.lat,pb.lon);
+  if(straightKm<0.05)return 0;
 
-  // Public OSRM is primarily a driving router. Do not use its duration as walking time.
-  // For walk/bike, use OSRM road distance when available and convert distance by mode speed.
-  if(mode==='walk' || mode==='bike'){
-    let routeKm=null;
-    try{
-      const url=`https://router.project-osrm.org/route/v1/driving/${pa.lon},${pa.lat};${pb.lon},${pb.lat}?overview=false`;
-      const r=await fetch(url);
-      const j=await r.json();
-      if(j.routes&&j.routes[0]&&Number.isFinite(j.routes[0].distance)){
-        routeKm=j.routes[0].distance/1000;
-      }
-    }catch(e){}
-
-    // If route distance cannot be obtained, use straight-line distance with a road/path correction.
-    const km=routeKm ?? (straightKm*1.2);
-    if(mode==='bike') return Math.max(1,Math.ceil(km/15*60));   // approx. 15 km/h
-    return Math.max(1,Math.ceil(km/4.8*60));                   // approx. 4.8 km/h
-  }
-
-  // Vehicle modes use OSRM driving duration.
+  let routeKm=null;
+  let driveMin=null;
   try{
     const url=`https://router.project-osrm.org/route/v1/driving/${pa.lon},${pa.lat};${pb.lon},${pb.lat}?overview=false`;
     const r=await fetch(url);
     const j=await r.json();
     if(j.routes&&j.routes[0]){
-      let min=Math.ceil(j.routes[0].duration/60);
-      if(mode==='carshare') min += 8;
-      if(mode==='rentalcar') min += 20;
-      if(mode==='taxi') min += 5;
-      return min;
+      if(Number.isFinite(j.routes[0].distance)) routeKm=j.routes[0].distance/1000;
+      if(Number.isFinite(j.routes[0].duration)) driveMin=j.routes[0].duration/60;
     }
   }catch(e){}
 
-  if(mode==='privatecar') return Math.ceil(straightKm/35*60+5);
-  if(mode==='carshare') return Math.ceil(straightKm/35*60+13);
-  if(mode==='rentalcar') return Math.ceil(straightKm/35*60+25);
-  if(mode==='taxi') return Math.ceil(straightKm/35*60+10);
-  return null;
+  const km=routeKm ?? (straightKm*1.2);
+
+  if(mode==='walk') return Math.max(1,Math.ceil(km/4.8*60));
+  if(mode==='bike') return Math.max(1,Math.ceil(km/15*60));
+
+  // Raw OSRM driving times are too optimistic for this app because they omit
+  // real-world departure/arrival friction and we often route to sightseeing facilities.
+  // Add a conservative local-road/parking margin and round UP to 5 minutes.
+  const base=driveMin ?? (km/35*60);
+  let min=base*1.25 + 5;
+
+  if(mode==='carshare') min += 8;
+  if(mode==='rentalcar') min += 20;
+  if(mode==='taxi') min += 5;
+
+  return Math.max(5,Math.ceil(min/5)*5);
+}
+
+function routePointForEvent(ev,dest){
+  const venue=ev?.venue;
+  if(venue && SPOT_COORDS?.[venue]) return SPOT_COORDS[venue];
+  return PLACES?.[dest]||null;
+}
+
+async function routeMinutes(mode,a,b){
+  const pa=PLACES[a],pb=PLACES[b];
+  if(!pa||!pb)return null;
+  if(a===b)return 0;
+  return routeMinutesCoords(mode,pa,pb);
 }
 
 
@@ -1835,8 +1837,11 @@ async function evaluateDirectMode(ev,dest,mode,start,deadline,ctx){
   const backTo=ctx.returnTo;
   if(!returnModeAllowed(mode,ctx))return null;
 
-  const oneWay=await routeMinutes(mode,from,dest);
-  const backWay=await routeMinutes(mode,dest,backTo);
+  const fromPoint=PLACES[from];
+  const destPoint=routePointForEvent(ev,dest);
+  const backPoint=PLACES[backTo];
+  const oneWay=(fromPoint&&destPoint) ? await routeMinutesCoords(mode,fromPoint,destPoint) : await routeMinutes(mode,from,dest);
+  const backWay=(destPoint&&backPoint) ? await routeMinutesCoords(mode,destPoint,backPoint) : await routeMinutes(mode,dest,backTo);
   if(oneWay==null || backWay==null)return null;
 
   const svc=await getModeService(mode);
@@ -1867,7 +1872,7 @@ async function evaluateDirectMode(ev,dest,mode,start,deadline,ctx){
   const transportCost=await estimateTransportCost(mode,from,dest,backTo,service);
 
   return {
-    ev,dest,returnTo:backTo,mode,modeLabel:MODE_LABELS[mode],modeIcon:MODE_ICONS[mode],
+    ev,dest,destLabel:(ev?.venue||dest),returnTo:backTo,mode,modeLabel:MODE_LABELS[mode],modeIcon:MODE_ICONS[mode],
     out:{n:MODE_LABELS[mode]+(access?`（拠点まで徒歩${access}分）`:''),kind:mode,dep:start,arr:rawArrive,[from]:fmt(start),[dest]:fmt(rawArrive)},
     back:{n:MODE_LABELS[mode],kind:mode,dep:backDep,arr:finish,[dest]:fmt(backDep),[backTo]:fmt(finish)},
     arrive,finish,spare:deadline-finish,stay,feasible:true,accessMinutes:access,service,
@@ -2062,6 +2067,7 @@ function weatherAdjustment(ev){
 
 
 const SPOT_COORDS={
+  '上越市立水族博物館 うみがたり':{lat:37.1847,lon:138.2222},
   '高田城址公園':{lat:37.1107,lon:138.2432},
   '高田本町・雁木通り周辺':{lat:37.1157,lon:138.2421},
   '春日山城跡周辺':{lat:37.1468,lon:138.2052},
@@ -2124,7 +2130,10 @@ async function renderPlanRouteMap(mapId,plan,ctx){
     return;
   }
 
-  const map=L.map(mapId,{scrollWheelZoom:false,zoomControl:true});
+  // Wait for layout so Leaflet gets a real width/height on mobile Safari.
+  await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+
+  const map=L.map(mapId,{scrollWheelZoom:false,zoomControl:true,preferCanvas:true});
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
     maxZoom:19,
     attribution:'&copy; OpenStreetMap contributors'
@@ -2148,7 +2157,9 @@ async function renderPlanRouteMap(mapId,plan,ctx){
     map.fitBounds(L.latLngBounds(stops.map(s=>[s.lat,s.lon])),{padding:[22,22]});
   }
 
-  setTimeout(()=>map.invalidateSize(),150);
+  map.invalidateSize(true);
+  setTimeout(()=>map.invalidateSize(true),120);
+  setTimeout(()=>map.invalidateSize(true),350);
 }
 
 function companionReason(ev){
@@ -2265,8 +2276,7 @@ async function buildPlans(){
 
  // 「行けるプランを出す」を押したら結果エリアへ移動
  requestAnimationFrame(()=>{
-   setTimeout(()=>{ top.forEach((p,idx)=>{ const el=[...document.querySelectorAll('.plan-map')][idx]; if(el) renderPlanRouteMap(el.id,p,searchCtx); }); },0);
-  summary.scrollIntoView({behavior:'smooth', block:'start'});
+   summary.scrollIntoView({behavior:'smooth', block:'start'});
  });
 
  let events=EVENTS.filter(ev=>eventIsAvailableAt(ev,planningDate)).filter(budgetAllows).filter(companionAllows);
@@ -2382,12 +2392,23 @@ async function buildPlans(){
      <div class="timeline">
        <div class="leg"><div>行き</div><div><strong>${p.modeIcon||''} ${esc(p.out.n)}</strong><br>${searchCtx.origin} → ${p.dest}</div><div>${p.out[searchCtx.origin]} → ${p.out[p.dest]}</div></div>
        <div class="leg"><div>滞在</div><div><strong>${p.dest}周辺</strong></div><div>約${p.stay}分</div></div>
-       <div class="leg"><div>帰り</div><div><strong>${p.modeIcon||''} ${esc(p.back.n)}</strong><br>${p.dest} → ${p.returnTo||origin}</div><div>${p.back[p.dest]} → ${p.back[p.returnTo||origin]}</div></div>
+       <div class="leg"><div>帰り</div><div><strong>${p.modeIcon||''} ${esc(p.back.n)}</strong><br>${esc(p.destLabel||p.dest)} → ${p.returnTo||origin}</div><div>${p.back[p.dest]} → ${p.back[p.returnTo||origin]}</div></div>
      </div>
      <div class="meta" style="margin-top:8px">ルート：${esc(searchCtx.origin)} → ${p.multimodal?`${esc(p.transferHub)}（乗換） → `:''}${esc(p.dest)} → ${p.multimodal?`${esc(p.transferHub)}（乗換） → `:''}${esc(p.returnTo||searchCtx.returnTo)}<br>帰着後の余裕：${Math.max(0,p.spare+buffer)}分</div>
      <div class="links"><a href="${p.ev.url}" target="_blank" rel="noopener">イベント詳細を見る</a></div>
    </div>`;
  }).join('');
+
+ // Result cards now exist in the DOM, so Leaflet can safely initialize.
+ requestAnimationFrame(()=>{
+   setTimeout(()=>{
+     const mapEls=[...box.querySelectorAll('.plan-map')];
+     top.forEach((p,idx)=>{
+       const el=mapEls[idx];
+       if(el) renderPlanRouteMap(el.id,p,searchCtx);
+     });
+   },80);
+ });
 }
 </script>
 <script>

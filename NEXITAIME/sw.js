@@ -1,4 +1,4 @@
-const CACHE='nexitaime-beta1-0-auto-multimodal';
+const CACHE='nexitaime-beta1-0-realistic-travel-time';
 const ASSETS=[
   './',
   './index.html',
