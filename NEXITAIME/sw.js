@@ -1,4 +1,4 @@
-const CACHE='nexitaime-beta1-0-mobility-distance-fix';
+const CACHE='nexitaime-beta1-0-visual-map-fix';
 const ASSETS=[
   './',
   './index.html',

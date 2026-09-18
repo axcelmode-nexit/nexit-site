@@ -33,6 +33,7 @@ button,select,input{font:inherit}.app{max-width:760px;margin:auto;padding:18px 1
 footer{text-align:center;color:#9aa6b5;font-size:10px;padding:26px 0}
 </style>
 <link crossorigin="" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" rel="stylesheet"/>
+<link href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" rel="stylesheet"/>
 <style>
 #mobilityMap{width:100%;height:320px;min-height:320px;border-radius:18px;overflow:hidden;margin-top:12px;border:1px solid #e8edf2;background:#dfeaf1}
 #mobilityMap .leaflet-container{width:100%;height:100%}
@@ -189,7 +190,7 @@ body{
   position:absolute;
   inset:0;
   background:
-    linear-gradient(90deg,rgba(255,255,255,.96) 0%,rgba(255,255,255,.88) 36%,rgba(255,255,255,.54) 58%,rgba(255,255,255,.12) 100%);
+    linear-gradient(90deg,rgba(255,255,255,.84) 0%,rgba(255,255,255,.72) 34%,rgba(255,255,255,.36) 60%,rgba(255,255,255,.06) 100%);
 }
 
 .hero-content{
@@ -276,7 +277,7 @@ main{
 
   .hero-shade{
     background:
-      linear-gradient(180deg,rgba(255,255,255,.93) 0%,rgba(255,255,255,.84) 50%,rgba(255,255,255,.50) 100%);
+      linear-gradient(180deg,rgba(255,255,255,.76) 0%,rgba(255,255,255,.66) 48%,rgba(255,255,255,.30) 100%);
   }
 
   .hero-content{
@@ -930,6 +931,14 @@ main{
 .mobility-section-title{font-size:13px;font-weight:900;color:#17324d;margin:2px 0 8px}
 </style>
 
+
+<style id="visual-map-fix">
+@media (max-width:700px){
+  .hero h1,.hero .hero-lead,.hero .hero-copy{
+    text-shadow:0 1px 0 rgba(255,255,255,.62);
+  }
+}
+</style>
 </head>
 <body>
 <div class="app">
@@ -1100,7 +1109,7 @@ main{
 <footer>NEXITAIME 〜上越版〜 · Powered by AXCEL MODE NEXIT · Beta1.0</footer>
 </div>
 <div class="sticky"><div class="inner"><button class="primary" id="go">行けるプランを出す ✨</button></div></div>
-<script crossorigin="" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script crossorigin="" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" onerror="this.onerror=null;this.removeAttribute('integrity');this.src='https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js';"></script>
 <script>
 let EVENTS=[], TRAIN={up:[],down:[]}, SHINANO={up:[],down:[]}, BUS={trips:[]}, BUS_MAIN={weekday:{},holiday:{}}, BUS_EXT={routes:[]}, PLACES={}, MOBILITY=[], origin='上越妙高', destinationArea='any', returnTarget='same', timingMode='now', planningDate=new Date(), mood='any', transport='auto', budget='any', companion='any', currentPos=null, weather=null, mobilityMap=null, mobilityMarkers=[], currentPosMarker=null, nearestService=null;
 
@@ -1635,9 +1644,31 @@ function mapIconForCategory(cat){
   return cat==='carshare'?'🚙':cat==='rentalcar'?'🚘':cat==='taxi'?'🚕':cat==='bike'?'🚲':'📍';
 }
 
+
+let leafletRetryCount=0;
+let pendingMobilityRows=null;
+function leafletReady(){ return typeof window.L!=='undefined'; }
+function retryMobilityMap(){
+  if(leafletReady()){
+    initMobilityMap();
+    if(pendingMobilityRows){
+      const rows=pendingMobilityRows;
+      pendingMobilityRows=null;
+      renderMapRows(rows);
+    }
+    return;
+  }
+  if(leafletRetryCount++<20) setTimeout(retryMobilityMap,300);
+  else{
+    const el=document.getElementById('mobilityMap');
+    if(el) el.innerHTML='<div style="display:flex;height:100%;align-items:center;justify-content:center;padding:18px;text-align:center;color:#6b7a8c;font-size:13px">地図ライブラリを読み込めませんでした。通信状態を確認して再読み込みしてください。</div>';
+  }
+}
+
 function initMobilityMap(){
   const el=document.getElementById('mobilityMap');
-  if(!el || typeof L==='undefined') return;
+  if(!el) return;
+  if(!leafletReady()){ retryMobilityMap(); return; }
   if(mobilityMap){
     requestAnimationFrame(()=>mobilityMap.invalidateSize({pan:false}));
     return;
@@ -1689,8 +1720,10 @@ async function getNearestService(rows){
 }
 
 function renderMapRows(rows){
+  pendingMobilityRows=rows;
   initMobilityMap();
   if(!mobilityMap)return;
+  pendingMobilityRows=null;
   clearServiceMarkers();
 
   const bounds=[];
@@ -2299,7 +2332,17 @@ const renderedPlanMaps=new Set();
 async function renderPlanRouteMap(mapId,plan,ctx){
   if(renderedPlanMaps.has(mapId))return;
   const el=document.getElementById(mapId);
-  if(!el || typeof L==='undefined')return;
+  if(!el)return;
+  if(!leafletReady()){
+    const tries=Number(el.dataset.leafletRetries||0);
+    if(tries<20){
+      el.dataset.leafletRetries=String(tries+1);
+      setTimeout(()=>renderPlanRouteMap(mapId,plan,ctx),300);
+    }else{
+      el.innerHTML='<div style="padding:14px;font-size:12px;color:#6f7c89">地図を読み込めませんでした。再読み込みしてください。</div>';
+    }
+    return;
+  }
   renderedPlanMaps.add(mapId);
 
   const stops=planStops(plan,ctx);
