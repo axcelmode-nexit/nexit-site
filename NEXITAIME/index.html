@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>NEXITAIME 〜上越版〜 v26</title>
+<title>NEXITAIME 〜上越版〜 v27</title>
 <style>
 :root{--ink:#26364b;--muted:#75859a;--line:#e7edf2;--red:#e53935;--sky:#59c7ff;--violet:#7d8dff}
 *{box-sizing:border-box}html,body{margin:0;background:linear-gradient(180deg,#fffdf8,#f6fbff);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans","Noto Sans JP",sans-serif;color:var(--ink)}
@@ -164,7 +164,7 @@ body{
 </style>
 
 
-<style id="v26-clean-hero">
+<style id="v27-clean-hero">
 body{
   background:linear-gradient(180deg,#f4faff 0%,#fff 52%,#f8fbff 100%) !important;
   background-image:none !important;
@@ -311,7 +311,7 @@ main{
 }
 </style>
 
-<style id="v26-auto-compare">
+<style id="v27-auto-compare">
 #summary h2{margin-bottom:6px}
 .plan .status{display:inline-block;margin-bottom:8px}
 </style>
@@ -319,7 +319,7 @@ main{
 <meta name="theme-color" content="#15314f">
 
 
-<style id="v26-version-cleanup">
+<style id="v27-version-cleanup">
 .version-badge,
 .edition-badge,
 .header-version,
@@ -329,7 +329,7 @@ main{
 </style>
 
 
-<style id="v26-location-unified">
+<style id="v27-location-unified">
 .unified-location-tools{
   margin:14px 0 16px;
 }
@@ -344,7 +344,7 @@ main{
 </style>
 
 
-<style id="v26-location-ui">
+<style id="v27-location-ui">
 .location-card{
   padding:24px 26px !important;
 }
@@ -438,6 +438,38 @@ main{
 <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="./assets/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="./assets/apple-touch-icon.png">
+
+<style id="v27-hero-title-fix">
+/* Desktop/tablet: keep the main headline on one line */
+@media (min-width: 701px){
+  .hero-content{
+    width:min(760px,calc(100% - 56px)) !important;
+    max-width:760px !important;
+  }
+
+  .hero h1{
+    max-width:none !important;
+    width:max-content;
+    white-space:nowrap !important;
+    font-size:clamp(42px,4.6vw,66px) !important;
+    line-height:1.02 !important;
+    letter-spacing:-.05em !important;
+  }
+}
+
+/* Mobile: allow a balanced two-line wrap rather than forcing overflow */
+@media (max-width:700px){
+  .hero h1{
+    width:auto !important;
+    max-width:330px !important;
+    white-space:normal !important;
+    text-wrap:balance;
+    font-size:42px !important;
+    line-height:1.05 !important;
+  }
+}
+</style>
+
 </head>
 <body>
 <div class="app">
@@ -587,7 +619,7 @@ main{
 <div class="note">鉄道は妙高はねうまライン公開時刻表を利用。バスは上越大通り線・佐渡汽船連絡バス・教育大学線・春日山／佐内線・山麓線の主要区間をアプリ内判定します。運休・遅延・臨時変更は上の公式運行情報を優先してください。イベントは events_auto.json があれば自動更新データを優先します。</div>
 </section>
 
-<footer>NEXITAIME 〜上越版〜 · Powered by AXCEL MODE NEXIT · v26</footer>
+<footer>NEXITAIME 〜上越版〜 · Powered by AXCEL MODE NEXIT · v27</footer>
 </div>
 <div class="sticky"><div class="inner"><button id="go" class="primary">今から行けるプランを出す ✨</button></div></div>
 
