@@ -1,9 +1,10 @@
-<!doctype html>
+<!DOCTYPE html>
+
 <html lang="ja">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>NEXITAIME 〜上越版〜 v31</title>
+<meta charset="utf-8"/>
+<meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport"/>
+<title>NEXITAIME 〜上越版〜 v34</title>
 <style>
 :root{--ink:#26364b;--muted:#75859a;--line:#e7edf2;--red:#e53935;--sky:#59c7ff;--violet:#7d8dff}
 *{box-sizing:border-box}html,body{margin:0;background:linear-gradient(180deg,#fffdf8,#f6fbff);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans","Noto Sans JP",sans-serif;color:var(--ink)}
@@ -31,8 +32,7 @@ button,select,input{font:inherit}.app{max-width:760px;margin:auto;padding:18px 1
 .primary{width:100%;border:0;border-radius:18px;padding:17px;background:linear-gradient(90deg,var(--sky),var(--violet));color:#fff;font-weight:900;font-size:16px}
 footer{text-align:center;color:#9aa6b5;font-size:10px;padding:26px 0}
 </style>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<link crossorigin="" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" rel="stylesheet"/>
 <style>
 #mobilityMap{width:100%;height:320px;min-height:320px;border-radius:18px;overflow:hidden;margin-top:12px;border:1px solid #e8edf2;background:#dfeaf1}
 #mobilityMap .leaflet-container{width:100%;height:100%}
@@ -41,12 +41,11 @@ integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
 .nearest-line{font-weight:800;color:#0f172a;margin-top:6px}
 .service-distance{font-size:12px;font-weight:700;color:#475569;margin-top:5px}
 </style>
-<link rel="manifest" href="./manifest.json">
-<meta name="theme-color" content="#f7fbff">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="NEXITAIME">
-
+<link href="./manifest.json" rel="manifest"/>
+<meta content="#f7fbff" name="theme-color"/>
+<meta content="yes" name="apple-mobile-web-app-capable"/>
+<meta content="default" name="apple-mobile-web-app-status-bar-style"/>
+<meta content="NEXITAIME" name="apple-mobile-web-app-title"/>
 <style>
 :root{
   --nexit-navy:#0c2c55;
@@ -162,9 +161,7 @@ body{
   .hero .hero-lead{font-size:16px;max-width:380px}
 }
 </style>
-
-
-<style id="v31-clean-hero">
+<style id="v34-clean-hero">
 body{
   background:linear-gradient(180deg,#f4faff 0%,#fff 52%,#f8fbff 100%) !important;
   background-image:none !important;
@@ -310,16 +307,12 @@ main{
   }
 }
 </style>
-
-<style id="v31-auto-compare">
+<style id="v34-auto-compare">
 #summary h2{margin-bottom:6px}
 .plan .status{display:inline-block;margin-bottom:8px}
 </style>
-
-<meta name="theme-color" content="#15314f">
-
-
-<style id="v31-version-cleanup">
+<meta content="#15314f" name="theme-color"/>
+<style id="v34-version-cleanup">
 .version-badge,
 .edition-badge,
 .header-version,
@@ -327,9 +320,7 @@ main{
   display: none !important;
 }
 </style>
-
-
-<style id="v31-location-unified">
+<style id="v34-location-unified">
 .unified-location-tools{
   margin:14px 0 16px;
 }
@@ -342,9 +333,7 @@ main{
   background:transparent !important;
 }
 </style>
-
-
-<style id="v31-location-ui">
+<style id="v34-location-ui">
 .location-card{
   padding:24px 26px !important;
 }
@@ -434,12 +423,10 @@ main{
   }
 }
 </style>
-
-<link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
-<link rel="icon" href="./assets/favicon-32.png" sizes="32x32" type="image/png">
-<link rel="apple-touch-icon" href="./assets/apple-touch-icon.png">
-
-<style id="v31-hero-title-fix">
+<link href="./assets/favicon.svg" rel="icon" type="image/svg+xml"/>
+<link href="./assets/favicon-32.png" rel="icon" sizes="32x32" type="image/png"/>
+<link href="./assets/apple-touch-icon.png" rel="apple-touch-icon"/>
+<style id="v34-hero-title-fix">
 /* Desktop/tablet: keep the main headline on one line */
 @media (min-width: 701px){
   .hero-content{
@@ -469,9 +456,7 @@ main{
   }
 }
 </style>
-
-
-<style id="v31-no-horizontal-scroll">
+<style id="v34-no-horizontal-scroll">
 /* All option groups should be visible without horizontal swiping */
 .chips,
 .chips.wrap,
@@ -513,6 +498,7 @@ main{
 /* Mobile: make choices easy to scan at a glance */
 @media (max-width:700px){
   #origins .chip,
+  #timing .chip,
   #destinations .chip,
   #returns .chip,
   #moods .chip {
@@ -541,6 +527,7 @@ main{
 /* Desktop/tablet: wrap naturally, no carousel behavior */
 @media (min-width:701px){
   #origins .chip,
+  #timing .chip,
   #destinations .chip,
   #returns .chip,
   #moods .chip,
@@ -549,12 +536,11 @@ main{
   }
 }
 </style>
-
-
-<style id="v31-compact-choice-buttons">
+<style id="v34-compact-choice-buttons">
 @media (max-width:700px){
   /* Make choice buttons more compact while preserving comfortable tap targets */
   #origins .chip,
+  #timing .chip,
   #destinations .chip,
   #returns .chip,
   #moods .chip,
@@ -569,6 +555,7 @@ main{
 
   /* Slightly tighter section spacing */
   #origins,
+  #timing,
   #destinations,
   #returns,
   #moods,
@@ -593,57 +580,166 @@ main{
   }
 }
 </style>
+<style id="v34-compact-location">
+@media (max-width:700px){
+  .location-card{
+    padding:16px !important;
+  }
 
-</head>
+  .location-card .title{
+    margin-bottom:10px !important;
+  }
+
+  .location-top{
+    gap:8px !important;
+    margin-top:8px !important;
+  }
+
+  .location-gps,
+  .location-status{
+    min-height:64px !important;
+    border-radius:15px !important;
+  }
+
+  .location-gps{
+    padding:10px 14px !important;
+    gap:9px !important;
+  }
+
+  .location-gps-icon{
+    font-size:20px !important;
+  }
+
+  .location-gps small,
+  .location-status small{
+    font-size:10px !important;
+    margin-bottom:2px !important;
+  }
+
+  .location-gps strong,
+  .location-status strong{
+    font-size:17px !important;
+    line-height:1.2 !important;
+  }
+
+  .location-status{
+    padding:10px 14px !important;
+  }
+
+  .location-status span{
+    font-size:11px !important;
+    line-height:1.35 !important;
+  }
+
+  .location-manual-label{
+    margin:12px 2px 8px !important;
+    font-size:12px !important;
+  }
+
+  #origins{
+    gap:8px !important;
+  }
+
+  #origins .chip{
+    min-height:42px !important;
+    padding:7px 9px !important;
+    font-size:13px !important;
+    border-radius:15px !important;
+  }
+}
+</style>
+
+\n<style id="v34-timing">\n.timing-detail{margin-top:12px}\n.timing-detail .field{max-width:440px}\n#timing{display:flex;flex-wrap:wrap;gap:10px;overflow:visible!important}\n#timing .chip{flex:0 1 auto}\n@media(max-width:700px){\n  #timing .chip{flex:1 1 calc(50% - 8px)!important;min-height:44px!important;padding:8px 10px!important;font-size:14px!important;border-radius:16px!important}\n  #timing .chip[data-timing="now"]{flex-basis:100%!important}\n  .timing-detail{margin-top:10px}\n}\n</style>\n<style id="v34-grouped-inputs">
+.input-group-card{
+  padding:22px 24px !important;
+}
+.group-title{
+  color:#173653;
+  font-size:20px;
+  font-weight:900;
+  margin-bottom:8px;
+}
+.group-subtitle{
+  color:#38536e;
+  font-size:14px;
+  font-weight:850;
+  margin:12px 0 9px;
+}
+.group-part-divider{
+  border-top:1px solid #e8eef5;
+  margin-top:14px;
+  padding-top:12px;
+}
+.group-part:first-of-type .group-subtitle{
+  margin-top:4px;
+}
+@media (max-width:700px){
+  .input-group-card{
+    padding:16px !important;
+  }
+  .group-title{
+    font-size:18px;
+    margin-bottom:6px;
+  }
+  .group-subtitle{
+    font-size:12.5px;
+    margin:10px 0 7px;
+  }
+  .group-part-divider{
+    margin-top:10px;
+    padding-top:10px;
+  }
+  /* tighten nested controls a touch */
+  .input-group-card .note{
+    margin-top:7px !important;
+    font-size:11px !important;
+    line-height:1.45 !important;
+  }
+}
+</style></head>
 <body>
 <div class="app">
 <div class="top"><div class="brand">NEXIT<span class="a">A</span>IME</div></div>
-<section class="hero hero-clean" aria-label="NEXITAIME 上越版">
-  <div class="hero-shade"></div>
-  <div class="hero-content">
-    <div class="brand-lockup">
-      <div class="brand-name">NEXIT<span class="a">A</span>IME</div>
-      <div class="powered">Powered by AXCEL MODE NEXIT</div>
-    </div>
-    <h1>上越で、<span class="accent">何</span>をする？</h1>
-    <p class="hero-lead">
-      イベントと交通を一緒に見て、<br>
+<section aria-label="NEXITAIME 上越版" class="hero hero-clean">
+<div class="hero-shade"></div>
+<div class="hero-content">
+<div class="brand-lockup">
+<div class="brand-name">NEXIT<span class="a">A</span>IME</div>
+<div class="powered">Powered by AXCEL MODE NEXIT</div>
+</div>
+<h1>上越で、<span class="accent">何</span>をする？</h1>
+<p class="hero-lead">
+      イベントと交通を一緒に見て、<br/>
       今から本当に行ける候補だけを提案します。
     </p>
-    <div class="hero-copy">AIで、次の時間を見つけよう。</div>
-  </div>
+<div class="hero-copy">AIで、次の時間を見つけよう。</div>
+</div>
 </section>
-
-<section class="card location-card">
-  <div class="title">1. 現在地・今いる場所</div>
-
-  <div class="location-top">
-    <button id="locateBtn" class="location-gps">
-      <span class="location-gps-icon">📍</span>
-      <span>
-        <small>GPS</small>
-        <strong>現在地を使う</strong>
-      </span>
-    </button>
-
-    <div class="location-status">
-      <small>現在地・天気</small>
-      <strong id="locationText">未取得</strong>
-      <span id="weatherBox">現在地を取得するか、下から場所を選んでください。</span>
-    </div>
-  </div>
-
-  <div class="location-manual-label">または今いる場所を選択</div>
-  <div class="chips" id="origins">
-    <button class="chip active" data-station="上越妙高">🚄 上越妙高</button>
-    <button class="chip" data-station="高田">🏯 高田</button>
-    <button class="chip" data-station="春日山">⛰ 春日山</button>
-    <button class="chip" data-station="直江津">🌊 直江津</button>
-  </div>
-</section>
-
-<section class="card">
-<div class="title">2. 行きたいエリア</div>
+<section class="card input-group-card"><div class="group-title">1. どこから・どこへ</div><div class="group-part">
+<div class="group-subtitle">現在地・今いる場所</div>
+<div class="location-top">
+<button class="location-gps" id="locateBtn">
+<span class="location-gps-icon">📍</span>
+<span>
+<small>GPS</small>
+<strong>現在地を使う</strong>
+</span>
+</button>
+<div class="location-status">
+<small>現在地・天気</small>
+<strong id="locationText">未取得</strong>
+<span id="weatherBox">現在地を取得するか、下から場所を選んでください。</span>
+</div>
+</div>
+<div class="location-manual-label">または今いる場所を選択</div>
+<div class="chips" id="origins">
+<button class="chip active" data-station="上越妙高">🚄 上越妙高</button>
+<button class="chip" data-station="高田">🏯 高田</button>
+<button class="chip" data-station="春日山">⛰ 春日山</button>
+<button class="chip" data-station="直江津">🌊 直江津</button>
+</div>
+</div><div class="group-part group-part-divider">
+<div class="group-subtitle">行きたいエリア</div>
 <div class="chips wrap" id="destinations">
 <button class="chip active" data-dest="any">✨ おまかせ</button>
 <button class="chip" data-dest="上越妙高">🚄 上越妙高</button>
@@ -652,10 +748,8 @@ main{
 <button class="chip" data-dest="直江津">🌊 直江津</button>
 </div>
 <div class="note" style="margin-top:10px">希望エリアを指定すると、そのエリアの候補を優先して探します。「おまかせ」なら上越全体から比較します。</div>
-</section>
-
-<section class="card">
-<div class="title">3. どこに戻りたい？</div>
+</div><div class="group-part group-part-divider">
+<div class="group-subtitle">どこに戻りたい？</div>
 <div class="chips wrap" id="returns">
 <button class="chip active" data-return="same">↩️ 今いる場所に戻る</button>
 <button class="chip" data-return="上越妙高">🚄 上越妙高</button>
@@ -664,26 +758,33 @@ main{
 <button class="chip" data-return="直江津">🌊 直江津</button>
 </div>
 <div class="note" style="margin-top:10px">初期値は「今いる場所に戻る」。別の場所を選ぶと、その地点への帰着まで含めて判定します。</div>
-</section>
-
-
-<section class="card">
-<div class="title">4. あとどれくらい？</div>
+</div></section><section class="card input-group-card"><div class="group-title">2. いつ・どれくらい</div><div class="group-part">
+<div class="group-subtitle">いつ行く？</div>
+<div class="chips wrap" id="timing">
+<button class="chip active" data-timing="now">⚡ 今すぐ</button>
+<button class="chip" data-timing="later">🕒 今日このあと</button>
+<button class="chip" data-timing="custom">📅 日時を指定</button>
+</div>
+<div class="timing-detail" hidden="" id="timingDetail">
+<div class="field" hidden="" id="laterTimeField"><label>出発時刻</label><input id="laterTime" type="time"/></div>
+<div class="field" hidden="" id="customDateTimeField"><label>出発日時</label><input id="customDateTime" type="datetime-local"/></div>
+</div>
+<div class="note" style="margin-top:10px">初期値は「今すぐ」。指定した日時を起点にイベント開催時間・営業時間・公開時刻表を判定します。</div>
+</div><div class="group-part group-part-divider">
+<div class="group-subtitle">あとどれくらい？</div>
 <div class="grid">
-<div class="field"><label>空き時間（分）</label><input id="free" type="number" value="120" min="30" max="480"></div>
+<div class="field"><label>空き時間（分）</label><input id="free" max="480" min="30" type="number" value="120"/></div>
 <div class="field"><label>戻りの余裕</label><select id="buffer">
-  <option value="10">10分</option>
-  <option value="15" selected>15分</option>
-  <option value="30">30分</option>
-  <option value="45">45分</option>
-  <option value="60">60分</option>
+<option value="10">10分</option>
+<option selected="" value="15">15分</option>
+<option value="30">30分</option>
+<option value="45">45分</option>
+<option value="60">60分</option>
 </select></div>
 </div>
 <div class="note" style="margin-top:10px">帰着後にこの時間を残せる候補だけを提案します。</div>
-</section>
-
-<section class="card">
-<div class="title">5. 気分</div>
+</div></section><section class="card input-group-card"><div class="group-title">3. どう過ごす？</div><div class="group-part">
+<div class="group-subtitle">気分</div>
 <div class="chips" id="moods">
 <button class="chip active" data-mood="any">✨ おまかせ</button>
 <button class="chip" data-mood="食">🍴 食べる</button>
@@ -691,31 +792,26 @@ main{
 <button class="chip" data-mood="家族">👨‍👩‍👧 家族</button>
 <button class="chip" data-mood="スポーツ">🚲 動く</button>
 </div>
-</section>
-
-
-<section class="card">
-<div class="title">6. 予算・同行者</div>
+</div><div class="group-part group-part-divider">
+<div class="group-subtitle">予算・同行者</div>
 <div class="grid">
-  <div class="field"><label>予算</label><select id="budget">
-    <option value="any">気にしない</option>
-    <option value="0">0円</option>
-    <option value="1000">〜1,000円</option>
-    <option value="3000">〜3,000円</option>
-  </select></div>
-  <div class="field"><label>同行者</label><select id="companion">
-    <option value="any">指定なし</option>
-    <option value="solo">ひとり</option>
-    <option value="couple">カップル</option>
-    <option value="family">家族</option>
-    <option value="kids">子連れ</option>
-  </select></div>
+<div class="field"><label>予算</label><select id="budget">
+<option value="any">気にしない</option>
+<option value="0">0円</option>
+<option value="1000">〜1,000円</option>
+<option value="3000">〜3,000円</option>
+</select></div>
+<div class="field"><label>同行者</label><select id="companion">
+<option value="any">指定なし</option>
+<option value="solo">ひとり</option>
+<option value="couple">カップル</option>
+<option value="family">家族</option>
+<option value="kids">子連れ</option>
+</select></div>
 </div>
 <div class="note" style="margin-top:10px">料金が確認できないイベントは除外せず、結果で「料金要確認」と表示します。</div>
-</section>
-
-<section class="card">
-<div class="title">7. 移動手段 <span style="font-size:10px;color:#8a98aa;font-weight:700">全10種類</span></div>
+</div><div class="group-part group-part-divider">
+<div class="group-subtitle">移動手段</div>
 <div class="chips wrap" id="transport">
 <button class="chip active" data-mode="auto">✨ おまかせ</button>
 <button class="chip" data-mode="privatecar">🚗 自家用車</button>
@@ -732,45 +828,46 @@ main{
 <div class="note" style="margin-top:10px">
 🚌 アプリ内の時刻判定は、上越大通り線・佐渡汽船連絡バスに加え、教育大学線・春日山／佐内線・山麓線の主要4エリア間に対応。その他の路線や臨時変更は上越バスロケーションシステムで確認できます。
 </div>
-</section>
+</div></section>
+
+
+
+
+
+
 
 <section class="card" id="mobilityPanel">
 <div class="title">近くで使える移動サービス</div>
-<div id="mobilityList" class="list"></div>
+<div class="list" id="mobilityList"></div>
 <div id="mobilityMap"></div>
 <div class="map-note">地図：OpenStreetMap。GPSを許可すると現在地と、選択した移動手段の利用拠点を表示します。</div>
-
 <div class="note" style="margin-top:10px">
 空車・配車・貸出台数はリアルタイム連携していません。最終確認は各公式サイト・電話で行ってください。
 </div>
 </section>
-
 <section class="card">
 <div class="title">NEXITAIME PICK</div>
-<div id="summary" class="result">
+<div class="result" id="summary">
 <h2>条件を選んでみて</h2>
-<p>イベント・交通・天気・予算・同行者を組み合わせて、今から往復できる候補を探します。</p>
+<p>イベント・交通・天気・予算・同行者を組み合わせて、指定した時間から往復できる候補を探します。</p>
 </div>
 <div id="plans"></div>
 <div class="title" style="margin-top:18px">公式運行情報</div>
 <div class="links">
-<a href="https://www.echigo-tokimeki.co.jp/traininfo/" target="_blank" rel="noopener">🚃 トキ鉄 運行状況</a>
-<a href="https://traininfo.jreast.co.jp/train_info/shinkansen.aspx?hl=ja-JP" target="_blank" rel="noopener">🚄 JR東日本 新幹線</a>
-<a href="https://traininfo.jreast.co.jp/train_info/shinetsu.aspx" target="_blank" rel="noopener">🚆 JR東日本 信越エリア</a>
-<a href="https://www.joetsubusloca.jp/" target="_blank" rel="noopener">🚌 上越バスロケ</a>
-<a href="https://www.city.joetsu.niigata.jp/soshiki/kotsu/bus-jikoku.html" target="_blank" rel="noopener">🗓 上越市 総合時刻表</a>
+<a href="https://www.echigo-tokimeki.co.jp/traininfo/" rel="noopener" target="_blank">🚃 トキ鉄 運行状況</a>
+<a href="https://traininfo.jreast.co.jp/train_info/shinkansen.aspx?hl=ja-JP" rel="noopener" target="_blank">🚄 JR東日本 新幹線</a>
+<a href="https://traininfo.jreast.co.jp/train_info/shinetsu.aspx" rel="noopener" target="_blank">🚆 JR東日本 信越エリア</a>
+<a href="https://www.joetsubusloca.jp/" rel="noopener" target="_blank">🚌 上越バスロケ</a>
+<a href="https://www.city.joetsu.niigata.jp/soshiki/kotsu/bus-jikoku.html" rel="noopener" target="_blank">🗓 上越市 総合時刻表</a>
 </div>
 <div class="note">鉄道は妙高はねうまライン公開時刻表を利用。バスは上越大通り線・佐渡汽船連絡バス・教育大学線・春日山／佐内線・山麓線の主要区間をアプリ内判定します。運休・遅延・臨時変更は上の公式運行情報を優先してください。イベントは events_auto.json があれば自動更新データを優先します。</div>
 </section>
-
-<footer>NEXITAIME 〜上越版〜 · Powered by AXCEL MODE NEXIT · v31</footer>
+<footer>NEXITAIME 〜上越版〜 · Powered by AXCEL MODE NEXIT · v34</footer>
 </div>
-<div class="sticky"><div class="inner"><button id="go" class="primary">今から行けるプランを出す ✨</button></div></div>
-
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<div class="sticky"><div class="inner"><button class="primary" id="go">行けるプランを出す ✨</button></div></div>
+<script crossorigin="" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-let EVENTS=[], TRAIN={up:[],down:[]}, BUS={trips:[]}, BUS_MAIN={weekday:{},holiday:{}}, BUS_EXT={routes:[]}, PLACES={}, MOBILITY=[], origin='上越妙高', destinationArea='any', returnTarget='same', mood='any', transport='auto', budget='any', companion='any', currentPos=null, weather=null, mobilityMap=null, mobilityMarkers=[], currentPosMarker=null, nearestService=null;
+let EVENTS=[], TRAIN={up:[],down:[]}, BUS={trips:[]}, BUS_MAIN={weekday:{},holiday:{}}, BUS_EXT={routes:[]}, PLACES={}, MOBILITY=[], origin='上越妙高', destinationArea='any', returnTarget='same', timingMode='now', planningDate=new Date(), mood='any', transport='auto', budget='any', companion='any', currentPos=null, weather=null, mobilityMap=null, mobilityMarkers=[], currentPosMarker=null, nearestService=null;
 
 Promise.all([
  fetch('./events_auto.json',{cache:'no-store'}).then(r=>r.ok?r.json():Promise.reject()).catch(()=>fetch('./events.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>[])),
@@ -799,6 +896,50 @@ document.querySelectorAll('#returns .chip').forEach(b=>b.onclick=()=>{
  document.querySelectorAll('#returns .chip').forEach(x=>x.classList.remove('active'));
  b.classList.add('active'); returnTarget=b.dataset.return;
 });
+function toLocalInputValue(d){
+  const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');
+  const hh=String(d.getHours()).padStart(2,'0'),mm=String(d.getMinutes()).padStart(2,'0');
+  return `${y}-${m}-${day}T${hh}:${mm}`;
+}
+function initTimingInputs(){
+  const now=new Date();
+  const later=new Date(now.getTime()+60*60*1000);
+  later.setMinutes(Math.ceil(later.getMinutes()/30)*30,0,0);
+  document.getElementById('laterTime').value=`${String(later.getHours()).padStart(2,'0')}:${String(later.getMinutes()).padStart(2,'0')}`;
+  document.getElementById('customDateTime').value=toLocalInputValue(later);
+  document.getElementById('customDateTime').min=toLocalInputValue(now);
+}
+function updateTimingUI(){
+  const detail=document.getElementById('timingDetail');
+  const later=document.getElementById('laterTimeField');
+  const custom=document.getElementById('customDateTimeField');
+  detail.hidden=timingMode==='now';
+  later.hidden=timingMode!=='later';
+  custom.hidden=timingMode!=='custom';
+}
+function selectedPlanDate(){
+  const now=new Date();
+  if(timingMode==='now') return now;
+  if(timingMode==='later'){
+    const v=document.getElementById('laterTime').value;
+    if(!v) return null;
+    const [h,m]=v.split(':').map(Number);
+    const d=new Date(now); d.setHours(h,m,0,0);
+    return d;
+  }
+  const v=document.getElementById('customDateTime').value;
+  return v?new Date(v):null;
+}
+function sameLocalDay(a,b){
+  return a&&b&&a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate();
+}
+document.querySelectorAll('#timing .chip').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('#timing .chip').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active'); timingMode=b.dataset.timing; updateTimingUI();
+});
+initTimingInputs();
+updateTimingUI();
+
 document.querySelectorAll('#moods .chip').forEach(b=>b.onclick=()=>{
  document.querySelectorAll('#moods .chip').forEach(x=>x.classList.remove('active'));
  b.classList.add('active'); mood=b.dataset.mood;
@@ -860,7 +1001,7 @@ function routeRunsToday(route,d=new Date()){
 }
 
 function findMainlineBus(a,b,after){
-  const dayKey=isHolidayBusDay()?'holiday':'weekday';
+  const dayKey=isHolidayBusDay(planningDate)?'holiday':'weekday';
   let key=null;
   if(a==='高田' && b==='上越妙高') key='takada_to_joetsumyoko';
   if(a==='上越妙高' && b==='高田') key='joetsumyoko_to_takada';
@@ -883,10 +1024,10 @@ function findMainlineBus(a,b,after){
 }
 
 function findExtendedBus(a,b,after){
-  const dayKey=isHolidayBusDay()?'holiday':'weekday';
+  const dayKey=isHolidayBusDay(planningDate)?'holiday':'weekday';
   const candidates=[];
   for(const route of (BUS_EXT.routes||[])){
-    if(!routeRunsToday(route))continue;
+    if(!routeRunsToday(route,planningDate))continue;
     for(const trip of (route[dayKey]||[])){
       const si=(trip.stops||[]).findIndex(s=>s.name===a);
       const di=(trip.stops||[]).findIndex(s=>s.name===b);
@@ -1384,12 +1525,10 @@ function dedupeCandidates(rows){
 }
 
 
-function eventIsOpenNow(ev, now=new Date()){
-  if(!inEventRange(ev,now)) return false;
-  const n=now.getHours()*60+now.getMinutes();
-  const s=ev.start_time?mins(ev.start_time):null;
+function eventIsAvailableAt(ev, when=new Date()){
+  if(!inEventRange(ev,when)) return false;
+  const n=when.getHours()*60+when.getMinutes();
   const e=ev.end_time?mins(ev.end_time):null;
-  if(s!=null && n<s) return true; // upcoming today is still a valid plan
   if(e!=null && n>e) return false;
   return true;
 }
@@ -1411,6 +1550,7 @@ function companionAllows(ev){
 }
 
 function weatherAdjustment(ev){
+  if(!sameLocalDay(planningDate,new Date())) return {score:0,reason:''};
   if(!weather) return {score:0,reason:''};
   const rainy=(weather.rain||0)>0 || (weather.precipitation||0)>0;
   const snowy=(weather.snowfall||0)>0;
@@ -1488,6 +1628,14 @@ async function scoreEventSet(events, modes, start, deadline){
   return dedupeCandidates(rows);
 }
 
+function planStartLabel(){
+  if(timingMode==='now') return '今すぐ';
+  const d=planningDate;
+  if(!d) return '指定時刻';
+  if(sameLocalDay(d,new Date())) return `今日 ${fmt(d.getHours()*60+d.getMinutes())}`;
+  return `${d.getMonth()+1}/${d.getDate()} ${fmt(d.getHours()*60+d.getMinutes())}`;
+}
+
 function sortCandidates(rows){
   return rows.sort((a,b)=>{
     if((b.preferenceScore||0)!==(a.preferenceScore||0))return (b.preferenceScore||0)-(a.preferenceScore||0);
@@ -1500,12 +1648,23 @@ function sortCandidates(rows){
 async function buildPlans(){
  const free=Number(document.getElementById('free').value)||120;
  const buffer=Math.max(10,Number(document.getElementById('buffer').value)||15);
- const now=new Date(), start=nowMinutes(), hardEnd=start+free, deadline=hardEnd-buffer;
+ const now=new Date();
+ const selected=selectedPlanDate();
  const summary=document.getElementById('summary'),box=document.getElementById('plans');
+ if(!selected || Number.isNaN(selected.getTime())){
+   summary.innerHTML='<h2>出発日時を確認してください</h2><p>「いつ行く？」で有効な日時を選んでください。</p>';
+   box.innerHTML=''; return;
+ }
+ if(selected.getTime()<now.getTime()-60000){
+   summary.innerHTML='<h2>出発時刻が過ぎています</h2><p>「今すぐ」か、これからの時刻を選んでください。</p>';
+   box.innerHTML=''; return;
+ }
+ planningDate=selected;
+ const start=planningDate.getHours()*60+planningDate.getMinutes(), hardEnd=start+free, deadline=hardEnd-buffer;
  summary.innerHTML='<h2>候補を比較中…</h2><p>移動時間・時刻表・戻り余裕を確認しています。</p>';
  box.innerHTML='';
 
- let events=EVENTS.filter(ev=>eventIsOpenNow(ev,now)).filter(budgetAllows).filter(companionAllows);
+ let events=EVENTS.filter(ev=>eventIsAvailableAt(ev,planningDate)).filter(budgetAllows).filter(companionAllows);
  if(destinationArea!=='any')events=events.filter(ev=>areaStation[ev.area]===destinationArea);
  if(mood!=='any')events=events.filter(ev=>(ev.categories||[]).includes(mood));
 
@@ -1524,7 +1683,7 @@ async function buildPlans(){
 
  // 3) If still none, relax mood while keeping destination/budget/companion
  if(!scored.length && mood!=='any'){
-   let relaxed=EVENTS.filter(ev=>eventIsOpenNow(ev,now)).filter(budgetAllows).filter(companionAllows);
+   let relaxed=EVENTS.filter(ev=>eventIsAvailableAt(ev,planningDate)).filter(budgetAllows).filter(companionAllows);
    if(destinationArea!=='any') relaxed=relaxed.filter(ev=>areaStation[ev.area]===destinationArea);
    scored=await scoreEventSet(relaxed,AUTO_MODES,start,deadline);
    if(scored.length) relaxationLevel=2;
@@ -1532,7 +1691,7 @@ async function buildPlans(){
 
  // 4) If still none, relax destination too
  if(!scored.length){
-   let relaxed=EVENTS.filter(ev=>eventIsOpenNow(ev,now)).filter(budgetAllows).filter(companionAllows);
+   let relaxed=EVENTS.filter(ev=>eventIsAvailableAt(ev,planningDate)).filter(budgetAllows).filter(companionAllows);
    scored=await scoreEventSet(relaxed,AUTO_MODES,start,deadline);
    if(scored.length) relaxationLevel=3;
  }
@@ -1559,18 +1718,18 @@ async function buildPlans(){
 
  if(relaxationLevel===0){
    if(transport==='auto'){
-     summary.innerHTML=`<h2>今の条件で${top.length}案あります</h2><p>${origin}から${destinationArea==='any'?'上越全体':destinationArea+'エリア'}を対象に、${resolvedReturnStation()}へ戻る条件で比較。空き時間${free}分・帰着後の余裕${buffer}分を確保します。</p>`;
+     summary.innerHTML=`<h2>今の条件で${top.length}案あります</h2><p>${origin}から${destinationArea==='any'?'上越全体':destinationArea+'エリア'}を対象に、${resolvedReturnStation()}へ戻る条件で比較。${planStartLabel()}出発・空き時間${free}分・帰着後の余裕${buffer}分を確保します。</p>`;
    }else{
      summary.innerHTML=`<h2>${MODE_LABELS[transport]||transport}で${top.length}案あります</h2><p>${origin}から${destinationArea==='any'?'上越全体':destinationArea+'エリア'}を対象に判定しました。</p>`;
    }
  }else if(relaxationLevel===1){
-   summary.innerHTML=`<h2>移動手段を少し広げると${top.length}案あります</h2><p>指定した条件はそのままに、他の移動手段も含めて「今から行ける」を探しました。</p>`;
+   summary.innerHTML=`<h2>移動手段を少し広げると${top.length}案あります</h2><p>指定した条件はそのままに、他の移動手段も含めて「その時間から行ける」を探しました。</p>`;
  }else if(relaxationLevel===2){
    summary.innerHTML=`<h2>気分を少し広げると${top.length}案あります</h2><p>時間内に行って戻れる候補を優先して提案しています。</p>`;
  }else if(relaxationLevel===3){
-   summary.innerHTML=`<h2>エリアを少し広げると${top.length}案あります</h2><p>今の空き時間で現実的に往復できる候補を、上越全体から探しました。</p>`;
+   summary.innerHTML=`<h2>エリアを少し広げると${top.length}案あります</h2><p>指定した時間内で現実的に往復できる候補を、上越全体から探しました。</p>`;
  }else{
-   summary.innerHTML=`<h2>イベント以外なら、今からできることがあります</h2><p>条件に合うイベントが少ないため、散歩・景色・駅周辺など、時間調整しやすい候補を出しています。</p>`;
+   summary.innerHTML=`<h2>イベント以外にも、その時間からできることがあります</h2><p>条件に合うイベントが少ないため、散歩・景色・駅周辺など、時間調整しやすい候補を出しています。</p>`;
  }
 
  box.innerHTML=top.map((p,idx)=>{
