@@ -1239,6 +1239,10 @@ main{
 <div class="sticky"><div class="inner"><button class="primary" id="go">おすすめを見つける ✨</button></div></div>
 <script crossorigin="" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" onerror="this.onerror=null;this.removeAttribute('integrity');this.src='https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js';"></script>
 <script>
+const GAS_PRICE_YEN_PER_L=180;      // conservative reference, not a live price
+const REAL_WORLD_KM_PER_L=9;         // short-trip / city-driving assumption
+const SHORT_TRIP_FUEL_ALLOWANCE_YEN=100; // warm-up / idling / detour allowance
+
 let EVENTS=[], TRAIN={up:[],down:[]}, SHINANO={up:[],down:[]}, BUS={trips:[]}, BUS_MAIN={weekday:{},holiday:{}}, BUS_EXT={routes:[]}, PLACES={}, MOBILITY=[], origin='上越妙高', destinationArea='any', returnTarget='same', timingMode='now', planningDate=new Date(), mood='any', transport='auto', budget='any', companion='any', currentPos=null, weather=null, mobilityMap=null, mobilityMarkers=[], currentPosMarker=null, nearestService=null;
 
 Promise.all([
@@ -1738,8 +1742,14 @@ async function estimateTransportCost(mode,from,dest,backTo,service,outKind=null,
     return {amount:null,label:'交通費：レンタル料金要確認',note:'貸出拠点の公式料金を確認'};
   }
   if(mode==='privatecar'){
-    const fuel=Math.max(0,Math.ceil(totalKm*20/10)*10);
-    return {amount:fuel,label:`交通費 約¥${fuel.toLocaleString()}`,note:'燃料代概算・駐車料金別'};
+    const liters=totalKm/REAL_WORLD_KM_PER_L;
+    const raw=liters*GAS_PRICE_YEN_PER_L + (totalKm>0?SHORT_TRIP_FUEL_ALLOWANCE_YEN:0);
+    const fuel=Math.max(0,Math.ceil(raw/10)*10);
+    return {
+      amount:fuel,
+      label:`燃料代 約¥${fuel.toLocaleString()}`,
+      note:`概算：${GAS_PRICE_YEN_PER_L}円/L・実燃費${REAL_WORLD_KM_PER_L}km/L＋短距離補正。駐車料金・高速料金は別`
+    };
   }
   if(mode==='taxi'){
     const calc=km=>Math.max(700,Math.round((700+km*350)/100)*100);
@@ -1748,12 +1758,13 @@ async function estimateTransportCost(mode,from,dest,backTo,service,outKind=null,
   }
   if(mode==='carshare'){
     const base=1000;
-    const distance=Math.ceil(totalKm*20/10)*10;
-    const amt=base+distance;
-    return {amount:amt,label:`交通費 約¥${amt.toLocaleString()}〜`,note:'短時間利用の概算。実料金はプラン・距離料金を公式確認'};
+    const fuel=Math.ceil(((totalKm/REAL_WORLD_KM_PER_L)*GAS_PRICE_YEN_PER_L + (totalKm>0?SHORT_TRIP_FUEL_ALLOWANCE_YEN:0))/10)*10;
+    const amt=base+fuel;
+    return {amount:amt,label:`交通費 約¥${amt.toLocaleString()}〜`,note:'短時間利用＋燃料の概算。実料金・距離料金は公式確認'};
   }
   if(mode==='rentalcar'){
-    const amt=3000+Math.ceil(totalKm*20/10)*10;
+    const fuel=Math.ceil(((totalKm/REAL_WORLD_KM_PER_L)*GAS_PRICE_YEN_PER_L + (totalKm>0?SHORT_TRIP_FUEL_ALLOWANCE_YEN:0))/10)*10;
+    const amt=3000+fuel;
     return {amount:amt,label:`交通費 約¥${amt.toLocaleString()}〜`,note:'短時間レンタル＋燃料の概算。実料金は公式確認'};
   }
   if(['train','bus','public'].includes(mode)){
@@ -2699,22 +2710,60 @@ const ITINERARY_SPOTS=[
 function buildSimpleItinerary(plan){
   const area=plan.ev?.area;
   const pool=ITINERARY_SPOTS.filter(s=>s.area===area);
-  if(!pool.length || !Number.isFinite(plan.stay) || plan.stay<35)return null;
+  if(!Number.isFinite(plan.stay) || plan.stay<30)return null;
+
+  const isTimedEvent=!!(plan.ev?.start_date || plan.ev?.source);
   let remain=plan.stay, t=plan.arrive, rows=[];
+
+  // Event plans should visibly include the event itself first.
+  if(isTimedEvent){
+    const eventStay=Math.min(
+      Math.max(30, Number(plan.ev?.recommended_stay_min)||45),
+      Math.max(30, remain)
+    );
+    rows.push({
+      name:plan.ev?.title||plan.ev?.venue||'イベント',
+      stay:eventStay,
+      arrive:t,
+      leave:t+eventStay,
+      move:0,
+      kind:'event'
+    });
+    t+=eventStay;
+    remain-=eventStay;
+  }
+
+  // Add one or more nearby area stops only when enough time remains.
   for(const s of pool){
     const move=rows.length?8:0;
     if(remain < s.stay+move)continue;
     t+=move;
-    rows.push({...s,arrive:t,leave:t+s.stay,move});
-    t+=s.stay; remain-=s.stay+move;
+    rows.push({...s,arrive:t,leave:t+s.stay,move,kind:'spot'});
+    t+=s.stay;
+    remain-=s.stay+move;
     if(rows.length>=4)break;
+  }
+
+  // Non-event flexible activities keep the old behavior.
+  if(!rows.length && pool.length){
+    remain=plan.stay; t=plan.arrive;
+    for(const s of pool){
+      const move=rows.length?8:0;
+      if(remain < s.stay+move)continue;
+      t+=move;
+      rows.push({...s,arrive:t,leave:t+s.stay,move,kind:'spot'});
+      t+=s.stay; remain-=s.stay+move;
+      if(rows.length>=4)break;
+    }
   }
   return rows.length?rows:null;
 }
 function renderSimpleItinerary(rows){
   if(!rows?.length)return '';
-  return `<div class="itinerary"><div class="itinerary-title">🗺️ この時間で回れる周遊プラン</div>`+
-    rows.map((s,i)=>`${i?`<div class="itinerary-travel">↳ 移動 約${s.move}分</div>`:''}<div class="itinerary-step"><div class="itinerary-num">${i+1}</div><div class="itinerary-main"><strong>${esc(s.name)}</strong><span>${fmt(s.arrive)}〜${fmt(s.leave)} ・ 滞在 ${s.stay}分</span></div><div class="itinerary-time">${s.stay}分</div></div>`).join('')+
+  const hasEvent=rows.some(s=>s.kind==='event');
+  const title=hasEvent?'🎪 イベント＋周辺スポット':'🗺️ この時間で回れる周遊プラン';
+  return `<div class="itinerary"><div class="itinerary-title">${title}</div>`+
+    rows.map((s,i)=>`${i?`<div class="itinerary-travel">↳ 移動 約${s.move}分</div>`:''}<div class="itinerary-step"><div class="itinerary-num">${i+1}</div><div class="itinerary-main"><strong>${s.kind==='event'?'🎪 ':''}${esc(s.name)}</strong><span>${fmt(s.arrive)}〜${fmt(s.leave)} ・ 滞在 ${s.stay}分</span></div><div class="itinerary-time">${s.stay}分</div></div>`).join('')+
     `</div>`;
 }
 
@@ -2946,28 +2995,26 @@ async function buildPlans(){
  // 1) Exact requested conditions
  scored=await scoreEventSet(events,requestedModes,start,deadline,searchCtx);
 
- // 2) If no result, keep area/mood but widen transport
- if(!scored.length && transport!=='auto'){
-   scored=await scoreEventSet(events,AUTO_MODES,start,deadline,searchCtx);
-   if(scored.length) relaxationLevel=1;
- }
+ // 2) Explicitly selected transport is strict.
+ // Never silently switch to private car / taxi / another mode.
+ // Only 'auto' compares all modes.
 
- // 3) If still none, relax mood while keeping destination/budget/companion
+ // 3) If still none, relax mood while keeping destination/budget/companion AND transport.
  if(!scored.length && mood!=='any'){
    let relaxed=EVENTS.filter(ev=>eventIsAvailableAt(ev,planningDate)).filter(budgetAllows).filter(companionAllows);
    if(destinationArea!=='any') relaxed=relaxed.filter(destinationMatchesEvent);
-   scored=await scoreEventSet(relaxed,AUTO_MODES,start,deadline,searchCtx);
+   scored=await scoreEventSet(relaxed,requestedModes,start,deadline,searchCtx);
    if(scored.length) relaxationLevel=2;
  }
 
- // 4) Never change a user-specified destination area.
- // If no event fits, only use flexible activities IN THAT SAME destination area.
+ // 4) Never change destination or an explicitly selected transport.
+ // Flexible activities are evaluated with the same requested transport modes.
  if(!scored.length){
    let flex=FLEX_ACTIVITIES.filter(budgetAllows).filter(companionAllows);
    if(searchCtx.destination!=='any'){
      flex=flex.filter(destinationMatchesEvent);
    }
-   scored=await scoreEventSet(flex,['walk','privatecar','taxi','bike'],start,deadline,searchCtx);
+   scored=await scoreEventSet(flex,requestedModes,start,deadline,searchCtx);
    if(scored.length) relaxationLevel=3;
  }
 
@@ -2995,8 +3042,9 @@ async function buildPlans(){
  top.forEach(p=>p.itinerary=buildSimpleItinerary(p));
 
  if(!top.length){
-   summary.innerHTML=`<h2>この条件では時間内に往復できる候補がありません</h2><p><strong>${searchCtx.origin} → ${destinationGroupLabel(searchCtx.destination)} → ${searchCtx.returnTo}</strong><br>場所は勝手に変更していません。空き時間・移動手段・日時を変えると候補が増える可能性があります。</p>`;
-   box.innerHTML='<div class="plan"><h3>条件を少し調整してください</h3><p>行き先を変更する場合は、上の「行きたいエリア」から明示的に選び直してください。</p></div>';
+   const selectedModeLabel=transport==='auto'?'選択中の条件':(MODE_LABELS[transport]||transport);
+   summary.innerHTML=`<h2>この時間では、${selectedModeLabel}で行けるプランがありません</h2><p><strong>${searchCtx.origin} → ${destinationGroupLabel(searchCtx.destination)} → ${searchCtx.returnTo}</strong><br>選んだ行き先や移動手段は勝手に変更していません。</p>`;
+   box.innerHTML=`<div class="plan"><h3>条件を少し変えると見つかるかもしれません</h3><p>空き時間を長くする、出発時刻を変える、または別の移動手段を選んで再検索してください。</p></div>`;
    return;
  }
 
@@ -3007,8 +3055,6 @@ async function buildPlans(){
    }else{
      summary.innerHTML=`<h2>${MODE_LABELS[transport]||transport}で${top.length}案あります</h2><p><strong>${routeSummary}</strong><br>指定した出発地・行き先・帰着先を固定して判定しました。</p>`;
    }
- }else if(relaxationLevel===1){
-   summary.innerHTML=`<h2>移動手段を広げると${top.length}案あります</h2><p><strong>${routeSummary}</strong><br>場所は変えず、他の移動手段だけを比較しました。</p>`;
  }else if(relaxationLevel===2){
    summary.innerHTML=`<h2>気分条件を広げると${top.length}案あります</h2><p><strong>${routeSummary}</strong><br>出発地・行き先・帰着先はそのままです。</p>`;
  }else{
