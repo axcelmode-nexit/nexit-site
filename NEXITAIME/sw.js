@@ -1,4 +1,4 @@
-const CACHE='nexitaime-v34';
+const CACHE='nexitaime-v36';
 const ASSETS=[
   './',
   './index.html',
