@@ -393,3 +393,10 @@ HTTPS配信時に位置情報/PWAが利用できます。
 - Leaflet JS/CSSにjsDelivrフォールバックを追加
 - Leafletの読み込みが遅い場合、移動サービス地図と結果ルート地図を自動再試行
 - 地図初期化前に候補データが来ても、読み込み後に再描画するよう修正
+
+
+## Beta1.0 Map regression fix 2
+- Fixed runtime ReferenceError caused by stray top-level `async` token introduced during mobility-distance refactor.
+- Restored bike seasonal condition `month < 3`.
+- Restored North Shinano timetable assignment.
+- Added mobile Safari pageshow/map resize recovery.

@@ -1122,7 +1122,14 @@ Promise.all([
  fetch('./bus_extended.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>({routes:[]})),
  fetch('./places.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>({})),
  fetch('./mobility_services.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>[])
-]).then(([e,t,shinanoData,b,bm,bx,p,m])=>{EVENTS=e;TRAIN=t;BUS=b;BUS_MAIN=bm;BUS_EXT=bx;PLACES=p;MOBILITY=m;renderMobility();});
+]).then(([e,t,shinanoData,b,bm,bx,p,m])=>{EVENTS=e;TRAIN=t;SHINANO=shinanoData||{up:[],down:[]};BUS=b;BUS_MAIN=bm;BUS_EXT=bx;PLACES=p;MOBILITY=m;renderMobility(); setTimeout(()=>{initMobilityMap();renderMobility();},250);});
+
+
+window.addEventListener('pageshow',()=>{
+  setTimeout(()=>{
+    try{ initMobilityMap(); if(mobilityMap) mobilityMap.invalidateSize({pan:false}); renderMobility(); }catch(e){}
+  },180);
+});
 
 document.querySelectorAll('#origins .chip').forEach(b=>b.onclick=async ()=>{
  document.querySelectorAll('#origins .chip').forEach(x=>x.classList.remove('active'));
@@ -1782,7 +1789,7 @@ function isLikelyOpen(s, now=new Date()){
   const rainy=weather && ((weather.rain||0)>0 || (weather.precipitation||0)>0);
 
   if(s.id==='bike_takada_sekaikan'){
-    if(month<MOBILITY_NEAR_KM || month>11 || day===2 || rainy) return false;
+    if(month<3 || month>11 || day===2 || rainy) return false;
     return h>=10 && h<17;
   }
   if(s.id==='bike_furusatto'){
@@ -1802,7 +1809,6 @@ function isLikelyOpen(s, now=new Date()){
   return true;
 }
 
-async 
 const MOBILITY_NEAR_KM=1.5;
 const MOBILITY_EXTENDED_KM=2.0;
 
