@@ -584,5 +584,602 @@
     "url": "https://eki-arai.com/shop/shikisaikan_myoko/",
     "source_url": "https://eki-arai.com/shop/shikisaikan_myoko/",
     "source_note": "道の駅あらい公式・昼営業を登録。祝祭日月曜や不定休は公式確認"
+  },
+  {
+    "id": "food-daiji",
+    "title": "らーめんだいじで上越豚骨ラーメン",
+    "area": "kasugayama",
+    "area_name": "春日山",
+    "venue": "らーめんだいじ",
+    "categories": [
+      "食",
+      "ごはん",
+      "グルメ",
+      "飲食",
+      "ラーメン",
+      "中華",
+      "雨OK"
+    ],
+    "summary": "豚骨スープと複数の醤油を合わせた上越豚骨ラーメン。",
+    "indoor": true,
+    "family_friendly": false,
+    "couple_friendly": true,
+    "solo_friendly": true,
+    "estimated_cost_yen": 1000,
+    "opening_hours": {
+      "default": "11:00-14:00"
+    },
+    "closed_weekdays": [
+      "mon"
+    ],
+    "parking": true,
+    "url": "https://joetsukankonavi.jp/restaurant/detail.php?id=38",
+    "source_url": "https://joetsukankonavi.jp/restaurant/detail.php?id=38",
+    "source_note": "上越観光Navi"
+  },
+  {
+    "id": "food-agosuke",
+    "title": "麺屋あごすけで焼きあご出汁の一杯",
+    "area": "kasugayama",
+    "area_name": "春日山",
+    "venue": "麺屋あごすけ",
+    "categories": [
+      "食",
+      "ごはん",
+      "グルメ",
+      "飲食",
+      "ラーメン",
+      "中華",
+      "雨OK"
+    ],
+    "summary": "焼きあごの出汁と自家製麺が人気のラーメン店。",
+    "indoor": true,
+    "family_friendly": true,
+    "couple_friendly": true,
+    "solo_friendly": true,
+    "estimated_cost_yen": 1000,
+    "opening_hours": {
+      "default": "11:30-14:30",
+      "sat": "11:00-15:00",
+      "sun": "11:00-15:00"
+    },
+    "closed_weekdays": [
+      "wed"
+    ],
+    "parking": true,
+    "url": "https://joetsukankonavi.jp/restaurant/detail.php?id=101",
+    "source_url": "https://joetsukankonavi.jp/restaurant/detail.php?id=101",
+    "source_note": "上越観光Navi・昼営業を登録"
+  },
+  {
+    "id": "food-ryomaken",
+    "title": "龍馬軒で担担麺",
+    "area": "takada",
+    "area_name": "高田",
+    "venue": "龍馬軒",
+    "categories": [
+      "食",
+      "ごはん",
+      "グルメ",
+      "飲食",
+      "ラーメン",
+      "中華",
+      "担々麺",
+      "雨OK"
+    ],
+    "summary": "濃厚なごま風味の担担麺や四川麻婆麺などを楽しめます。",
+    "indoor": true,
+    "family_friendly": true,
+    "couple_friendly": true,
+    "solo_friendly": true,
+    "estimated_cost_yen": 1200,
+    "opening_hours": {
+      "default": "11:00-14:30"
+    },
+    "closed_weekdays": [
+      "mon"
+    ],
+    "parking": true,
+    "url": "https://joetsukankonavi.jp/restaurant/detail.php?id=76",
+    "source_url": "https://joetsukankonavi.jp/restaurant/detail.php?id=76",
+    "source_note": "上越観光Navi・昼営業を登録"
+  },
+  {
+    "id": "food-ashita",
+    "title": "麺屋あしたで鶏豚魚介ラーメン",
+    "area": "joetsumyoko",
+    "area_name": "上越妙高",
+    "venue": "鶏豚魚介らーめん 麺屋あした",
+    "categories": [
+      "食",
+      "ごはん",
+      "グルメ",
+      "飲食",
+      "ラーメン",
+      "雨OK"
+    ],
+    "summary": "鶏・豚・魚介を組み合わせた白湯系ラーメンなどを提供。",
+    "indoor": true,
+    "family_friendly": true,
+    "couple_friendly": true,
+    "solo_friendly": true,
+    "estimated_cost_yen": 1000,
+    "opening_hours": {
+      "default": "11:00-14:00"
+    },
+    "closed_weekdays": [
+      "thu"
+    ],
+    "parking": true,
+    "url": "https://joetsukankonavi.jp/restaurant/detail.php?id=40",
+    "source_url": "https://joetsukankonavi.jp/restaurant/detail.php?id=40",
+    "source_note": "上越観光Navi・昼営業を登録。火水夜休などは昼判定に影響しないため省略"
+  },
+  {
+    "id": "food-ouka",
+    "title": "王華飯店で地場食材の中国料理",
+    "area": "takada",
+    "area_name": "高田",
+    "venue": "中国料理 王華飯店",
+    "categories": [
+      "食",
+      "ごはん",
+      "グルメ",
+      "飲食",
+      "中華",
+      "ラーメン",
+      "定食",
+      "雨OK"
+    ],
+    "summary": "地場食材を使った中国料理を気軽に楽しめます。",
+    "indoor": true,
+    "family_friendly": true,
+    "couple_friendly": true,
+    "solo_friendly": true,
+    "estimated_cost_yen": 1500,
+    "opening_hours": {
+      "default": "11:00-14:00"
+    },
+    "closed_weekdays": [
+      "thu"
+    ],
+    "parking": true,
+    "url": "https://joetsukankonavi.jp/restaurant/detail.php?id=62",
+    "source_url": "https://joetsukankonavi.jp/restaurant/detail.php?id=62",
+    "source_note": "上越観光Navi・昼営業を登録"
+  },
+  {
+    "id": "food-bitaban",
+    "title": "比他棒で本格中華と雪むろ酒かすラーメン",
+    "area": "takada",
+    "area_name": "高田",
+    "venue": "純 和中遊彩縁 比他棒",
+    "categories": [
+      "食",
+      "ごはん",
+      "グルメ",
+      "飲食",
+      "中華",
+      "ラーメン",
+      "雨OK"
+    ],
+    "summary": "本格中華と雪むろ酒かすラーメンを味わえる店。",
+    "indoor": true,
+    "family_friendly": true,
+    "couple_friendly": true,
+    "solo_friendly": true,
+    "estimated_cost_yen": 1500,
+    "opening_hours": {
+      "default": "11:30-14:00"
+    },
+    "closed_weekdays": [
+      "mon"
+    ],
+    "parking": true,
+    "url": "https://joetsukankonavi.jp/restaurant/detail.php?id=92",
+    "source_url": "https://joetsukankonavi.jp/restaurant/detail.php?id=92",
+    "source_note": "上越観光Navi・昼営業を登録。第2・4火曜休はUI側で要確認"
+  },
+  {
+    "id": "food-marine-hamanasu",
+    "title": "海月で日本海の海鮮ランチ",
+    "area": "kakizaki",
+    "area_name": "柿崎",
+    "venue": "マリンホテルハマナス レストラン海月",
+    "categories": [
+      "食",
+      "ごはん",
+      "グルメ",
+      "飲食",
+      "海鮮",
+      "和食",
+      "定食",
+      "雨OK"
+    ],
+    "summary": "日本海を眺めながら海鮮丼や御膳を楽しめます。",
+    "indoor": true,
+    "family_friendly": true,
+    "couple_friendly": true,
+    "solo_friendly": true,
+    "estimated_cost_yen": 2500,
+    "opening_hours": {
+      "default": "11:30-14:00"
+    },
+    "parking": true,
+    "url": "https://joetsukankonavi.jp/restaurant/detail.php?id=28",
+    "source_url": "https://joetsukankonavi.jp/restaurant/detail.php?id=28",
+    "source_note": "上越観光Navi・昼営業を登録。不定休"
+  },
+  {
+    "id": "food-namitose",
+    "title": "割烹なみとせで直江津の魚料理",
+    "area": "naoetsu",
+    "area_name": "直江津",
+    "venue": "割烹なみとせ",
+    "categories": [
+      "食",
+      "ごはん",
+      "グルメ",
+      "飲食",
+      "海鮮",
+      "和食",
+      "定食",
+      "雨OK"
+    ],
+    "summary": "直江津で旬の魚料理やランチ膳を楽しめる割烹。",
+    "indoor": true,
+    "family_friendly": true,
+    "couple_friendly": true,
+    "solo_friendly": true,
+    "estimated_cost_yen": 2000,
+    "opening_hours": {
+      "default": "11:30-13:30"
+    },
+    "parking": true,
+    "url": "https://joetsukankonavi.jp/restaurant/detail.php?id=104",
+    "source_url": "https://joetsukankonavi.jp/restaurant/detail.php?id=104",
+    "source_note": "上越観光Navi・昼営業を登録。不定休"
+  },
+  {
+    "id": "food-regina",
+    "title": "REGINAでケーキと焼きたてパン",
+    "area": "takada",
+    "area_name": "高田",
+    "venue": "REGINA SWEETS & BAKERY",
+    "categories": [
+      "食",
+      "カフェ",
+      "スイーツ",
+      "パン",
+      "グルメ",
+      "飲食",
+      "雨OK"
+    ],
+    "summary": "ケーキや焼きたてパン、キッシュランチなどを楽しめるカフェ。",
+    "indoor": true,
+    "family_friendly": true,
+    "couple_friendly": true,
+    "solo_friendly": true,
+    "estimated_cost_yen": 1500,
+    "opening_hours": {
+      "default": "10:00-18:00"
+    },
+    "closed_weekdays": [
+      "tue"
+    ],
+    "parking": true,
+    "url": "https://joetsukankonavi.jp/restaurant/detail.php?id=15",
+    "source_url": "https://joetsukankonavi.jp/restaurant/detail.php?id=15",
+    "source_note": "上越観光Navi"
+  },
+  {
+    "id": "food-sucreplus",
+    "title": "Sucre+でランチとデザート",
+    "area": "kasugayama",
+    "area_name": "春日山",
+    "venue": "Sucre+（シュクレプリュス）",
+    "categories": [
+      "食",
+      "カフェ",
+      "スイーツ",
+      "洋食",
+      "ランチ",
+      "グルメ",
+      "飲食",
+      "雨OK"
+    ],
+    "summary": "フレンチをベースに和とエスニックを合わせたランチやデザート。",
+    "indoor": true,
+    "family_friendly": true,
+    "couple_friendly": true,
+    "solo_friendly": true,
+    "estimated_cost_yen": 2000,
+    "opening_hours": {
+      "default": "11:00-16:00"
+    },
+    "parking": true,
+    "url": "https://joetsukankonavi.jp/restaurant/detail.php?id=44",
+    "source_url": "https://joetsukankonavi.jp/restaurant/detail.php?id=44",
+    "source_note": "上越観光Navi・昼〜カフェ営業を登録。不定休"
+  },
+  {
+    "id": "food-itakuratei",
+    "title": "いたくら亭で手打ちそば",
+    "area": "itakura",
+    "area_name": "板倉",
+    "venue": "そば処 いたくら亭",
+    "categories": [
+      "食",
+      "ごはん",
+      "グルメ",
+      "飲食",
+      "そば",
+      "うどん",
+      "和食",
+      "雨OK"
+    ],
+    "summary": "地粉を使った手打ち手切りそばを古民家風の建物で楽しめます。",
+    "indoor": true,
+    "family_friendly": true,
+    "couple_friendly": true,
+    "solo_friendly": true,
+    "estimated_cost_yen": 1500,
+    "opening_hours": {
+      "default": "11:00-14:30",
+      "sat": "11:00-15:00",
+      "sun": "11:00-15:00"
+    },
+    "closed_weekdays": [
+      "tue"
+    ],
+    "parking": true,
+    "url": "https://joetsukankonavi.jp/restaurant/detail.php?id=3",
+    "source_url": "https://joetsukankonavi.jp/restaurant/detail.php?id=3",
+    "source_note": "上越観光Navi"
+  },
+  {
+    "id": "food-yukinoka",
+    "title": "雪の香テラスで雪室スイーツ",
+    "area": "naoetsu",
+    "area_name": "直江津",
+    "venue": "雪の香テラス 直江津店",
+    "categories": [
+      "食",
+      "カフェ",
+      "スイーツ",
+      "グルメ",
+      "飲食",
+      "雨OK"
+    ],
+    "summary": "雪室熟成のお茶を使った上越らしいスイーツを楽しめます。",
+    "indoor": true,
+    "family_friendly": true,
+    "couple_friendly": true,
+    "solo_friendly": true,
+    "estimated_cost_yen": 1200,
+    "opening_hours": {
+      "default": "10:00-18:00"
+    },
+    "closed_weekdays": [
+      "wed"
+    ],
+    "parking": true,
+    "url": "https://joetsukankonavi.jp/restaurant/detail.php?id=108",
+    "source_url": "https://joetsukankonavi.jp/restaurant/detail.php?id=108",
+    "source_note": "上越観光Navi"
+  },
+  {
+    "id": "food-komeda-joetsumyoko",
+    "title": "コメダ珈琲店 上越妙高駅前店で休憩",
+    "area": "joetsumyoko",
+    "area_name": "上越妙高",
+    "venue": "珈琲所コメダ珈琲店 上越妙高駅前店",
+    "categories": [
+      "食",
+      "カフェ",
+      "ごはん",
+      "パン",
+      "スイーツ",
+      "グルメ",
+      "飲食",
+      "雨OK"
+    ],
+    "summary": "駅近で朝から利用でき、軽食やシロノワールなどを楽しめます。",
+    "indoor": true,
+    "family_friendly": true,
+    "couple_friendly": true,
+    "solo_friendly": true,
+    "estimated_cost_yen": 1500,
+    "opening_hours": {
+      "default": "07:00-21:00"
+    },
+    "parking": true,
+    "url": "https://joetsukankonavi.jp/restaurant/detail.php?id=107",
+    "source_url": "https://joetsukankonavi.jp/restaurant/detail.php?id=107",
+    "source_note": "上越観光Navi・無休"
+  },
+  {
+    "id": "food-okagesama",
+    "title": "農家レストラン おかげさまで地元野菜ランチ",
+    "area": "kasugayama",
+    "area_name": "春日山",
+    "venue": "あるるん畑 農家レストラン おかげさま",
+    "categories": [
+      "食",
+      "ごはん",
+      "定食",
+      "和食",
+      "地産地消",
+      "グルメ",
+      "飲食",
+      "雨OK"
+    ],
+    "summary": "地元産コシヒカリやあるるん畑の野菜を使ったランチを楽しめます。",
+    "indoor": true,
+    "family_friendly": true,
+    "couple_friendly": true,
+    "solo_friendly": true,
+    "estimated_cost_yen": 1200,
+    "opening_hours": {
+      "default": "11:00-14:00"
+    },
+    "parking": true,
+    "url": "https://joetsukankonavi.jp/restaurant/detail.php?id=98",
+    "source_url": "https://joetsukankonavi.jp/restaurant/detail.php?id=98",
+    "source_note": "上越観光Navi・年末年始休"
+  },
+  {
+    "id": "food-tonjiru-tachibana",
+    "title": "たちばなで妙高名物とん汁",
+    "area": "myoko_arai",
+    "area_name": "新井",
+    "venue": "とん汁の店 たちばな",
+    "categories": [
+      "食",
+      "ごはん",
+      "定食",
+      "ラーメン",
+      "和食",
+      "妙高名物",
+      "グルメ",
+      "飲食",
+      "雨OK"
+    ],
+    "summary": "新井名物のとん汁専門店。とん汁ラーメンも名物です。",
+    "indoor": true,
+    "family_friendly": true,
+    "couple_friendly": true,
+    "solo_friendly": true,
+    "estimated_cost_yen": 1200,
+    "opening_hours": {
+      "default": "11:00-17:00"
+    },
+    "closed_weekdays": [
+      "mon"
+    ],
+    "parking": true,
+    "url": "https://myokotourism.jp/restaurants/%E3%81%A8%E3%82%93%E6%B1%81%E3%81%AE%E5%BA%97-%E3%81%9F%E3%81%A1%E3%81%B0%E3%81%AA/",
+    "source_url": "https://myokotourism.jp/restaurants/%E3%81%A8%E3%82%93%E6%B1%81%E3%81%AE%E5%BA%97-%E3%81%9F%E3%81%A1%E3%81%B0%E3%81%AA/",
+    "source_note": "妙高観光局"
+  },
+  {
+    "id": "food-arakin",
+    "title": "あらきんラーメンで昔ながらの味",
+    "area": "myoko_kogen",
+    "area_name": "池の平",
+    "venue": "あらきんラーメン",
+    "categories": [
+      "食",
+      "ごはん",
+      "ラーメン",
+      "中華",
+      "グルメ",
+      "飲食",
+      "雨OK"
+    ],
+    "summary": "池の平で長く受け継がれてきた味を楽しめるラーメン店。",
+    "indoor": true,
+    "family_friendly": true,
+    "couple_friendly": true,
+    "solo_friendly": true,
+    "estimated_cost_yen": 1000,
+    "opening_hours": {
+      "default": "09:00-23:00"
+    },
+    "parking": true,
+    "url": "https://myokotourism.jp/restaurants/%E3%81%82%E3%82%89%E3%81%8D%E3%82%93%E3%83%A9%E3%83%BC%E3%83%A1%E3%83%B3/",
+    "source_url": "https://myokotourism.jp/restaurants/%E3%81%82%E3%82%89%E3%81%8D%E3%82%93%E3%83%A9%E3%83%BC%E3%83%A1%E3%83%B3/",
+    "source_note": "妙高観光局・不定休"
+  },
+  {
+    "id": "food-basho-en",
+    "title": "芭蕉苑で妙高産そば",
+    "area": "myoko_kogen",
+    "area_name": "池の平",
+    "venue": "芭蕉苑",
+    "categories": [
+      "食",
+      "ごはん",
+      "そば",
+      "うどん",
+      "和食",
+      "スイーツ",
+      "グルメ",
+      "飲食",
+      "雨OK"
+    ],
+    "summary": "いもり池のほとりで妙高産そば粉の手打ち蕎麦を楽しめます。",
+    "indoor": true,
+    "family_friendly": true,
+    "couple_friendly": true,
+    "solo_friendly": true,
+    "estimated_cost_yen": 1200,
+    "opening_hours": {
+      "default": "08:00-17:00"
+    },
+    "parking": true,
+    "url": "https://myokotourism.jp/restaurants/%E8%8A%AD%E8%95%89%E8%8B%91/",
+    "source_url": "https://myokotourism.jp/restaurants/%E8%8A%AD%E8%95%89%E8%8B%91/",
+    "source_note": "妙高観光局・冬期休業"
+  },
+  {
+    "id": "food-farm-gelato-sekka",
+    "title": "FARM GELATO 雪菓で妙高のジェラート",
+    "area": "myoko_arai",
+    "area_name": "新井",
+    "venue": "FARM GELATO 雪菓（セッカ）",
+    "categories": [
+      "食",
+      "カフェ",
+      "スイーツ",
+      "ジェラート",
+      "グルメ",
+      "飲食",
+      "雨OK"
+    ],
+    "summary": "妙高の旬の野菜や果物を使った季節のジェラート。",
+    "indoor": true,
+    "family_friendly": true,
+    "couple_friendly": true,
+    "solo_friendly": true,
+    "estimated_cost_yen": 700,
+    "opening_hours": {
+      "default": "09:30-16:00"
+    },
+    "parking": true,
+    "url": "https://myokotourism.jp/news/%E9%81%93%E3%81%AE%E9%A7%85%E3%81%82%E3%82%89%E3%81%84-%E3%81%B2%E3%81%A0%E3%81%AA%E3%82%93%E5%86%85%E3%80%80farm-gelato-%E9%9B%AA%E8%8F%93%EF%BC%88%E3%82%BB%E3%83%83%E3%82%AB%E3%82%AA%E3%83%BC/",
+    "source_url": "https://myokotourism.jp/news/%E9%81%93%E3%81%AE%E9%A7%85%E3%81%82%E3%82%89%E3%81%84-%E3%81%B2%E3%81%A0%E3%81%AA%E3%82%93%E5%86%85%E3%80%80farm-gelato-%E9%9B%AA%E8%8F%93%EF%BC%88%E3%82%BB%E3%83%83%E3%82%AB%E3%82%AA%E3%83%BC/",
+    "source_note": "妙高観光局・2026年4月8日オープン案内"
+  },
+  {
+    "id": "food-myoko-tomato",
+    "title": "妙高山麓直売センターとまとでそば・定食",
+    "area": "myoko_arai",
+    "area_name": "関山",
+    "venue": "妙高山麓直売センターとまと",
+    "categories": [
+      "食",
+      "ごはん",
+      "そば",
+      "定食",
+      "ラーメン",
+      "地産地消",
+      "グルメ",
+      "飲食",
+      "雨OK"
+    ],
+    "summary": "直売所併設食堂で十割そば、ラーメン、定食などを楽しめます。",
+    "indoor": true,
+    "family_friendly": true,
+    "couple_friendly": true,
+    "solo_friendly": true,
+    "estimated_cost_yen": 1500,
+    "opening_hours": {
+      "default": "09:00-17:00"
+    },
+    "parking": true,
+    "url": "https://myokotourism.jp/restaurants/%E5%A6%99%E9%AB%98%E5%B1%B1%E9%BA%93%E7%9B%B4%E5%A3%B2%E3%82%BB%E3%83%B3%E3%82%BF%E3%83%BC%E3%81%A8%E3%81%BE%E3%81%A8/",
+    "source_url": "https://myokotourism.jp/restaurants/%E5%A6%99%E9%AB%98%E5%B1%B1%E9%BA%93%E7%9B%B4%E5%A3%B2%E3%82%BB%E3%83%B3%E3%82%BF%E3%83%BC%E3%81%A8%E3%81%BE%E3%81%A8/",
+    "source_note": "妙高観光局・冬季は17時、4〜9月の施設全体は18時まで。食堂の詳細LOは要確認"
   }
 ]
