@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>NEXITAIME 〜上越版〜 v20</title>
+<title>NEXITAIME 〜上越版〜 v22</title>
 <style>
 :root{--ink:#26364b;--muted:#75859a;--line:#e7edf2;--red:#e53935;--sky:#59c7ff;--violet:#7d8dff}
 *{box-sizing:border-box}html,body{margin:0;background:linear-gradient(180deg,#fffdf8,#f6fbff);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans","Noto Sans JP",sans-serif;color:var(--ink)}
@@ -13,6 +13,8 @@ button,select,input{font:inherit}.app{max-width:760px;margin:auto;padding:18px 1
 .hero{padding:22px 2px 16px}.hero h1{font-size:clamp(39px,10vw,62px);line-height:1;letter-spacing:-.06em;margin:0 0 10px}.hero p{margin:0;color:var(--muted);line-height:1.65}
 .card{background:#fff;border:1px solid var(--line);border-radius:24px;padding:16px;margin-top:14px;box-shadow:0 18px 50px rgba(70,100,140,.1)}
 .title{font-size:13px;font-weight:900;margin-bottom:10px}.chips{display:flex;gap:8px;overflow:auto}
+.chips.wrap{flex-wrap:wrap;overflow:visible}
+#transport .chip,#destinations .chip{flex:0 0 auto}
 .chip{border:1px solid var(--line);border-radius:999px;padding:10px 13px;white-space:nowrap;background:#fff;color:#5d7086;font-weight:900}
 .chip.active{background:#e7f7ff;border-color:#8ad7ff;color:#3d6f8e}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.field{background:#f8fbfe;border:1px solid #e1e8ef;border-radius:15px;padding:10px}
@@ -30,9 +32,11 @@ button,select,input{font:inherit}.app{max-width:760px;margin:auto;padding:18px 1
 footer{text-align:center;color:#9aa6b5;font-size:10px;padding:26px 0}
 </style>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-integrity="sha256-p4NxAoJBhIINfQ3yn5p6xkvpK7MZ/T2v1gVn7h8h5YM=" crossorigin="">
+integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
 <style>
-#mobilityMap{height:320px;border-radius:18px;overflow:hidden;margin-top:12px;border:1px solid #e8edf2}
+#mobilityMap{width:100%;height:320px;min-height:320px;border-radius:18px;overflow:hidden;margin-top:12px;border:1px solid #e8edf2;background:#dfeaf1}
+#mobilityMap .leaflet-container{width:100%;height:100%}
+#mobilityMap .leaflet-tile{max-width:none!important;max-height:none!important}
 .map-note{font-size:12px;color:#64748b;margin-top:8px;line-height:1.6}
 .nearest-line{font-weight:800;color:#0f172a;margin-top:6px}
 .service-distance{font-size:12px;font-weight:700;color:#475569;margin-top:5px}
@@ -160,7 +164,7 @@ body{
 </style>
 
 
-<style id="v20-clean-hero">
+<style id="v22-clean-hero">
 body{
   background:linear-gradient(180deg,#f4faff 0%,#fff 52%,#f8fbff 100%) !important;
   background-image:none !important;
@@ -307,14 +311,14 @@ main{
 }
 </style>
 
-<style id="v20-auto-compare">
+<style id="v22-auto-compare">
 #summary h2{margin-bottom:6px}
 .plan .status{display:inline-block;margin-bottom:8px}
 </style>
 </head>
 <body>
 <div class="app">
-<div class="top"><div class="brand">NEXIT<span class="a">A</span>IME</div><div class="badge">〜上越版〜 v20</div></div>
+<div class="top"><div class="brand">NEXIT<span class="a">A</span>IME</div><div class="badge">〜上越版〜 v22</div></div>
 <section class="hero hero-clean" aria-label="NEXITAIME 上越版">
   <div class="hero-shade"></div>
   <div class="hero-content">
@@ -357,7 +361,19 @@ main{
 </section>
 
 <section class="card">
-<div class="title">2. あとどれくらい？</div>
+<div class="title">2. 行きたいエリア</div>
+<div class="chips wrap" id="destinations">
+<button class="chip active" data-dest="any">✨ おまかせ</button>
+<button class="chip" data-dest="上越妙高">🚄 上越妙高</button>
+<button class="chip" data-dest="高田">🏯 高田</button>
+<button class="chip" data-dest="春日山">⛰ 春日山</button>
+<button class="chip" data-dest="直江津">🌊 直江津</button>
+</div>
+<div class="note" style="margin-top:10px">希望エリアを指定すると、そのエリアの候補を優先して探します。「おまかせ」なら上越全体から比較します。</div>
+</section>
+
+<section class="card">
+<div class="title">3. あとどれくらい？</div>
 <div class="grid">
 <div class="field"><label>空き時間（分）</label><input id="free" type="number" value="120" min="30" max="480"></div>
 <div class="field"><label>戻りの余裕（分）</label><input id="buffer" type="number" value="15" min="0" max="60"></div>
@@ -365,7 +381,7 @@ main{
 </section>
 
 <section class="card">
-<div class="title">3. 気分</div>
+<div class="title">4. 気分</div>
 <div class="chips" id="moods">
 <button class="chip active" data-mood="any">✨ おまかせ</button>
 <button class="chip" data-mood="食">🍴 食べる</button>
@@ -377,7 +393,7 @@ main{
 
 
 <section class="card">
-<div class="title">4. 予算・同行者</div>
+<div class="title">5. 予算・同行者</div>
 <div class="grid">
   <div class="field"><label>予算</label><select id="budget">
     <option value="any">気にしない</option>
@@ -397,8 +413,8 @@ main{
 </section>
 
 <section class="card">
-<div class="title">5. 移動手段</div>
-<div class="chips" id="transport">
+<div class="title">6. 移動手段 <span style="font-size:10px;color:#8a98aa;font-weight:700">全10種類</span></div>
+<div class="chips wrap" id="transport">
 <button class="chip active" data-mode="auto">✨ おまかせ</button>
 <button class="chip" data-mode="privatecar">🚗 自家用車</button>
 <button class="chip" data-mode="carshare">🚙 カーシェア</button>
@@ -449,8 +465,10 @@ main{
 </div>
 <div class="sticky"><div class="inner"><button id="go" class="primary">今から行けるプランを出す ✨</button></div></div>
 
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script>
-let EVENTS=[], TRAIN={up:[],down:[]}, BUS={trips:[]}, BUS_MAIN={weekday:{},holiday:{}}, BUS_EXT={routes:[]}, PLACES={}, MOBILITY=[], origin='上越妙高', mood='any', transport='auto', budget='any', companion='any', currentPos=null, weather=null, mobilityMap=null, mobilityMarkers=[], currentPosMarker=null, nearestService=null;
+let EVENTS=[], TRAIN={up:[],down:[]}, BUS={trips:[]}, BUS_MAIN={weekday:{},holiday:{}}, BUS_EXT={routes:[]}, PLACES={}, MOBILITY=[], origin='上越妙高', destinationArea='any', mood='any', transport='auto', budget='any', companion='any', currentPos=null, weather=null, mobilityMap=null, mobilityMarkers=[], currentPosMarker=null, nearestService=null;
 
 Promise.all([
  fetch('./events_auto.json',{cache:'no-store'}).then(r=>r.ok?r.json():Promise.reject()).catch(()=>fetch('./events.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>[])),
@@ -465,6 +483,10 @@ Promise.all([
 document.querySelectorAll('#origins .chip').forEach(b=>b.onclick=()=>{
  document.querySelectorAll('#origins .chip').forEach(x=>x.classList.remove('active'));
  b.classList.add('active'); origin=b.dataset.station; renderMobility();
+});
+document.querySelectorAll('#destinations .chip').forEach(b=>b.onclick=()=>{
+ document.querySelectorAll('#destinations .chip').forEach(x=>x.classList.remove('active'));
+ b.classList.add('active'); destinationArea=b.dataset.dest;
 });
 document.querySelectorAll('#moods .chip').forEach(b=>b.onclick=()=>{
  document.querySelectorAll('#moods .chip').forEach(x=>x.classList.remove('active'));
@@ -700,12 +722,21 @@ function mapIconForCategory(cat){
 function initMobilityMap(){
   const el=document.getElementById('mobilityMap');
   if(!el || typeof L==='undefined') return;
-  if(mobilityMap) return;
-  mobilityMap=L.map('mobilityMap',{zoomControl:true}).setView([37.122,138.242],12);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+  if(mobilityMap){
+    requestAnimationFrame(()=>mobilityMap.invalidateSize({pan:false}));
+    return;
+  }
+  mobilityMap=L.map(el,{zoomControl:true,attributionControl:true}).setView([37.122,138.242],12);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{
     maxZoom:19,
-    attribution:'&copy; OpenStreetMap contributors'
+    attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'
   }).addTo(mobilityMap);
+  requestAnimationFrame(()=>mobilityMap.invalidateSize({pan:false}));
+  setTimeout(()=>mobilityMap && mobilityMap.invalidateSize({pan:false}),250);
+  if('ResizeObserver' in window){
+    const ro=new ResizeObserver(()=>mobilityMap && mobilityMap.invalidateSize({pan:false}));
+    ro.observe(el);
+  }
 }
 
 function clearServiceMarkers(){
@@ -772,7 +803,8 @@ function renderMapRows(rows){
   if(bounds.length>1) mobilityMap.fitBounds(bounds,{padding:[30,30],maxZoom:15});
   else if(bounds.length===1) mobilityMap.setView(bounds[0],14);
 
-  setTimeout(()=>mobilityMap.invalidateSize(),100);
+  requestAnimationFrame(()=>mobilityMap.invalidateSize({pan:false}));
+  setTimeout(()=>mobilityMap && mobilityMap.invalidateSize({pan:false}),200);
 }
 
 async function serviceAccessMinutes(mode){
@@ -1042,6 +1074,7 @@ async function buildPlans(){
  box.innerHTML='';
 
  let events=EVENTS.filter(ev=>eventIsOpenNow(ev,now)).filter(budgetAllows).filter(companionAllows);
+ if(destinationArea!=='any')events=events.filter(ev=>areaStation[ev.area]===destinationArea);
  if(mood!=='any')events=events.filter(ev=>(ev.categories||[]).includes(mood));
 
  let scored=[];
@@ -1072,9 +1105,9 @@ async function buildPlans(){
  }
 
  if(transport==='auto'){
-   summary.innerHTML=`<h2>全移動手段から${top.length}案を選びました</h2><p>${origin}から、空き時間${free}分・戻り余裕${buffer}分。天気・予算・同行者も加味して比較しています。</p>`;
+   summary.innerHTML=`<h2>全移動手段から${top.length}案を選びました</h2><p>${origin}から${destinationArea==='any'?'上越全体':destinationArea+'エリア'}を対象に、空き時間${free}分・戻り余裕${buffer}分。天気・予算・同行者も加味して比較しています。</p>`;
  }else{
-   summary.innerHTML=`<h2>${MODE_LABELS[transport]||transport}で${top.length}案</h2><p>${origin}から、空き時間${free}分・戻り余裕${buffer}分で判定しました。</p>`;
+   summary.innerHTML=`<h2>${MODE_LABELS[transport]||transport}で${top.length}案</h2><p>${origin}から${destinationArea==='any'?'上越全体':destinationArea+'エリア'}を対象に、空き時間${free}分・戻り余裕${buffer}分で判定しました。</p>`;
  }
 
  box.innerHTML=top.map((p,idx)=>{
@@ -1099,8 +1132,6 @@ async function buildPlans(){
  }).join('');
 }
 </script>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(()=>{}));
