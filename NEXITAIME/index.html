@@ -1242,6 +1242,77 @@ window.NEXITAIME_AI_ENDPOINT =
 #adjustRun:disabled{opacity:.65;cursor:wait}
 </style>
 
+
+<style id="crowding-reservation-style">
+.crowd-wrap{margin:8px 0 10px}
+.crowd-badge{
+  display:inline-flex;align-items:center;min-height:30px;
+  margin:0 6px 6px 0;padding:5px 9px;border-radius:999px;
+  border:1px solid #e0e7ed;background:#fff;font-size:10px;font-weight:900;color:#43596d;
+}
+.crowd-badge.reservation{border-color:#f0d3a0;background:#fff8eb;color:#7f5a18}
+.crowd-badge.crowd{border-color:#f0d2d2;background:#fff5f5;color:#8b4343}
+.crowd-note{font-size:9px;line-height:1.45;color:#8796a5;margin-top:1px}
+</style>
+
+
+<style id="favorite-research-style">
+.favorite-item-actions-search{
+  display:flex;flex-wrap:wrap;gap:6px;margin-top:8px
+}
+.favorite-item-actions-search .favorite-rerun{
+  min-height:36px;border:1px solid #dbe5ed;border-radius:11px;
+  padding:7px 10px;background:#fff;color:#36546d;font-size:10px;font-weight:900
+}
+.favorite-item-actions-search .favorite-rerun.primary{
+  background:#edf7ff;border-color:#bfddf0;color:#205a83
+}
+.favorite-item-actions-search button:disabled{opacity:.6}
+.favorite-research-note{
+  margin-top:9px;font-size:9px;line-height:1.5;color:#8796a5
+}
+@media(max-width:520px){
+  .favorite-item-actions-search .favorite-rerun{flex:1 1 calc(50% - 6px)}
+}
+</style>
+
+
+<style id="corporate-link-style">
+.operator-card{
+  max-width:760px;margin:18px auto 8px;padding:0 14px;
+}
+.operator-card-inner{
+  display:flex;align-items:center;justify-content:space-between;gap:14px;
+  padding:14px 16px;border:1px solid #e2eaf0;border-radius:16px;
+  background:#fff;box-shadow:0 7px 22px rgba(28,64,94,.05);
+}
+.operator-card strong{display:block;font-size:12px;color:#173f66}
+.operator-card span{display:block;margin-top:3px;font-size:10px;color:#7c8c9a}
+.operator-card a{
+  white-space:nowrap;text-decoration:none;font-size:10px;font-weight:900;
+  color:#2d6f9e;background:#edf7ff;border-radius:999px;padding:8px 10px
+}
+footer a{color:inherit;font-weight:900}
+@media(max-width:520px){
+  .operator-card-inner{align-items:flex-start;flex-direction:column}
+  .operator-card a{align-self:stretch;text-align:center}
+}
+</style>
+
+
+<script id="nexitaime-analytics-config">
+window.NEXITAIME_ANALYTICS_ENDPOINT =
+  "https://axcelmode-nexit-ai.pages.dev/api/nexitaime-analytics";
+</script>
+
+
+<style id="analytics-privacy-style">
+.analytics-privacy-note{
+  max-width:760px;margin:10px auto 0;padding:0 14px;
+  text-align:center;font-size:9px;line-height:1.55;color:#98a5b1;
+}
+</style>
+
 </head>
 <body>
 <div class="app">
@@ -1322,14 +1393,13 @@ window.NEXITAIME_AI_ENDPOINT =
 <div class="grid">
 <div class="field"><label>空き時間（分）</label><input id="free" max="480" min="30" type="number" value="120"/></div>
 <div class="field"><label>戻りの余裕</label><select id="buffer">
-<option value="10">10分</option>
 <option selected="" value="15">15分</option>
 <option value="30">30分</option>
 <option value="45">45分</option>
 <option value="60">60分</option>
 </select></div>
 </div>
-<div class="note" style="margin-top:10px">帰着後にこの時間を残せる候補だけを提案します。</div>
+<div class="note" style="margin-top:10px">帰着後に残しておきたい余裕時間です。初期値は15分です。</div>
 </div></section><section class="card input-group-card"><div class="group-title">3. どう過ごす？</div><div class="group-part">
 <div class="group-subtitle">気分</div>
 <div class="chips" id="moods">
@@ -1439,11 +1509,82 @@ window.NEXITAIME_AI_ENDPOINT =
 </div>
 <div class="note">鉄道は妙高はねうまライン公開時刻表を利用。バスは上越大通り線・佐渡汽船連絡バス・教育大学線・春日山／佐内線・山麓線の主要区間をアプリ内判定します。運休・遅延・臨時変更は上の公式運行情報を優先してください。イベントは events_auto.json があれば自動更新データを優先します。</div>
 </section>
-<footer>NEXITAIME 〜上越版〜 · Powered by AXCEL MODE NEXIT · Beta1.0</footer>
+<footer>NEXITAIME 〜上越版〜 · Powered by 
+<a href="https://axcelmode-nexit.jp/" target="_blank" rel="noopener">AXCEL MODE NEXIT</a> · Beta1.0
+<section class="operator-card" aria-label="運営会社">
+  <div class="operator-card-inner">
+    <div>
+      <strong>運営：AXCEL MODE NEXIT</strong>
+      <span>上越発のソフトウェア開発・AI活用支援</span>
+    </div>
+    <a href="https://axcelmode-nexit.jp/" target="_blank" rel="noopener" onclick="try{trackNexitaime('corporate_click')}catch(_){}">会社サイトを見る →</a>
+  </div>
+</section>
+
+<div class="analytics-privacy-note">
+  利用改善のため、選択された条件や検索結果件数などを匿名の集計データとして記録します。
+  自由入力文・GPS座標・氏名などは送信しません。
+</div>
+</footer>
 </div>
 <div class="sticky"><div class="inner"><button class="primary" id="go">おすすめを見つける ✨</button></div></div>
 <script crossorigin="" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" onerror="this.onerror=null;this.removeAttribute('integrity');this.src='https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js';"></script>
 <script>
+
+const NEXITAIME_ANALYTICS_SESSION_KEY='nexitaime-analytics-session-v1';
+
+function analyticsSessionId(){
+  try{
+    let id=sessionStorage.getItem(NEXITAIME_ANALYTICS_SESSION_KEY);
+    if(!id){
+      id=(crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`);
+      sessionStorage.setItem(NEXITAIME_ANALYTICS_SESSION_KEY,id);
+    }
+    return id;
+  }catch(_){
+    return '';
+  }
+}
+
+function analyticsPayload(eventName,extra={}){
+  return {
+    event:eventName,
+    session:analyticsSessionId(),
+    ts:new Date().toISOString(),
+    app:'nexitaime',
+    version:'Beta1.0',
+    destination:destinationArea||'any',
+    mood:mood||'any',
+    transport:transport||'auto',
+    budget:budget||'any',
+    companion:companion||'any',
+    timing:timingMode||'now',
+    ...extra
+  };
+}
+
+function trackNexitaime(eventName,extra={}){
+  const endpoint=String(window.NEXITAIME_ANALYTICS_ENDPOINT||'').trim();
+  if(!endpoint)return;
+
+  const body=JSON.stringify(analyticsPayload(eventName,extra));
+
+  // Never block the user flow for analytics.
+  try{
+    if(navigator.sendBeacon){
+      const blob=new Blob([body],{type:'application/json'});
+      if(navigator.sendBeacon(endpoint,blob))return;
+    }
+  }catch(_){}
+
+  fetch(endpoint,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body,
+    keepalive:true
+  }).catch(()=>{});
+}
+
 const GAS_PRICE_YEN_PER_L=180;      // conservative reference, not a live price
 const REAL_WORLD_KM_PER_L=9;         // short-trip / city-driving assumption
 const SHORT_TRIP_FUEL_ALLOWANCE_YEN=100; // warm-up / idling / detour allowance
@@ -2333,6 +2474,17 @@ function weekdayKey(d){
   return ['sun','mon','tue','wed','thu','fri','sat'][d.getDay()];
 }
 
+function dateKey(d){
+  const y=d.getFullYear();
+  const m=String(d.getMonth()+1).padStart(2,'0');
+  const day=String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+
+function monthDayKey(d){
+  return `${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
 function seasonalDaylightEndMinutes(d){
   const m=d.getMonth()+1;
   // Conservative local sightseeing cutoff, not an astronomical sunset time.
@@ -2343,8 +2495,101 @@ function seasonalDaylightEndMinutes(d){
   return 18*60+30;
 }
 
-function spotAvailability(ev, arrive, leave, baseDate){
-  const result={ok:true,label:'',reason:'',verified:false};
+function inMonthDayRange(md,start,end){
+  if(!start || !end)return true;
+  // Supports ranges crossing New Year, e.g. 12-20 -> 03-31.
+  return start<=end ? (md>=start && md<=end) : (md>=start || md<=end);
+}
+
+function seasonalAllows(ev,d){
+  const s=ev.seasonal;
+  if(!s)return {ok:true,label:''};
+
+  const month=d.getMonth()+1;
+  const md=monthDayKey(d);
+
+  if(Array.isArray(s.months) && !s.months.includes(month)){
+    return {ok:false,label:s.label||'季節休業'};
+  }
+
+  if(s.start && s.end && !inMonthDayRange(md,s.start,s.end)){
+    return {ok:false,label:s.label||'季節休業'};
+  }
+
+  if(Array.isArray(s.periods) && s.periods.length){
+    const open=s.periods.some(p=>inMonthDayRange(md,p.start,p.end));
+    if(!open)return {ok:false,label:s.label||'季節休業'};
+  }
+
+  return {ok:true,label:s.label||''};
+}
+
+function hoursSpecForDate(ev,d){
+  const dk=dateKey(d);
+  const wd=weekdayKey(d);
+
+  // Explicit date override has top priority.
+  if(ev.special_hours && Object.prototype.hasOwnProperty.call(ev.special_hours,dk)){
+    return ev.special_hours[dk];
+  }
+
+  const hours=ev.opening_hours;
+  if(!hours)return null;
+  if(typeof hours==='string')return hours;
+  return hours[wd] ?? hours.default ?? null;
+}
+
+function parseHoursSpec(spec){
+  if(!spec || spec==='closed')return null;
+  if(typeof spec==='object'){
+    const open=spec.open ? mins(spec.open) : null;
+    const close=spec.close ? mins(spec.close) : null;
+    return {
+      open,close,
+      openText:spec.open||'',
+      closeText:spec.close||'',
+      lastEntry:spec.last_entry ? mins(spec.last_entry) : null,
+      lastEntryText:spec.last_entry||'',
+      lastOrder:spec.last_order ? mins(spec.last_order) : null,
+      lastOrderText:spec.last_order||''
+    };
+  }
+
+  const parts=String(spec).split('-');
+  if(parts.length!==2)return null;
+  return {
+    open:mins(parts[0]),
+    close:mins(parts[1]),
+    openText:parts[0],
+    closeText:parts[1],
+    lastEntry:null,lastEntryText:'',
+    lastOrder:null,lastOrderText:''
+  };
+}
+
+function availabilityWindow(ev,baseDate){
+  const wd=weekdayKey(baseDate);
+  const dk=dateKey(baseDate);
+  const result={
+    closed:false,verified:false,
+    open:null,close:null,
+    lastEntry:null,lastOrder:null,
+    label:'',reason:''
+  };
+
+  if(Array.isArray(ev.closed_dates) && ev.closed_dates.includes(dk)){
+    return {...result,closed:true,verified:true,label:'臨時休業',reason:'指定日は休業日のため除外'};
+  }
+
+  const seasonal=seasonalAllows(ev,baseDate);
+  if(!seasonal.ok){
+    return {...result,closed:true,verified:true,label:seasonal.label,reason:'指定日は営業期間外のため除外'};
+  }
+
+  const closed=(ev.closed_weekdays||[]);
+  if(closed.includes(wd)){
+    return {...result,closed:true,verified:true,label:'定休日',reason:'指定日は定休日のため除外'};
+  }
 
   if(ev.always_open===true){
     result.verified=true;
@@ -2352,46 +2597,44 @@ function spotAvailability(ev, arrive, leave, baseDate){
   }
 
   if(ev.daylight_only===true){
-    const end=seasonalDaylightEndMinutes(baseDate);
-    if(arrive>=end || leave>end){
-      return {
-        ok:false,verified:true,
-        label:'日中推奨',
-        reason:`日没前の見学を推奨するため、${fmt(end)}までに見学を終えられない候補は除外`
-      };
-    }
+    result.close=seasonalDaylightEndMinutes(baseDate);
     result.verified=true;
-    result.label=`屋外・${fmt(end)}頃まで推奨`;
+    result.label=`屋外・${fmt(result.close)}頃まで推奨`;
   }
 
-  const closed=(ev.closed_weekdays||[]);
-  const wd=weekdayKey(baseDate);
-  if(closed.includes(wd)){
-    return {ok:false,verified:true,label:'休業日',reason:'指定日は休業日のため除外'};
+  const spec=hoursSpecForDate(ev,baseDate);
+  if(spec==='closed'){
+    return {...result,closed:true,verified:true,label:'休業日',reason:'指定日は休業日のため除外'};
   }
 
-  const hours=ev.opening_hours;
-  if(hours){
-    const spec=(typeof hours==='string') ? hours : (hours[wd] ?? hours.default ?? null);
-    if(spec==='closed'){
-      return {ok:false,verified:true,label:'休業日',reason:'指定日は休業日のため除外'};
+  const parsed=parseHoursSpec(spec);
+  if(parsed){
+    result.open=parsed.open;
+    result.close=parsed.close;
+    result.lastEntry=parsed.lastEntry;
+    result.lastOrder=parsed.lastOrder;
+
+    if(ev.last_entry){
+      result.lastEntry=mins(ev.last_entry);
     }
-    if(spec){
-      const parts=String(spec).split('-');
-      if(parts.length===2){
-        const open=mins(parts[0]), close=mins(parts[1]);
-        const last=ev.last_entry ? mins(ev.last_entry) : close;
-        if(arrive<open || arrive>=last || leave>close){
-          return {
-            ok:false,verified:true,
-            label:`営業時間 ${parts[0]}〜${parts[1]}`,
-            reason:`到着・滞在が営業時間（${parts[0]}〜${parts[1]}）に収まらないため除外`
-          };
-        }
-        result.verified=true;
-        result.label=`営業時間 ${parts[0]}〜${parts[1]}`;
-      }
+    if(ev.last_order){
+      result.lastOrder=mins(ev.last_order);
     }
+
+    result.verified=true;
+
+    const extras=[];
+    if(result.lastEntry!=null)extras.push(`最終入館 ${fmt(result.lastEntry)}`);
+    if(result.lastOrder!=null)extras.push(`LO ${fmt(result.lastOrder)}`);
+
+    const hoursLabel=(parsed.openText && parsed.closeText)
+      ? `営業時間 ${parsed.openText}〜${parsed.closeText}`
+      : '営業時間登録あり';
+    result.label=extras.length ? `${hoursLabel}・${extras.join('・')}` : hoursLabel;
+  }else{
+    // Top-level cutoff fields can still be used when hours are otherwise supplied externally.
+    if(ev.last_entry)result.lastEntry=mins(ev.last_entry);
+    if(ev.last_order)result.lastOrder=mins(ev.last_order);
   }
 
   if(!result.verified){
@@ -2403,7 +2646,48 @@ function spotAvailability(ev, arrive, leave, baseDate){
       result.reason='見学可能時間のデータが未登録';
     }
   }
+
   return result;
+}
+
+function arrivalCutoffFor(ev,window){
+  const values=[];
+  if(window.lastEntry!=null)values.push(window.lastEntry);
+  if(window.lastOrder!=null)values.push(window.lastOrder);
+  return values.length ? Math.min(...values) : null;
+}
+
+function spotAvailability(ev, arrive, leave, baseDate){
+  const w=availabilityWindow(ev,baseDate);
+
+  if(w.closed){
+    return {ok:false,verified:w.verified,label:w.label,reason:w.reason,window:w};
+  }
+
+  if(w.open!=null && arrive<w.open){
+    return {
+      ok:false,verified:w.verified,label:w.label,
+      reason:`営業開始（${fmt(w.open)}）前のため除外`,window:w
+    };
+  }
+
+  const cutoff=arrivalCutoffFor(ev,w);
+  if(cutoff!=null && arrive>=cutoff){
+    const name=(w.lastEntry!=null && cutoff===w.lastEntry) ? '最終入館' : 'ラストオーダー';
+    return {
+      ok:false,verified:w.verified,label:w.label,
+      reason:`${name}（${fmt(cutoff)}）に間に合わないため除外`,window:w
+    };
+  }
+
+  if(w.close!=null && leave>w.close){
+    return {
+      ok:false,verified:w.verified,label:w.label,
+      reason:`営業終了（${fmt(w.close)}）までに滞在を終えられないため除外`,window:w
+    };
+  }
+
+  return {ok:true,verified:w.verified,label:w.label,reason:w.reason,window:w};
 }
 
 function availabilityBadge(plan){
@@ -2412,6 +2696,80 @@ function availabilityBadge(plan){
   const cls=a.verified?'hours-ok':'hours-check';
   return `<div class="hours-badge ${cls}">🕒 ${esc(a.label)}</div>`;
 }
+
+function timeInRanges(minute,ranges=[]){
+  return (ranges||[]).some(range=>{
+    if(!range)return false;
+    const parts=String(range).split('-');
+    if(parts.length!==2)return false;
+    const start=mins(parts[0]), end=mins(parts[1]);
+    if(start==null||end==null)return false;
+    return start<=end
+      ? minute>=start && minute<end
+      : minute>=start || minute<end;
+  });
+}
+
+function crowdingMeta(plan, when=planningDate||new Date()){
+  const ev=plan?.ev||{};
+  const cats=ev.categories||[];
+  const arrival=Number.isFinite(plan?.arrive)
+    ? plan.arrive
+    : (when.getHours()*60+when.getMinutes());
+  const items=[];
+
+  // Explicit venue/event metadata takes priority.
+  if(ev.reservation_required===true){
+    items.push({label:'🎟️ 予約必要',kind:'reservation',level:'high'});
+  }else if(ev.reservation_recommended===true){
+    items.push({label:'📅 予約推奨',kind:'reservation',level:'medium'});
+  }
+
+  if(Array.isArray(ev.busy_hours) && timeInRanges(arrival,ev.busy_hours)){
+    items.push({label:'⚠️ 混みやすい時間帯',kind:'crowd',level:'medium'});
+  }
+
+  if(ev.crowding_note){
+    items.push({label:`👥 ${String(ev.crowding_note).slice(0,28)}`,kind:'crowd',level:'info'});
+  }
+
+  // Event timing: this is a generic caution, not live congestion data.
+  const timing=eventTimingMeta(ev,when);
+  if(timing && (timing.label==='今日開催'||timing.label==='開催中'||timing.label==='まもなく開始')){
+    items.push({label:'👥 イベント時間帯は混雑注意',kind:'crowd',level:'medium'});
+  }
+
+  // Generic dining peak-time guidance.
+  const isFood=cats.some(c=>['食','食べる','ごはん','グルメ','飲食','ランチ','ディナー'].includes(c));
+  const isCafe=cats.some(c=>['カフェ','喫茶','スイーツ','コーヒー'].includes(c));
+  if(isFood && timeInRanges(arrival,['11:30-13:30','18:00-20:00'])){
+    items.push({label:'🍴 食事ピーク時間帯',kind:'crowd',level:'info'});
+  }else if(isCafe && timeInRanges(arrival,['13:30-16:00'])){
+    items.push({label:'☕ カフェ混雑時間帯の目安',kind:'crowd',level:'info'});
+  }
+
+  // Weekend/holiday caution only for leisure/event-type destinations.
+  const leisure = timing || cats.some(c=>['観光','見る','文化','歴史','自然','景色','温泉','サウナ','イベント','祭り','催し','体験'].includes(c));
+  if(leisure && isHolidayBusDay(when)){
+    items.push({label:'🗓️ 休日は混雑に注意',kind:'crowd',level:'info'});
+  }
+
+  // Deduplicate, strongest/earliest wording wins.
+  const seen=new Set();
+  return items.filter(item=>{
+    if(seen.has(item.label))return false;
+    seen.add(item.label);
+    return true;
+  }).slice(0,3);
+}
+
+function crowdingHtml(plan){
+  const items=crowdingMeta(plan);
+  if(!items.length)return '';
+  const badges=items.map(x=>`<span class="crowd-badge ${esc(x.kind)}">${esc(x.label)}</span>`).join('');
+  return `<div class="crowd-wrap">${badges}<div class="crowd-note">混雑表示はリアルタイム情報ではなく、登録情報と時間帯・曜日からの目安です。</div></div>`;
+}
+
 
 async function evaluateDirectMode(ev,dest,mode,start,deadline,ctx){
   const from=ctx.origin;
@@ -2433,10 +2791,21 @@ async function evaluateDirectMode(ev,dest,mode,start,deadline,ctx){
   const rawArrive=start+access+oneWay;
   const eventStart=ev.start_time?mins(ev.start_time):null;
   const eventEnd=ev.end_time?mins(ev.end_time):null;
-  const arrive=eventStart&&rawArrive<eventStart?eventStart:rawArrive;
+
+  const window=availabilityWindow(ev,planningDate);
+  if(window.closed)return null;
+
+  let arrive=rawArrive;
+  if(eventStart!=null && arrive<eventStart)arrive=eventStart;
+  if(window.open!=null && arrive<window.open)arrive=window.open;
+
+  const cutoff=arrivalCutoffFor(ev,window);
+  if(cutoff!=null && arrive>=cutoff)return null;
 
   let latestLeave=deadline-backWay-returnAccess;
   if(eventEnd!=null)latestLeave=Math.min(latestLeave,eventEnd);
+  if(window.close!=null)latestLeave=Math.min(latestLeave,window.close);
+
   const stay=Math.floor(latestLeave-arrive);
   if(stay<30)return null;
 
@@ -2483,13 +2852,22 @@ async function evaluateTransitMode(ev,dest,mode,start,deadline,ctx){
 
   const eventStart=ev.start_time?mins(ev.start_time):null;
   const eventEnd=ev.end_time?mins(ev.end_time):null;
+  const window=availabilityWindow(ev,planningDate);
+  if(window.closed)return null;
+
   let arrive=out.arr;
   if(eventStart!=null && arrive<eventStart)arrive=eventStart;
+  if(window.open!=null && arrive<window.open)arrive=window.open;
+
+  const cutoff=arrivalCutoffFor(ev,window);
+  if(cutoff!=null && arrive>=cutoff)return null;
 
   const earliestBack=arrive+30;
-  if(eventEnd!=null && earliestBack>eventEnd)return null;
+  let effectiveEnd=eventEnd;
+  if(window.close!=null)effectiveEnd=effectiveEnd==null ? window.close : Math.min(effectiveEnd,window.close);
+  if(effectiveEnd!=null && earliestBack>effectiveEnd)return null;
 
-  const back=findBestTransitReturn(dest,backTo,earliestBack,deadline,eventEnd,mode);
+  const back=findBestTransitReturn(dest,backTo,earliestBack,deadline,effectiveEnd,mode);
   if(!back)return null;
 
   const stay=Math.floor(back.dep-arrive);
@@ -3321,6 +3699,7 @@ function bindPlanShareButtons(plans, ctx){
       if(!plan)return;
       const text=planShareText(plan,ctx);
       const action=btn.dataset.shareAction;
+      try{ trackNexitaime('share',{shareAction:action||'unknown'}); }catch(_){}
 
       if(action==='line'){
         const url=`https://line.me/R/msg/text/?${encodeURIComponent(text)}`;
@@ -3381,6 +3760,7 @@ function saveFavorites(rows){
 
 function isFavorite(plan,ctx){
   const key=favoriteKey(plan,ctx);
+  const wasSaved=loadFavorites().some(x=>x.key===key);
   return loadFavorites().some(x=>x.key===key);
 }
 
@@ -3398,7 +3778,18 @@ function favoritePayload(plan,ctx){
     stay:Number(plan.stay)||0,
     cost:totalPlanCost(plan),
     url:plan.ev?.url||'',
-    shareText:planShareText(plan,ctx)
+    shareText:planShareText(plan,ctx),
+    search:{
+      origin:ctx?.origin||origin,
+      returnTarget:returnTarget,
+      destinationArea,
+      transport,
+      mood,
+      budget,
+      companion,
+      freeMinutes:Number(document.getElementById('free')?.value)||120,
+      buffer:Number(document.getElementById('buffer')?.value)||15
+    }
   };
 }
 
@@ -3419,6 +3810,78 @@ function toggleFavorite(plan,ctx,btn){
     btn.textContent=on?'★ 保存済み':'☆ お気に入り';
   }
   renderFavoriteTray();
+  try{ trackNexitaime(wasSaved?'favorite_remove':'favorite_add'); }catch(_){}
+}
+
+
+function setOriginChoice(value){
+  if(!value)return;
+  origin=value;
+  document.querySelectorAll('#origins .chip').forEach(btn=>{
+    btn.classList.toggle('active', btn.dataset.station===value);
+  });
+  const locationText=document.getElementById('locationText');
+  if(locationText)locationText.textContent=`${value}付近`;
+}
+
+function setReturnChoice(value){
+  returnTarget=value||'same';
+  document.querySelectorAll('#returns .chip').forEach(btn=>{
+    btn.classList.toggle('active', btn.dataset.return===returnTarget);
+  });
+}
+
+function setTimingChoice(value='now'){
+  timingMode=value;
+  document.querySelectorAll('#timing .chip').forEach(btn=>{
+    btn.classList.toggle('active', btn.dataset.timing===value);
+  });
+  updateTimingUI();
+}
+
+function setSelectChoice(id,value){
+  const el=document.getElementById(id);
+  if(!el || value==null)return;
+  const exists=[...el.options].some(o=>o.value===String(value));
+  if(!exists)return;
+  el.value=String(value);
+  if(id==='budget')budget=String(value);
+  if(id==='companion')companion=String(value);
+}
+
+function setBufferChoice(value){
+  const el=document.getElementById('buffer');
+  if(!el)return;
+  const v=String(value||15);
+  if([...el.options].some(o=>o.value===v))el.value=v;
+}
+
+async function restoreFavoriteSearch(row,{keepCurrentOrigin=false}={}){
+  const s=row?.search||{};
+
+  if(!keepCurrentOrigin){
+    setOriginChoice(s.origin||row?.origin||origin);
+  }
+
+  setReturnChoice(s.returnTarget||'same');
+  setDestinationChoice(s.destinationArea||'any');
+  setTransportChoice(s.transport||'auto');
+  setMoodChoice(s.mood||'any');
+  setSelectChoice('budget',s.budget||'any');
+  setSelectChoice('companion',s.companion||'any');
+  setFreeMinutes(s.freeMinutes||120);
+  setBufferChoice(s.buffer||15);
+  setTimingChoice('now');
+
+  const p=PLACES[origin];
+  if(p){
+    try{ await updateWeatherFor(p.lat,p.lon,origin); }catch(_){}
+  }
+
+  renderMobility();
+  await buildPlans();
+
+  document.getElementById('results')?.scrollIntoView({behavior:'smooth',block:'start'});
 }
 
 function renderFavoriteTray(){
@@ -3430,6 +3893,7 @@ function renderFavoriteTray(){
     host.hidden=true;
     return;
   }
+
   host.hidden=false;
   host.innerHTML=`<div class="favorite-tray-card">
     <div class="favorite-tray-head">
@@ -3442,13 +3906,50 @@ function renderFavoriteTray(){
           <strong>${esc(x.title)}</strong>
           <span>${esc(x.origin)} → ${esc(x.venue)} → ${esc(x.returnTo)}${x.modeLabel?` ・ ${esc(x.modeLabel)}`:''}</span>
         </div>
-        <div class="favorite-item-actions">
+        <div class="favorite-item-actions favorite-item-actions-search">
+          <button type="button" class="favorite-rerun primary" data-fav-rerun="${i}">🔄 今日の条件で再検索</button>
+          <button type="button" class="favorite-rerun" data-fav-current="${i}">📍 今いる場所から</button>
           <button type="button" class="favorite-copy" data-fav-copy="${i}">コピー</button>
           <button type="button" class="favorite-remove" data-fav-remove="${i}">削除</button>
         </div>
       </div>`).join('')}
     </div>
+    <div class="favorite-research-note">再検索では保存時の気分・移動手段・予算・行き先などを復元し、日時だけ「今すぐ」で再計算します。</div>
   </div>`;
+
+  host.querySelectorAll('[data-fav-rerun]').forEach(btn=>{
+    btn.addEventListener('click',async()=>{
+      const row=loadFavorites()[Number(btn.dataset.favRerun)];
+      if(!row)return;
+      const before=btn.textContent;
+      btn.disabled=true;
+      btn.textContent='再検索中…';
+      try{
+        try{ trackNexitaime('favorite_rerun',{rerunMode:'saved_origin'}); }catch(_){}
+        await restoreFavoriteSearch(row,{keepCurrentOrigin:false});
+      }finally{
+        btn.disabled=false;
+        btn.textContent=before;
+      }
+    });
+  });
+
+  host.querySelectorAll('[data-fav-current]').forEach(btn=>{
+    btn.addEventListener('click',async()=>{
+      const row=loadFavorites()[Number(btn.dataset.favCurrent)];
+      if(!row)return;
+      const before=btn.textContent;
+      btn.disabled=true;
+      btn.textContent='再検索中…';
+      try{
+        try{ trackNexitaime('favorite_rerun',{rerunMode:'current_origin'}); }catch(_){}
+        await restoreFavoriteSearch(row,{keepCurrentOrigin:true});
+      }finally{
+        btn.disabled=false;
+        btn.textContent=before;
+      }
+    });
+  });
 
   host.querySelectorAll('[data-fav-copy]').forEach(btn=>{
     btn.addEventListener('click',async()=>{
@@ -3458,6 +3959,7 @@ function renderFavoriteTray(){
       shareFeedback(btn,ok?'コピー済み ✓':'コピー失敗');
     });
   });
+
   host.querySelectorAll('[data-fav-remove]').forEach(btn=>{
     btn.addEventListener('click',()=>{
       const rows=loadFavorites();
@@ -3466,6 +3968,7 @@ function renderFavoriteTray(){
       renderFavoriteTray();
     });
   });
+
   host.querySelector('#clearFavorites')?.addEventListener('click',()=>{
     saveFavorites([]);
     renderFavoriteTray();
@@ -3695,6 +4198,7 @@ function bindPlanAdjustPanel(){
 
       try{
         const result=await runNaturalLanguageAdjustment(text);
+        try{ trackNexitaime('plan_adjust',{adjustSource:result.source||'unknown'}); }catch(_){}
 
         if(!result.changes.length){
           showAdjustFeedback('条件を読み取れませんでした。少し言い換えてみてください。');
@@ -3725,6 +4229,7 @@ function bindPlanAdjustPanel(){
 }
 
 async function buildPlans(){
+ try{ trackNexitaime('search_start',{freeMinutes:Number(document.getElementById('free')?.value)||120,buffer:Number(document.getElementById('buffer')?.value)||15}); }catch(_){}
  const free=Number(document.getElementById('free').value)||120;
  const buffer=Math.max(10,Number(document.getElementById('buffer').value)||15);
  const now=new Date();
@@ -3818,6 +4323,7 @@ async function buildPlans(){
  top.forEach(p=>p.itinerary=buildSimpleItinerary(p));
 
  if(!top.length){
+   try{ trackNexitaime('search_result',{resultCount:0}); }catch(_){}
    if(adjustPanel) adjustPanel.hidden=true;
    const selectedModeLabel=transport==='auto'?'選択中の条件':(MODE_LABELS[transport]||transport);
    summary.innerHTML=`<h2>この時間では、${selectedModeLabel}で行けるプランがありません</h2><p><strong>${searchCtx.origin} → ${destinationGroupLabel(searchCtx.destination)} → ${searchCtx.returnTo}</strong><br>選んだ行き先や移動手段は勝手に変更していません。</p>`;
@@ -3851,6 +4357,8 @@ async function buildPlans(){
 
  if(adjustPanel){ adjustPanel.hidden=false; bindPlanAdjustPanel(); }
 
+ try{ trackNexitaime('search_result',{resultCount:top.length}); }catch(_){}
+
  box.innerHTML=top.map((p,idx)=>{
    const rank=idx===0&&transport==='auto'?'<span class="status">おすすめ</span>':'<span class="status">間に合う</span>';
    const recommendationHtml=renderRecommendationBadges(p,idx);
@@ -3866,6 +4374,7 @@ async function buildPlans(){
      ? `<div class="cost-total">合計目安：約¥${Number(totalCost).toLocaleString()} <small>（施設・イベント＋交通）</small></div>`
      : '';
    const hoursHtml=availabilityBadge(p);
+   const crowdingInfoHtml=crowdingHtml(p);
    const routeMapId=`plan-route-map-${Date.now()}-${idx}-${Math.random().toString(36).slice(2,7)}`;
    const stopsForPlan=planStops(p,searchCtx);
    const routeStopChips=stopsForPlan.map((s,i)=>{
@@ -3886,6 +4395,7 @@ async function buildPlans(){
      <div class="note" style="margin-bottom:6px"><strong>この案の理由：</strong>${esc([p.reason,p.weatherReason,companionReason(p.ev)].filter(Boolean).join('・')||'時間内に収まるため')}</div>
      <div class="meta">🎫 ${esc(costLabel(p.ev))}${p.ev.indoor?' · 🏠 屋内':''}</div>
      ${hoursHtml}
+     ${crowdingInfoHtml}
      ${transportCostHtml}
      ${totalCostHtml}
      ${serviceNote}
@@ -3937,6 +4447,7 @@ if ('serviceWorker' in navigator) {
 </script>
 <script>
 document.addEventListener('DOMContentLoaded',()=>{
+  try{ trackNexitaime('page_view'); }catch(_){}
   try{ renderFavoriteTray(); }catch(_){}
 });
 </script>

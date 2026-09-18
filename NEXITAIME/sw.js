@@ -1,4 +1,4 @@
-const CACHE='nexitaime-beta1-0-existing-ai';
+const CACHE='nexitaime-beta1-0-analytics';
 const ASSETS=[
   './',
   './index.html',
