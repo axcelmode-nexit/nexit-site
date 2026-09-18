@@ -1,4 +1,4 @@
-const CACHE='nexitaime-beta1-0-favorites';
+const CACHE='nexitaime-beta1-0-ai-adjust';
 const ASSETS=[
   './',
   './index.html',

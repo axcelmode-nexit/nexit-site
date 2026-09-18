@@ -1196,6 +1196,40 @@ main{
 }
 </style>
 
+
+<style id="plan-adjust-style">
+.plan-adjust-panel{
+  margin:12px 0 16px;padding:13px;
+  border:1px solid #dfe8ef;border-radius:17px;
+  background:linear-gradient(180deg,#fbfdff,#f7fbff);
+  box-shadow:0 6px 20px rgba(28,64,94,.05);
+}
+.plan-adjust-head{display:flex;justify-content:space-between;gap:10px;margin-bottom:10px}
+.plan-adjust-head strong{display:block;font-size:13px;color:#173f66}
+.plan-adjust-head span{display:block;margin-top:2px;font-size:10px;color:#7b8d9d}
+.adjust-presets{display:flex;flex-wrap:wrap;gap:7px}
+.adjust-preset{
+  min-height:38px;padding:8px 10px;border-radius:999px;
+  border:1px solid #d8e4ed;background:#fff;color:#36546d;
+  font-size:10px;font-weight:900;
+}
+.adjust-freeform{display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:10px}
+.adjust-freeform input{
+  min-width:0;min-height:42px;border:1px solid #d8e4ed;border-radius:12px;
+  padding:9px 11px;font-size:12px;background:#fff;
+}
+.adjust-freeform button{
+  min-height:42px;border:0;border-radius:12px;padding:9px 13px;
+  background:#173f66;color:#fff;font-size:11px;font-weight:900;
+}
+.adjust-feedback{min-height:16px;margin-top:7px;font-size:10px;color:#6e8192}
+@media(max-width:520px){
+  .adjust-presets{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+  .adjust-preset{text-align:left;border-radius:12px}
+  .adjust-freeform{grid-template-columns:1fr}
+}
+</style>
+
 </head>
 <body>
 <div class="app">
@@ -1359,6 +1393,27 @@ main{
 <h2>条件を選んでみて</h2>
 <p>イベント・交通・天気・予算・同行者を組み合わせて、指定した時間から往復できる候補を探します。</p>
 </div>
+<div id="planAdjustPanel" class="plan-adjust-panel" hidden>
+  <div class="plan-adjust-head">
+    <div>
+      <strong>✨ プランを調整</strong>
+      <span>条件を変えて、すぐに再提案します</span>
+    </div>
+  </div>
+  <div class="adjust-presets">
+    <button type="button" class="adjust-preset" data-adjust="shorter">⏱ 30分短く</button>
+    <button type="button" class="adjust-preset" data-adjust="near">📍 もっと近場</button>
+    <button type="button" class="adjust-preset" data-adjust="rain">🌧 雨でもOK</button>
+    <button type="button" class="adjust-preset" data-adjust="food">🍴 ごはんを入れる</button>
+    <button type="button" class="adjust-preset" data-adjust="public">🚉 公共交通だけ</button>
+  </div>
+  <div class="adjust-freeform">
+    <input id="adjustText" type="text" maxlength="80" placeholder="例：温泉にして、30分短く" />
+    <button type="button" id="adjustRun">再提案する</button>
+  </div>
+  <div id="adjustFeedback" class="adjust-feedback"></div>
+</div>
+
 <div id="favoriteTray" class="favorite-tray" hidden></div>
 <div id="plans"></div>
 <div class="title" style="margin-top:18px">公式運行情報</div>
@@ -3141,7 +3196,7 @@ function sortCandidates(rows){
 
 function setTransportChoice(mode){
   transport=mode;
-  document.querySelectorAll('#transports .chip').forEach(btn=>{
+  document.querySelectorAll('#transport .chip').forEach(btn=>{
     btn.classList.toggle('active', btn.dataset.mode===mode);
   });
 }
@@ -3149,7 +3204,7 @@ function setTransportChoice(mode){
 function setDestinationChoice(value){
   destinationArea=value;
   document.querySelectorAll('#destinations .chip').forEach(btn=>{
-    btn.classList.toggle('active', btn.dataset.destination===value);
+    btn.classList.toggle('active', btn.dataset.dest===value);
   });
 }
 
@@ -3416,6 +3471,134 @@ function bindFavoriteButtons(plans,ctx){
   });
 }
 
+
+function setMoodChoice(value){
+  mood=value;
+  document.querySelectorAll('#moods .chip').forEach(btn=>{
+    btn.classList.toggle('active', btn.dataset.mood===value);
+  });
+}
+
+function setFreeMinutes(value){
+  const el=document.getElementById('free');
+  if(!el)return;
+  const min=Number(el.min)||30;
+  const max=Number(el.max)||480;
+  el.value=Math.max(min,Math.min(max,Number(value)||120));
+}
+
+function currentFreeMinutes(){
+  return Number(document.getElementById('free')?.value)||120;
+}
+
+function showAdjustFeedback(message){
+  const el=document.getElementById('adjustFeedback');
+  if(!el)return;
+  el.textContent=message||'';
+}
+
+async function applyPlanAdjustment(kind){
+  const changes=[];
+
+  if(kind==='shorter'){
+    setFreeMinutes(currentFreeMinutes()-30);
+    changes.push('空き時間を30分短く');
+  }else if(kind==='near'){
+    setDestinationChoice('any');
+    setTransportChoice('walk');
+    changes.push('行き先をおまかせ・徒歩で近場優先');
+  }else if(kind==='rain'){
+    setMoodChoice('rain');
+    changes.push('雨でもOK');
+  }else if(kind==='food'){
+    setMoodChoice('food');
+    changes.push('ごはん');
+  }else if(kind==='public'){
+    setTransportChoice('public');
+    changes.push('公共交通だけ');
+  }
+
+  showAdjustFeedback(changes.length?`${changes.join('、')}で再提案します。`:'条件を変更できませんでした。');
+  await buildPlans();
+}
+
+function parseAdjustmentText(text){
+  const t=(text||'').trim();
+  const changes=[];
+
+  if(!t)return changes;
+
+  // Time changes
+  let m=t.match(/(\d+)\s*分\s*(短|減)/);
+  if(m){
+    setFreeMinutes(currentFreeMinutes()-Number(m[1]));
+    changes.push(`空き時間を${m[1]}分短く`);
+  }else{
+    m=t.match(/(\d+)\s*分\s*(長|増|追加)/);
+    if(m){
+      setFreeMinutes(currentFreeMinutes()+Number(m[1]));
+      changes.push(`空き時間を${m[1]}分長く`);
+    }
+  }
+
+  // Mood / activity
+  if(/雨|屋内/.test(t)){ setMoodChoice('rain'); changes.push('雨でもOK'); }
+  else if(/ごはん|ご飯|食事|ランチ|夕食|ディナー/.test(t)){ setMoodChoice('food'); changes.push('ごはん'); }
+  else if(/カフェ|珈琲|コーヒー/.test(t)){ setMoodChoice('cafe'); changes.push('カフェ'); }
+  else if(/温泉|サウナ|風呂/.test(t)){ setMoodChoice('onsen'); changes.push('温泉・サウナ'); }
+  else if(/イベント|祭|まつり/.test(t)){ setMoodChoice('event'); changes.push('イベント'); }
+  else if(/景色|自然|絶景|海|山/.test(t)){ setMoodChoice('nature'); changes.push('自然・景色'); }
+  else if(/観光|史跡|歴史/.test(t)){ setMoodChoice('sightseeing'); changes.push('観光'); }
+
+  // Transport
+  if(/公共交通|電車|鉄道|バス/.test(t)){ setTransportChoice('public'); changes.push('公共交通'); }
+  else if(/徒歩|歩き|近場|近く/.test(t)){
+    setDestinationChoice('any');
+    setTransportChoice('walk');
+    changes.push('徒歩で近場優先');
+  }
+  else if(/自家用車|車で|クルマ/.test(t)){ setTransportChoice('privatecar'); changes.push('自家用車'); }
+  else if(/タクシー/.test(t)){ setTransportChoice('taxi'); changes.push('タクシー'); }
+  else if(/レンタル自転車|自転車/.test(t)){ setTransportChoice('bike'); changes.push('レンタル自転車'); }
+  else if(/カーシェア|レンタカー/.test(t)){ setTransportChoice('mobilitycar'); changes.push('カーシェア・レンタカー'); }
+
+  return [...new Set(changes)];
+}
+
+function bindPlanAdjustPanel(){
+  document.querySelectorAll('[data-adjust]').forEach(btn=>{
+    if(btn.dataset.bound==='1')return;
+    btn.dataset.bound='1';
+    btn.addEventListener('click',()=>applyPlanAdjustment(btn.dataset.adjust));
+  });
+
+  const run=document.getElementById('adjustRun');
+  if(run && run.dataset.bound!=='1'){
+    run.dataset.bound='1';
+    run.addEventListener('click',async()=>{
+      const input=document.getElementById('adjustText');
+      const changes=parseAdjustmentText(input?.value||'');
+      if(!changes.length){
+        showAdjustFeedback('「30分短く」「温泉」「公共交通」などで入力してください。');
+        return;
+      }
+      showAdjustFeedback(`${changes.join('、')}で再提案します。`);
+      await buildPlans();
+    });
+  }
+
+  const input=document.getElementById('adjustText');
+  if(input && input.dataset.bound!=='1'){
+    input.dataset.bound='1';
+    input.addEventListener('keydown',e=>{
+      if(e.key==='Enter'){
+        e.preventDefault();
+        document.getElementById('adjustRun')?.click();
+      }
+    });
+  }
+}
+
 async function buildPlans(){
  const free=Number(document.getElementById('free').value)||120;
  const buffer=Math.max(10,Number(document.getElementById('buffer').value)||15);
@@ -3442,6 +3625,7 @@ async function buildPlans(){
 
  const start=planningDate.getHours()*60+planningDate.getMinutes(), hardEnd=start+free, deadline=hardEnd-buffer;
  summary.innerHTML='<h2>候補を比較中…</h2><p>移動時間・時刻表・戻り余裕を確認しています。</p>';
+ const adjustPanel=document.getElementById('planAdjustPanel'); if(adjustPanel) adjustPanel.hidden=true;
  box.innerHTML='';
 
  // 「おすすめを見つける」を押したら結果エリアへ移動
@@ -3509,6 +3693,7 @@ async function buildPlans(){
  top.forEach(p=>p.itinerary=buildSimpleItinerary(p));
 
  if(!top.length){
+   if(adjustPanel) adjustPanel.hidden=true;
    const selectedModeLabel=transport==='auto'?'選択中の条件':(MODE_LABELS[transport]||transport);
    summary.innerHTML=`<h2>この時間では、${selectedModeLabel}で行けるプランがありません</h2><p><strong>${searchCtx.origin} → ${destinationGroupLabel(searchCtx.destination)} → ${searchCtx.returnTo}</strong><br>選んだ行き先や移動手段は勝手に変更していません。</p>`;
    box.innerHTML=`<div class="plan no-result-actions-wrap">
@@ -3538,6 +3723,8 @@ async function buildPlans(){
  }else{
    summary.innerHTML=`<h2>そのエリアでできることを${top.length}案見つけました</h2><p><strong>${routeSummary}</strong><br>指定エリアは変えず、時間調整しやすい候補を提案しています。</p>`;
  }
+
+ if(adjustPanel){ adjustPanel.hidden=false; bindPlanAdjustPanel(); }
 
  box.innerHTML=top.map((p,idx)=>{
    const rank=idx===0&&transport==='auto'?'<span class="status">おすすめ</span>':'<span class="status">間に合う</span>';
