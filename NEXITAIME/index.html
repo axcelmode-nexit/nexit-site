@@ -1230,6 +1230,18 @@ main{
 }
 </style>
 
+
+<script id="nexitaime-ai-config">
+window.NEXITAIME_AI_ENDPOINT =
+  "https://axcelmode-nexit-ai.pages.dev/api/nexitaime-adjust";
+</script>
+
+
+<style id="nexitaime-existing-ai-style">
+.adjust-ai-note{margin-top:5px;font-size:9px;color:#93a0ad}
+#adjustRun:disabled{opacity:.65;cursor:wait}
+</style>
+
 </head>
 <body>
 <div class="app">
@@ -1412,6 +1424,7 @@ main{
     <button type="button" id="adjustRun">再提案する</button>
   </div>
   <div id="adjustFeedback" class="adjust-feedback"></div>
+  <div class="adjust-ai-note">NEXITの既存Cloudflare AI基盤で希望を解析します。AI通信に失敗した場合は端末内判定へ自動切替します。</div>
 </div>
 
 <div id="favoriteTray" class="favorite-tray" hidden></div>
@@ -3565,6 +3578,97 @@ function parseAdjustmentText(text){
   return [...new Set(changes)];
 }
 
+
+function applyStructuredAdjustment(adj){
+  const changes=[];
+
+  if(adj && Number.isFinite(Number(adj.freeMinutes))){
+    setFreeMinutes(Number(adj.freeMinutes));
+    changes.push(`空き時間${Number(adj.freeMinutes)}分`);
+  }else if(adj && Number.isFinite(Number(adj.freeMinutesDelta)) && Number(adj.freeMinutesDelta)!==0){
+    setFreeMinutes(currentFreeMinutes()+Number(adj.freeMinutesDelta));
+    const delta=Number(adj.freeMinutesDelta);
+    changes.push(`空き時間${delta>0?'+':''}${delta}分`);
+  }
+
+  if(adj?.mood && ['any','food','cafe','sightseeing','event','nature','onsen','active','rain'].includes(adj.mood)){
+    setMoodChoice(adj.mood);
+    changes.push(`気分：${adj.mood}`);
+  }
+
+  if(adj?.transport && ['auto','privatecar','mobilitycar','public','taxi','walk','bike'].includes(adj.transport)){
+    setTransportChoice(adj.transport);
+    changes.push(`移動手段：${adj.transport}`);
+  }
+
+  if(adj?.destination && ['any','central','kasugayama','sea','east','mountain','myoko'].includes(adj.destination)){
+    setDestinationChoice(adj.destination);
+    changes.push(`行き先：${adj.destination}`);
+  }
+
+  return changes;
+}
+
+async function askNexitaimeAI(text){
+  const endpoint=String(window.NEXITAIME_AI_ENDPOINT||'').trim();
+  if(!endpoint) throw new Error('AI endpoint is not configured');
+
+  const payload={
+    message:String(text||'').trim(),
+    current:{
+      freeMinutes:currentFreeMinutes(),
+      mood,
+      transport,
+      destination:destinationArea,
+      origin,
+      returnTo:returnTarget==='same'?origin:returnTarget
+    }
+  };
+
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),10000);
+
+  try{
+    const r=await fetch(endpoint,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(payload),
+      signal:controller.signal
+    });
+
+    if(!r.ok){
+      throw new Error(`AI API ${r.status}`);
+    }
+
+    const data=await r.json();
+    if(!data?.adjustment || typeof data.adjustment!=='object'){
+      throw new Error('AI response invalid');
+    }
+
+    return data.adjustment;
+  }finally{
+    clearTimeout(timer);
+  }
+}
+
+async function runNaturalLanguageAdjustment(text){
+  const input=(text||'').trim();
+  if(!input) return {changes:[],source:'none'};
+
+  try{
+    const adj=await askNexitaimeAI(input);
+    const changes=applyStructuredAdjustment(adj);
+    if(changes.length){
+      return {changes,source:'ai',note:adj.note||''};
+    }
+  }catch(err){
+    console.info('NEXITAIME AI unavailable; using local parser.',err);
+  }
+
+  const changes=parseAdjustmentText(input);
+  return {changes,source:'local',note:''};
+}
+
 function bindPlanAdjustPanel(){
   document.querySelectorAll('[data-adjust]').forEach(btn=>{
     if(btn.dataset.bound==='1')return;
@@ -3577,13 +3681,34 @@ function bindPlanAdjustPanel(){
     run.dataset.bound='1';
     run.addEventListener('click',async()=>{
       const input=document.getElementById('adjustText');
-      const changes=parseAdjustmentText(input?.value||'');
-      if(!changes.length){
+      const text=input?.value||'';
+
+      if(!text.trim()){
         showAdjustFeedback('「30分短く」「温泉」「公共交通」などで入力してください。');
         return;
       }
-      showAdjustFeedback(`${changes.join('、')}で再提案します。`);
-      await buildPlans();
+
+      const before=run.textContent;
+      run.disabled=true;
+      run.textContent='AI解析中…';
+      showAdjustFeedback('希望を読み取っています…');
+
+      try{
+        const result=await runNaturalLanguageAdjustment(text);
+
+        if(!result.changes.length){
+          showAdjustFeedback('条件を読み取れませんでした。少し言い換えてみてください。');
+          return;
+        }
+
+        const sourceLabel=result.source==='ai'?'AI':'端末内判定';
+        const note=result.note?` ${result.note}`:'';
+        showAdjustFeedback(`${sourceLabel}で「${result.changes.join('、')}」に調整します。${note}`);
+        await buildPlans();
+      }finally{
+        run.disabled=false;
+        run.textContent=before;
+      }
     });
   }
 

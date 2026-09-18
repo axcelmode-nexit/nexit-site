@@ -593,3 +593,25 @@ HTTPS配信時に位置情報/PWAが利用できます。
 Beta1.0では外部AI APIには接続せず、入力意図を端末内のルールで既存条件へ変換して再検索します。
 条件変更後も、出発地・行き先・帰着先を勝手に別の値へ変更しません（「近場」は明示的に行き先おまかせ＋徒歩へ変更）。
 あわせて、既存のワンタップ再検索で使う移動手段・行き先ボタンのDOMセレクタ不整合を修正しました。
+
+
+## Beta1.0 既存NEXIT AI基盤接続版
+
+コーポレートサイトの採用AIと同じ Cloudflare Pages + Workers AI 基盤を利用します。
+
+追加ファイル:
+- `functions/api/nexitaime-adjust.js`
+
+公開URL:
+- `https://axcelmode-nexit-ai.pages.dev/api/nexitaime-adjust`
+
+NEXITAIME側の `index.html` は上記URLを呼び出す設定済みです。
+
+### デプロイ
+既存の `axcelmode-nexit-ai` Pagesプロジェクトのリポジトリへ
+`functions/api/nexitaime-adjust.js` を追加してデプロイしてください。
+
+既存の `recruit-chat.js` と同じ `env.AI` binding を利用するため、
+同じPagesプロジェクトなら新しいAIキー設定は不要です。
+
+AIが失敗・タイムアウトした場合、NEXITAIME側は従来の端末内ルールへ自動フォールバックします。
