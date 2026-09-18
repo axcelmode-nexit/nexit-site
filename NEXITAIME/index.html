@@ -1029,6 +1029,37 @@ main{
 }
 </style>
 
+
+<style id="recommendation-upgrade">
+.recommend-badges{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 10px}
+.recommend-badge{display:inline-flex;align-items:center;min-height:28px;padding:4px 9px;border-radius:999px;font-size:11px;font-weight:900;border:1px solid #dbe6ef;background:#f7fafc;color:#49627b}
+.recommend-badge.primary{background:#eaf8ff;border-color:#9edcff;color:#2e6e94}
+.recommend-badge.event{background:#fff1f6;border-color:#ffc2d6;color:#9d3a61}
+.recommend-badge.weather{background:#eef7ff;border-color:#b8dcff;color:#356f9b}
+.recommend-badge.cost{background:#eefbf2;border-color:#b9e8c6;color:#377548}
+.recommend-badge.fit{background:#fff7e7;border-color:#f4d9a0;color:#7e5b17}
+.recommend-badge.time{background:#f3f1ff;border-color:#d4ccff;color:#5a4d9a}
+
+.event-info{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:5px 0 8px;padding:8px 10px;border-radius:12px;background:#fff8fb;border:1px solid #ffe1ec;font-size:11px;color:#6f5260}
+.event-info strong{color:#a03964}
+.event-info span{font-weight:800}
+
+.plan-schedule{margin:12px 0;border:1px solid #e1e8ef;border-radius:16px;padding:12px;background:#fbfdff}
+.plan-schedule-title{font-size:13px;font-weight:950;color:#193d63;margin-bottom:7px}
+.schedule-row{display:grid;grid-template-columns:28px 1fr auto;gap:9px;align-items:center;padding:8px 0;border-top:1px dashed #e3e9ef}
+.schedule-row:first-of-type{border-top:0}
+.schedule-dot{width:24px;height:24px;border-radius:999px;display:grid;place-items:center;background:#e8f6ff;color:#306d93;font-size:11px;font-weight:950}
+.schedule-main{display:flex;flex-direction:column;gap:2px;min-width:0}
+.schedule-main strong{font-size:12px;color:#253f5c}
+.schedule-main span{font-size:10px;color:#8190a1}
+.schedule-time{font-size:12px;font-weight:950;color:#294d70;white-space:nowrap}
+
+@media(max-width:520px){
+  .schedule-row{grid-template-columns:26px 1fr auto;gap:7px}
+  .schedule-time{font-size:11px}
+}
+</style>
+
 </head>
 <body>
 <div class="app">
@@ -2534,6 +2565,112 @@ function companionReason(ev){
   return '';
 }
 
+function eventTimingMeta(ev, when=planningDate||new Date()){
+  if(!ev || !ev.start_date) return null;
+  const y=when.getFullYear(), mo=String(when.getMonth()+1).padStart(2,'0'), d=String(when.getDate()).padStart(2,'0');
+  const today=`${y}-${mo}-${d}`;
+  const sameDay=ev.start_date===today && (!ev.end_date || ev.end_date===today);
+
+  let label='';
+  let score=0;
+  if(ev.start_date===today){
+    label=sameDay?'今日開催':'開催中';
+    score=sameDay?20:12;
+  }else if(ev.start_date<today && (!ev.end_date || ev.end_date>=today)){
+    label='期間限定';
+    score=8;
+  }
+
+  if(ev.start_time && ev.start_date===today){
+    const nowMin=when.getHours()*60+when.getMinutes();
+    const startMin=mins(ev.start_time);
+    const diff=startMin-nowMin;
+    if(diff>=0 && diff<=90){
+      label='まもなく開始';
+      score=Math.max(score,24);
+    }else if(diff<0 && (!ev.end_time || nowMin<=mins(ev.end_time))){
+      label='開催中';
+      score=Math.max(score,22);
+    }
+  }
+  return label?{label,score}:null;
+}
+
+function recommendationBadges(plan, idx){
+  const badges=[];
+  const ev=plan.ev||{};
+  const timing=eventTimingMeta(ev);
+
+  if(idx===0) badges.push({label:'✨ おすすめ',kind:'primary'});
+  if(timing) badges.push({label:`🎪 ${timing.label}`,kind:'event'});
+
+  if(plan.weatherReason && /雨|雪/.test(plan.weatherReason) && ev.indoor===true){
+    badges.push({label:'☔ 天気でも安心',kind:'weather'});
+  }
+
+  const total=totalPlanCost(plan);
+  if(total!=null && total<=1000){
+    badges.push({label:'💰 コスパ良',kind:'cost'});
+  }
+
+  if(companion==='family' && (ev.family_friendly===true || (ev.categories||[]).includes('家族') || (ev.categories||[]).includes('子ども'))){
+    badges.push({label:'👨‍👩‍👧 家族向け',kind:'fit'});
+  }else if(companion==='group'){
+    badges.push({label:'👥 グループ向け',kind:'fit'});
+  }else if(companion==='couple' && ev.couple_friendly!==false){
+    badges.push({label:'💑 カップル向け',kind:'fit'});
+  }else if(companion==='solo' && ev.solo_friendly!==false){
+    badges.push({label:'🙂 ひとり向け',kind:'fit'});
+  }
+
+  if(Number.isFinite(plan.stay) && plan.stay>=60){
+    badges.push({label:'⏱️ しっかり楽しめる',kind:'time'});
+  }else if(Number.isFinite(plan.stay) && plan.stay>=30){
+    badges.push({label:'⏱️ 今の空き時間に◎',kind:'time'});
+  }
+
+  return badges.slice(0,4);
+}
+
+function renderRecommendationBadges(plan, idx){
+  const rows=recommendationBadges(plan,idx);
+  if(!rows.length) return '';
+  return `<div class="recommend-badges">${rows.map(b=>`<span class="recommend-badge ${b.kind}">${b.label}</span>`).join('')}</div>`;
+}
+
+function eventInfoHtml(ev){
+  if(!ev) return '';
+  const timing=eventTimingMeta(ev);
+  const dates=[];
+  if(ev.start_date){
+    const s=ev.start_date.replaceAll('-','/');
+    const e=ev.end_date && ev.end_date!==ev.start_date ? `〜${ev.end_date.replaceAll('-','/')}` : '';
+    dates.push(`${s}${e}`);
+  }
+  if(ev.start_time || ev.end_time){
+    dates.push(`${ev.start_time||''}${ev.end_time?`〜${ev.end_time}`:''}`);
+  }
+  if(!timing && !dates.length) return '';
+  return `<div class="event-info">${timing?`<strong>🎪 ${timing.label}</strong>`:''}${dates.length?`<span>${dates.join(' ・ ')}</span>`:''}</div>`;
+}
+
+function renderPlanSchedule(plan, ctx){
+  const from=ctx?.origin||origin;
+  const back=plan.returnTo||ctx?.returnTo||resolvedReturnStation(ctx);
+  const outDep=plan.out?.[from]||'';
+  const outArr=plan.out?.[plan.dest]||'';
+  const backDep=plan.back?.[plan.dest]||'';
+  const backArr=plan.back?.[back]||'';
+  const rows=[
+    {icon:'🚩',title:`${from}を出発`,time:outDep,sub:plan.modeLabel||''},
+    {icon:'📍',title:plan.ev?.venue||plan.ev?.title||plan.dest,time:outArr,sub:`滞在 約${plan.stay}分`},
+    {icon:'↩️',title:'帰路へ',time:backDep,sub:plan.modeLabel||''},
+    {icon:'🏁',title:`${back}に到着`,time:backArr,sub:`帰着後の余裕 約${Math.max(0,(plan.spare||0)+buffer)}分`}
+  ];
+  return `<div class="plan-schedule"><div class="plan-schedule-title">🗓️ おすすめプラン</div>${rows.map((r,i)=>`<div class="schedule-row"><div class="schedule-dot">${i+1}</div><div class="schedule-main"><strong>${r.icon} ${esc(r.title)}</strong>${r.sub?`<span>${esc(r.sub)}</span>`:''}</div><div class="schedule-time">${esc(r.time)}</div></div>`).join('')}</div>`;
+}
+
+
 function costLabel(ev){
   if(ev.estimated_cost_yen==null) return '料金要確認';
   return ev.estimated_cost_yen===0?'無料候補':`目安 ¥${Number(ev.estimated_cost_yen).toLocaleString()}`;
@@ -2717,6 +2854,14 @@ const FLEX_ACTIVITIES=[
   }
 ];
 
+function startDateForScoring(start){
+  const d=new Date(planningDate||new Date());
+  if(Number.isFinite(start)){
+    d.setHours(Math.floor(start/60),start%60,0,0);
+  }
+  return d;
+}
+
 async function scoreEventSet(events, modes, start, deadline, ctx){
   let rows=[];
   for(const ev of events){
@@ -2728,7 +2873,9 @@ async function scoreEventSet(events, modes, start, deadline, ctx){
         const wa=weatherAdjustment(ev);
         c.weatherScore=wa.score;
         c.weatherReason=wa.reason;
-        c.preferenceScore=wa.score + (companion==='any'?0:12) + (budget==='any'?0:8);
+        const timing=eventTimingMeta(ev,startDateForScoring(start));
+        c.eventTiming=timing;
+        c.preferenceScore=wa.score + (timing?.score||0) + (companion==='any'?0:12) + (budget==='any'?0:8);
         rows.push(c);
       }
     }
@@ -2870,6 +3017,9 @@ async function buildPlans(){
 
  box.innerHTML=top.map((p,idx)=>{
    const rank=idx===0&&transport==='auto'?'<span class="status">おすすめ</span>':'<span class="status">間に合う</span>';
+   const recommendationHtml=renderRecommendationBadges(p,idx);
+   const eventInfo=eventInfoHtml(p.ev);
+   const scheduleHtml=renderPlanSchedule(p,searchCtx);
    const serviceNote=p.service?`<div class="note">利用候補：${esc(p.service.name)}${p.accessMinutes?`（拠点まで徒歩 約${p.accessMinutes}分）`:''}</div>`:'';
    const itineraryHtml=renderSimpleItinerary(p.itinerary);
    const totalCost=totalPlanCost(p);
@@ -2885,8 +3035,10 @@ async function buildPlans(){
    const routeStopChips=stopsForPlan.map((s,i)=>`<span class="route-stop-chip">${i+1}. ${esc(s.name)}</span>`).join('');
    return `<div class="plan">${p.multimodal?`<div class="multimodal-badge">🔀 おまかせ複合移動：公共交通＋${esc(MODE_LABELS[p.lastMode]||p.lastMode)}</div>`:''}
      ${rank}
+     ${recommendationHtml}
      <div class="meta" style="font-weight:900;margin-bottom:6px">${p.modeIcon||''} ${esc(p.modeLabel||'')}</div>
      <h3>${esc(p.ev.title)}</h3>
+     ${eventInfo}
      <div class="meta">📍 ${esc(p.ev.area_name)} · ${esc(p.ev.venue||'')}</div>
      <p>${esc(p.ev.summary||'')}</p>
      <div class="note" style="margin-bottom:6px"><strong>この案の理由：</strong>${esc([p.reason,p.weatherReason,companionReason(p.ev)].filter(Boolean).join('・')||'時間内に収まるため')}</div>
@@ -2894,7 +3046,9 @@ async function buildPlans(){
      ${hoursHtml}
      ${transportCostHtml}
      ${totalCostHtml}
-     ${serviceNote}${itineraryHtml}
+     ${serviceNote}
+     ${scheduleHtml}
+     ${itineraryHtml}
      <div class="plan-map-wrap">
        <div id="${routeMapId}" class="plan-map"></div>
        <div class="route-stop-list">${routeStopChips}</div>

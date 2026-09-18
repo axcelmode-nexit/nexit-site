@@ -1,4 +1,4 @@
-const CACHE='nexitaime-beta1-0-cta-reword';
+const CACHE='nexitaime-beta1-0-recommendation-upgrade';
 const ASSETS=[
   './',
   './index.html',
