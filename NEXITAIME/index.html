@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>NEXITAIME 〜上越版〜 v29</title>
+<title>NEXITAIME 〜上越版〜 v30</title>
 <style>
 :root{--ink:#26364b;--muted:#75859a;--line:#e7edf2;--red:#e53935;--sky:#59c7ff;--violet:#7d8dff}
 *{box-sizing:border-box}html,body{margin:0;background:linear-gradient(180deg,#fffdf8,#f6fbff);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans","Noto Sans JP",sans-serif;color:var(--ink)}
@@ -164,7 +164,7 @@ body{
 </style>
 
 
-<style id="v29-clean-hero">
+<style id="v30-clean-hero">
 body{
   background:linear-gradient(180deg,#f4faff 0%,#fff 52%,#f8fbff 100%) !important;
   background-image:none !important;
@@ -311,7 +311,7 @@ main{
 }
 </style>
 
-<style id="v29-auto-compare">
+<style id="v30-auto-compare">
 #summary h2{margin-bottom:6px}
 .plan .status{display:inline-block;margin-bottom:8px}
 </style>
@@ -319,7 +319,7 @@ main{
 <meta name="theme-color" content="#15314f">
 
 
-<style id="v29-version-cleanup">
+<style id="v30-version-cleanup">
 .version-badge,
 .edition-badge,
 .header-version,
@@ -329,7 +329,7 @@ main{
 </style>
 
 
-<style id="v29-location-unified">
+<style id="v30-location-unified">
 .unified-location-tools{
   margin:14px 0 16px;
 }
@@ -344,7 +344,7 @@ main{
 </style>
 
 
-<style id="v29-location-ui">
+<style id="v30-location-ui">
 .location-card{
   padding:24px 26px !important;
 }
@@ -439,7 +439,7 @@ main{
 <link rel="icon" href="./assets/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="./assets/apple-touch-icon.png">
 
-<style id="v29-hero-title-fix">
+<style id="v30-hero-title-fix">
 /* Desktop/tablet: keep the main headline on one line */
 @media (min-width: 701px){
   .hero-content{
@@ -466,6 +466,86 @@ main{
     text-wrap:balance;
     font-size:42px !important;
     line-height:1.05 !important;
+  }
+}
+</style>
+
+
+<style id="v30-no-horizontal-scroll">
+/* All option groups should be visible without horizontal swiping */
+.chips,
+.chips.wrap,
+#origins,
+#destinations,
+#returns,
+#moods,
+#transports {
+  display:flex !important;
+  flex-wrap:wrap !important;
+  overflow-x:visible !important;
+  overflow-y:visible !important;
+  white-space:normal !important;
+  gap:10px !important;
+  scrollbar-width:none;
+  -webkit-overflow-scrolling:auto !important;
+}
+
+.chips::-webkit-scrollbar,
+#origins::-webkit-scrollbar,
+#destinations::-webkit-scrollbar,
+#returns::-webkit-scrollbar,
+#moods::-webkit-scrollbar,
+#transports::-webkit-scrollbar {
+  display:none !important;
+}
+
+.chips .chip,
+#origins .chip,
+#destinations .chip,
+#returns .chip,
+#moods .chip,
+#transports .chip {
+  flex:0 0 auto !important;
+  min-width:0 !important;
+  max-width:100% !important;
+}
+
+/* Mobile: make choices easy to scan at a glance */
+@media (max-width:700px){
+  #origins .chip,
+  #destinations .chip,
+  #returns .chip,
+  #moods .chip {
+    flex:1 1 calc(50% - 10px) !important;
+    justify-content:center;
+    text-align:center;
+    min-height:46px;
+  }
+
+  #transports .chip {
+    flex:1 1 calc(50% - 10px) !important;
+    justify-content:center;
+    text-align:center;
+    min-height:50px;
+  }
+
+  /* "おまかせ" can span full width for clarity */
+  #destinations .chip[data-dest="any"],
+  #moods .chip[data-mood="any"],
+  #transports .chip[data-transport="auto"],
+  #returns .chip[data-return="same"] {
+    flex-basis:100% !important;
+  }
+}
+
+/* Desktop/tablet: wrap naturally, no carousel behavior */
+@media (min-width:701px){
+  #origins .chip,
+  #destinations .chip,
+  #returns .chip,
+  #moods .chip,
+  #transports .chip {
+    flex:0 1 auto !important;
   }
 }
 </style>
@@ -639,7 +719,7 @@ main{
 <div class="note">鉄道は妙高はねうまライン公開時刻表を利用。バスは上越大通り線・佐渡汽船連絡バス・教育大学線・春日山／佐内線・山麓線の主要区間をアプリ内判定します。運休・遅延・臨時変更は上の公式運行情報を優先してください。イベントは events_auto.json があれば自動更新データを優先します。</div>
 </section>
 
-<footer>NEXITAIME 〜上越版〜 · Powered by AXCEL MODE NEXIT · v29</footer>
+<footer>NEXITAIME 〜上越版〜 · Powered by AXCEL MODE NEXIT · v30</footer>
 </div>
 <div class="sticky"><div class="inner"><button id="go" class="primary">今から行けるプランを出す ✨</button></div></div>
 
