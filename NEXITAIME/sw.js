@@ -1,4 +1,4 @@
-const CACHE='nexitaime-v36';
+const CACHE='nexitaime-beta1-0-weather-walk-bike';
 const ASSETS=[
   './',
   './index.html',

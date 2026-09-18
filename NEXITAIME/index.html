@@ -778,6 +778,18 @@ main{
 }
 </style>
 
+
+<style id="beta10-results-scroll">
+#summary{
+  scroll-margin-top:18px;
+}
+@media (max-width:700px){
+  #summary{
+    scroll-margin-top:16px;
+  }
+}
+</style>
+
 </head>
 <body>
 <div class="app">
@@ -1483,15 +1495,17 @@ async function getModeService(mode){
   return {service,access};
 }
 
-function resolvedReturnStation(){
+function resolvedReturnStation(ctx=null){
+  if(ctx) return ctx.returnTo;
   return returnTarget==='same' ? origin : returnTarget;
 }
 
-function returnModeAllowed(mode){
-  const backTo=resolvedReturnStation();
+function returnModeAllowed(mode,ctx=null){
+  const backTo=resolvedReturnStation(ctx);
+  const from=ctx?.origin || origin;
   // Carshare and rental bicycle generally require return to the original station.
   // Without verified one-way availability, do not propose them for a different return point.
-  if(backTo!==origin && ['carshare','bike'].includes(mode)) return false;
+  if(backTo!==from && ['carshare','bike'].includes(mode)) return false;
   return true;
 }
 
@@ -1508,11 +1522,12 @@ function reasonForMode(mode,service){
   return '時間内に収まる案';
 }
 
-async function evaluateDirectMode(ev,dest,mode,start,deadline){
-  const backTo=resolvedReturnStation();
-  if(!returnModeAllowed(mode))return null;
+async function evaluateDirectMode(ev,dest,mode,start,deadline,ctx){
+  const from=ctx.origin;
+  const backTo=ctx.returnTo;
+  if(!returnModeAllowed(mode,ctx))return null;
 
-  const oneWay=await routeMinutes(mode,origin,dest);
+  const oneWay=await routeMinutes(mode,from,dest);
   const backWay=await routeMinutes(mode,dest,backTo);
   if(oneWay==null || backWay==null)return null;
 
@@ -1536,11 +1551,11 @@ async function evaluateDirectMode(ev,dest,mode,start,deadline){
   const service=svc?.service||null;
 
   let modeReason=reasonForMode(mode,service);
-  if(backTo!==origin && mode==='rentalcar') modeReason += '（乗り捨て可否・料金は要確認）';
+  if(backTo!==from && mode==='rentalcar') modeReason += '（乗り捨て可否・料金は要確認）';
 
   return {
     ev,dest,returnTo:backTo,mode,modeLabel:MODE_LABELS[mode],modeIcon:MODE_ICONS[mode],
-    out:{n:MODE_LABELS[mode]+(access?`（拠点まで徒歩${access}分）`:''),kind:mode,dep:start,arr:rawArrive,[origin]:fmt(start),[dest]:fmt(rawArrive)},
+    out:{n:MODE_LABELS[mode]+(access?`（拠点まで徒歩${access}分）`:''),kind:mode,dep:start,arr:rawArrive,[from]:fmt(start),[dest]:fmt(rawArrive)},
     back:{n:MODE_LABELS[mode],kind:mode,dep:backDep,arr:finish,[dest]:fmt(backDep),[backTo]:fmt(finish)},
     arrive,finish,spare:deadline-finish,stay,feasible:true,accessMinutes:access,service,
     reason:modeReason
@@ -1560,9 +1575,10 @@ function findBestTransitReturn(a,b,earliest,deadline,eventEnd,mode){
   return best;
 }
 
-async function evaluateTransitMode(ev,dest,mode,start,deadline){
-  const backTo=resolvedReturnStation();
-  const out=chooseTransportMode(origin,dest,start,mode);
+async function evaluateTransitMode(ev,dest,mode,start,deadline,ctx){
+  const from=ctx.origin;
+  const backTo=ctx.returnTo;
+  const out=chooseTransportMode(from,dest,start,mode);
   if(!out)return null;
 
   const eventStart=ev.start_time?mins(ev.start_time):null;
@@ -1590,9 +1606,9 @@ async function evaluateTransitMode(ev,dest,mode,start,deadline){
   };
 }
 
-async function evaluateMode(ev,dest,mode,start,deadline){
-  if(['train','bus','public'].includes(mode))return evaluateTransitMode(ev,dest,mode,start,deadline);
-  return evaluateDirectMode(ev,dest,mode,start,deadline);
+async function evaluateMode(ev,dest,mode,start,deadline,ctx){
+  if(['train','bus','public'].includes(mode))return evaluateTransitMode(ev,dest,mode,start,deadline,ctx);
+  return evaluateDirectMode(ev,dest,mode,start,deadline,ctx);
 }
 
 function dedupeCandidates(rows){
@@ -1690,13 +1706,13 @@ const FLEX_ACTIVITIES=[
   }
 ];
 
-async function scoreEventSet(events, modes, start, deadline){
+async function scoreEventSet(events, modes, start, deadline, ctx){
   let rows=[];
   for(const ev of events){
     const dest=areaStation[ev.area];
     if(!dest)continue;
     for(const mode of modes){
-      const c=await evaluateMode(ev,dest,mode,start,deadline);
+      const c=await evaluateMode(ev,dest,mode,start,deadline,ctx);
       if(c&&c.feasible){
         const wa=weatherAdjustment(ev);
         c.weatherScore=wa.score;
@@ -1741,9 +1757,23 @@ async function buildPlans(){
    box.innerHTML=''; return;
  }
  planningDate=selected;
+
+ // Freeze "from / to / return" at the moment the search starts.
+ // Async route checks must never be affected by later UI state changes.
+ const searchCtx={
+   origin,
+   destination:destinationArea,
+   returnTo:returnTarget==='same' ? origin : returnTarget
+ };
+
  const start=planningDate.getHours()*60+planningDate.getMinutes(), hardEnd=start+free, deadline=hardEnd-buffer;
  summary.innerHTML='<h2>候補を比較中…</h2><p>移動時間・時刻表・戻り余裕を確認しています。</p>';
  box.innerHTML='';
+
+ // 「行けるプランを出す」を押したら結果エリアへ移動
+ requestAnimationFrame(()=>{
+   summary.scrollIntoView({behavior:'smooth', block:'start'});
+ });
 
  let events=EVENTS.filter(ev=>eventIsAvailableAt(ev,planningDate)).filter(budgetAllows).filter(companionAllows);
  if(destinationArea!=='any')events=events.filter(ev=>areaStation[ev.area]===destinationArea);
@@ -1754,11 +1784,11 @@ async function buildPlans(){
  const requestedModes=transport==='auto'?AUTO_MODES:[transport];
 
  // 1) Exact requested conditions
- scored=await scoreEventSet(events,requestedModes,start,deadline);
+ scored=await scoreEventSet(events,requestedModes,start,deadline,searchCtx);
 
  // 2) If no result, keep area/mood but widen transport
  if(!scored.length && transport!=='auto'){
-   scored=await scoreEventSet(events,AUTO_MODES,start,deadline);
+   scored=await scoreEventSet(events,AUTO_MODES,start,deadline,searchCtx);
    if(scored.length) relaxationLevel=1;
  }
 
@@ -1766,51 +1796,52 @@ async function buildPlans(){
  if(!scored.length && mood!=='any'){
    let relaxed=EVENTS.filter(ev=>eventIsAvailableAt(ev,planningDate)).filter(budgetAllows).filter(companionAllows);
    if(destinationArea!=='any') relaxed=relaxed.filter(ev=>areaStation[ev.area]===destinationArea);
-   scored=await scoreEventSet(relaxed,AUTO_MODES,start,deadline);
+   scored=await scoreEventSet(relaxed,AUTO_MODES,start,deadline,searchCtx);
    if(scored.length) relaxationLevel=2;
  }
 
- // 4) If still none, relax destination too
+ // 4) Never change a user-specified destination area.
+ // If no event fits, only use flexible activities IN THAT SAME destination area.
  if(!scored.length){
-   let relaxed=EVENTS.filter(ev=>eventIsAvailableAt(ev,planningDate)).filter(budgetAllows).filter(companionAllows);
-   scored=await scoreEventSet(relaxed,AUTO_MODES,start,deadline);
+   let flex=FLEX_ACTIVITIES.filter(budgetAllows).filter(companionAllows);
+   if(searchCtx.destination!=='any'){
+     flex=flex.filter(ev=>areaStation[ev.area]===searchCtx.destination);
+   }
+   scored=await scoreEventSet(flex,['walk','privatecar','taxi','bike'],start,deadline,searchCtx);
    if(scored.length) relaxationLevel=3;
  }
 
- // 5) Final safety net: flexible activities, so the app never ends with zero ideas
- if(!scored.length){
-   let flex=FLEX_ACTIVITIES.filter(budgetAllows).filter(companionAllows);
-   if(destinationArea!=='any'){
-     const exact=flex.filter(ev=>areaStation[ev.area]===destinationArea);
-     if(exact.length) flex=exact;
-   }
-   scored=await scoreEventSet(flex,['walk','car','taxi','bike'],start,deadline);
-   if(scored.length) relaxationLevel=4;
- }
-
  scored=sortCandidates(scored);
- const top=scored.slice(0,3);
+ // Same event/place shown with different transport is one plan, not multiple plans.
+ const uniquePlans=[];
+ const seenPlan=new Set();
+ for(const row of scored){
+   const key=row.ev.id||`${row.ev.title}|${row.ev.venue||''}`;
+   if(seenPlan.has(key)) continue;
+   seenPlan.add(key);
+   uniquePlans.push(row);
+ }
+ const top=uniquePlans.slice(0,3);
 
  if(!top.length){
-   summary.innerHTML='<h2>近場でできることを探しています</h2><p>戻り先・空き時間・移動手段を少し変えると、さらに候補を広げられます。</p>';
-   box.innerHTML='<div class="plan"><h3>まずは現在地を確認してみてください</h3><p>GPSを使うと、近いエリアから候補を探し直せます。</p></div>';
+   summary.innerHTML=`<h2>この条件では時間内に往復できる候補がありません</h2><p><strong>${searchCtx.origin} → ${searchCtx.destination==='any'?'上越全体':searchCtx.destination} → ${searchCtx.returnTo}</strong><br>場所は勝手に変更していません。空き時間・移動手段・日時を変えると候補が増える可能性があります。</p>`;
+   box.innerHTML='<div class="plan"><h3>条件を少し調整してください</h3><p>行き先を変更する場合は、上の「行きたいエリア」から明示的に選び直してください。</p></div>';
    return;
  }
 
+ const routeSummary=`${searchCtx.origin} → ${searchCtx.destination==='any'?'上越全体':searchCtx.destination} → ${searchCtx.returnTo}`;
  if(relaxationLevel===0){
    if(transport==='auto'){
-     summary.innerHTML=`<h2>今の条件で${top.length}案あります</h2><p>${origin}から${destinationArea==='any'?'上越全体':destinationArea+'エリア'}を対象に、${resolvedReturnStation()}へ戻る条件で比較。${planStartLabel()}出発・空き時間${free}分・帰着後の余裕${buffer}分を確保します。</p>`;
+     summary.innerHTML=`<h2>今の条件で${top.length}案あります</h2><p><strong>${routeSummary}</strong><br>${planStartLabel()}出発・空き時間${free}分・帰着後の余裕${buffer}分を確保します。</p>`;
    }else{
-     summary.innerHTML=`<h2>${MODE_LABELS[transport]||transport}で${top.length}案あります</h2><p>${origin}から${destinationArea==='any'?'上越全体':destinationArea+'エリア'}を対象に判定しました。</p>`;
+     summary.innerHTML=`<h2>${MODE_LABELS[transport]||transport}で${top.length}案あります</h2><p><strong>${routeSummary}</strong><br>指定した出発地・行き先・帰着先を固定して判定しました。</p>`;
    }
  }else if(relaxationLevel===1){
-   summary.innerHTML=`<h2>移動手段を少し広げると${top.length}案あります</h2><p>指定した条件はそのままに、他の移動手段も含めて「その時間から行ける」を探しました。</p>`;
+   summary.innerHTML=`<h2>移動手段を広げると${top.length}案あります</h2><p><strong>${routeSummary}</strong><br>場所は変えず、他の移動手段だけを比較しました。</p>`;
  }else if(relaxationLevel===2){
-   summary.innerHTML=`<h2>気分を少し広げると${top.length}案あります</h2><p>時間内に行って戻れる候補を優先して提案しています。</p>`;
- }else if(relaxationLevel===3){
-   summary.innerHTML=`<h2>エリアを少し広げると${top.length}案あります</h2><p>指定した時間内で現実的に往復できる候補を、上越全体から探しました。</p>`;
+   summary.innerHTML=`<h2>気分条件を広げると${top.length}案あります</h2><p><strong>${routeSummary}</strong><br>出発地・行き先・帰着先はそのままです。</p>`;
  }else{
-   summary.innerHTML=`<h2>イベント以外にも、その時間からできることがあります</h2><p>条件に合うイベントが少ないため、散歩・景色・駅周辺など、時間調整しやすい候補を出しています。</p>`;
+   summary.innerHTML=`<h2>そのエリアでできることを${top.length}案見つけました</h2><p><strong>${routeSummary}</strong><br>指定エリアは変えず、時間調整しやすい候補を提案しています。</p>`;
  }
 
  box.innerHTML=top.map((p,idx)=>{
@@ -1825,11 +1856,11 @@ async function buildPlans(){
      <div class="note" style="margin-bottom:6px"><strong>この案の理由：</strong>${esc([p.reason,p.weatherReason,companionReason(p.ev)].filter(Boolean).join('・')||'時間内に収まるため')}</div><div class="meta">💴 ${esc(costLabel(p.ev))}${p.ev.indoor?' · 🏠 屋内':''}</div>
      ${serviceNote}
      <div class="timeline">
-       <div class="leg"><div>行き</div><div><strong>${p.modeIcon||''} ${esc(p.out.n)}</strong><br>${origin} → ${p.dest}</div><div>${p.out[origin]} → ${p.out[p.dest]}</div></div>
+       <div class="leg"><div>行き</div><div><strong>${p.modeIcon||''} ${esc(p.out.n)}</strong><br>${searchCtx.origin} → ${p.dest}</div><div>${p.out[searchCtx.origin]} → ${p.out[p.dest]}</div></div>
        <div class="leg"><div>滞在</div><div><strong>${p.dest}周辺</strong></div><div>約${p.stay}分</div></div>
        <div class="leg"><div>帰り</div><div><strong>${p.modeIcon||''} ${esc(p.back.n)}</strong><br>${p.dest} → ${p.returnTo||origin}</div><div>${p.back[p.dest]} → ${p.back[p.returnTo||origin]}</div></div>
      </div>
-     <div class="meta" style="margin-top:8px">帰着先：${esc(p.returnTo||origin)} ／ 帰着後の余裕：${Math.max(0,p.spare+buffer)}分</div>
+     <div class="meta" style="margin-top:8px">ルート：${esc(searchCtx.origin)} → ${esc(p.dest)} → ${esc(p.returnTo||searchCtx.returnTo)}<br>帰着後の余裕：${Math.max(0,p.spare+buffer)}分</div>
      <div class="links"><a href="${p.ev.url}" target="_blank" rel="noopener">イベント詳細を見る</a></div>
    </div>`;
  }).join('');
