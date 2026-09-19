@@ -4419,11 +4419,12 @@ async function fetchHotPepperRestaurants(){
   try{
     const qs=new URLSearchParams({
       destination:destinationArea||'any',
+      origin:origin||'上越妙高',
       mood:mood||'food',
-      kind:(mood==='food' ? (foodKind||'any') : 'カフェ')
+      kind:(mood==='food' ? (foodKind||'ラーメン') : 'カフェ')
     });
     const controller=new AbortController();
-    const timer=setTimeout(()=>controller.abort(),1800);
+    const timer=setTimeout(()=>controller.abort(),1400);
     const res=await fetch(`${endpoint}?${qs.toString()}`,{signal:controller.signal,headers:{Accept:'application/json'}});
     clearTimeout(timer);
     if(!res.ok)return [];
