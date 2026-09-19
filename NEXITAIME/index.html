@@ -1947,7 +1947,7 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
 </section>
 
 <div class="hotpepper-credit">Powered by <a href="https://webservice.recruit.co.jp/" target="_blank" rel="noopener">ホットペッパーグルメ Webサービス</a></div>
-<footer data-build="v42">NEXITAIME 〜上越版〜 · Powered by 
+<footer data-build="v43">NEXITAIME 〜上越版〜 · Powered by 
 <a href="https://axcelmode-nexit.jp/" target="_blank" rel="noopener">AXCEL MODE NEXIT</a> · Beta1.0
 <section class="operator-card" aria-label="運営会社">
   <div class="operator-card-inner">
@@ -2587,12 +2587,18 @@ function routeMinutesCoordsFast(mode,pa,pb){
   return Math.max(5,Math.ceil(min/5)*5);
 }
 
-function routePointForEvent(ev,dest){
+function exactPointForEvent(ev){
   const lat=Number(ev?.lat), lon=Number(ev?.lng ?? ev?.lon);
   if(Number.isFinite(lat) && Number.isFinite(lon)) return {lat,lon};
+
   const venue=ev?.venue;
   if(venue && SPOT_COORDS?.[venue]) return SPOT_COORDS[venue];
-  return PLACES?.[dest]||null;
+
+  return null;
+}
+
+function routePointForEvent(ev,dest){
+  return exactPointForEvent(ev) || PLACES?.[dest] || null;
 }
 
 async function routeMinutes(mode,a,b){
@@ -3533,10 +3539,12 @@ const MAX_PUBLIC_LAST_MILE_WALK_MIN=25;
 
 function publicLastMileForEvent(ev,dest){
   const stationPoint=PLACES?.[dest]||null;
-  const venuePoint=routePointForEvent(ev,dest);
+  const venuePoint=exactPointForEvent(ev);
+
+  // If the venue has no exact coordinate, do not pretend it is located at the station.
   if(!stationPoint || !venuePoint){
     return {
-      mode:'walk',minutes:0,km:0,label:'徒歩',
+      mode:'walk',minutes:null,km:null,label:'徒歩',
       station:dest,venue:ev?.venue||ev?.title||dest,known:false
     };
   }
@@ -3556,7 +3564,7 @@ function publicLastMileForEvent(ev,dest){
 }
 
 function publicAccessStationCandidates(ev,fallbackDest){
-  const venuePoint=routePointForEvent(ev,fallbackDest);
+  const venuePoint=exactPointForEvent(ev);
   const rows=[];
   const seen=new Set();
 
@@ -3603,7 +3611,10 @@ async function evaluateTransitAtStation(ev,dest,mode,start,deadline,ctx){
 
   const lastMile=publicLastMileForEvent(ev,dest);
 
-  if(lastMile.known && lastMile.minutes>MAX_PUBLIC_LAST_MILE_WALK_MIN)return null;
+  // Public-transit recommendations require a known station-to-venue leg.
+  // Unknown venue coordinates must not become a fictitious 0-minute walk.
+  if(!lastMile.known)return null;
+  if(lastMile.minutes>MAX_PUBLIC_LAST_MILE_WALK_MIN)return null;
 
   const eventStart=ev.start_time?mins(ev.start_time):null;
   const eventEnd=ev.end_time?mins(ev.end_time):null;
@@ -5096,7 +5107,7 @@ function renderTransitGuide(plan,ctx){
   }else{
     addTransitLeg(plan.out,ctx.origin,plan.dest);
 
-    if(plan.lastMile?.minutes){
+    if(Number.isFinite(plan.lastMile?.minutes) && plan.lastMile.minutes>0){
       rows.push({
         type:'lastmile',
         from:plan.dest,
@@ -5222,6 +5233,10 @@ function finalPlanGuard(plan,ctx,start,deadline){
   }
 
   if(['public','train','bus'].includes(plan?.mode)){
+    if(plan?.lastMile?.known===false || plan?.lastMile?.minutes==null){
+      reasons.push('駅から目的地までの距離情報が未確認');
+    }
+
     const outReal=plan?.out?.n!=='徒歩圏' && plan?.out?.lineName!=='徒歩圏';
     const backReal=plan?.back?.n!=='徒歩圏' && plan?.back?.lineName!=='徒歩圏';
     if(!outReal && !backReal){
