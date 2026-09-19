@@ -1956,7 +1956,7 @@ const GAS_PRICE_YEN_PER_L=180;      // conservative reference, not a live price
 const REAL_WORLD_KM_PER_L=9;         // short-trip / city-driving assumption
 const SHORT_TRIP_FUEL_ALLOWANCE_YEN=100; // warm-up / idling / detour allowance
 
-let EVENTS=[], RESTAURANTS=[], TRAIN={up:[],down:[]}, SHINANO={up:[],down:[]}, BUS={trips:[]}, BUS_MAIN={weekday:{},holiday:{}}, BUS_EXT={routes:[]}, PLACES={}, MOBILITY=[], origin='上越妙高', destinationArea='any', returnTarget='same', timingMode='now', planningDate=new Date(), mood='any', foodKind='ラーメン', onsenKind='温泉', sightseeingKind='歴史・文化', activeKind='散歩・ウォーキング', transport='auto', budget='any', companion='any', currentPos=null, weather=null, mobilityMap=null, mobilityMarkers=[], currentPosMarker=null, nearestService=null;
+let EVENTS=[], RESTAURANTS=[], TRAIN={up:[],down:[]}, SHINANO={up:[],down:[]}, BUS={trips:[]}, BUS_MAIN={weekday:{},holiday:{}}, BUS_EXT={routes:[]}, PLACES={}, MOBILITY=[], origin='上越妙高', destinationArea='any', returnTarget='same', timingMode='now', planningDate=new Date(), mood='any', foodKind='ラーメン', onsenKind='温泉', sightseeingKind='歴史・文化', activeKind='散歩・ウォーキング', transport='auto', budget='any', companion='any', currentPos=null, weather=null, weatherForecast=null, mobilityMap=null, mobilityMarkers=[], currentPosMarker=null, nearestService=null;
 
 Promise.all([
  fetch('./events_auto.json',{cache:'no-store'}).then(r=>r.ok?r.json():Promise.reject()).catch(()=>fetch('./events.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>[])),
@@ -2024,7 +2024,14 @@ function sameLocalDay(a,b){
 }
 document.querySelectorAll('#timing .chip').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('#timing .chip').forEach(x=>x.classList.remove('active'));
-  b.classList.add('active'); timingMode=b.dataset.timing; updateTimingUI();
+  b.classList.add('active');
+  timingMode=b.dataset.timing;
+  updateTimingUI();
+  renderWeatherForDate(selectedPlanDate()||new Date());
+});
+
+document.getElementById('customDateTime')?.addEventListener('change',()=>{
+  renderWeatherForDate(selectedPlanDate()||new Date());
 });
 initTimingInputs();
 updateTimingUI();
@@ -2336,22 +2343,72 @@ function weatherState(w){
   return '🌤️ 天気';
 }
 
+function weatherAtDate(target){
+  if(!target)return weather;
+  const hourly=weatherForecast?.hourly;
+  if(!hourly?.time?.length)return sameLocalDay(target,new Date())?weather:null;
+
+  const targetMs=target.getTime();
+  let best=-1, bestGap=Infinity;
+
+  for(let i=0;i<hourly.time.length;i++){
+    const t=new Date(hourly.time[i]);
+    const gap=Math.abs(t.getTime()-targetMs);
+    if(gap<bestGap){
+      bestGap=gap;
+      best=i;
+    }
+  }
+
+  if(best<0 || bestGap>90*60*1000)return null;
+
+  return {
+    temperature_2m:hourly.temperature_2m?.[best],
+    precipitation:hourly.precipitation?.[best],
+    rain:hourly.rain?.[best],
+    snowfall:hourly.snowfall?.[best],
+    weather_code:hourly.weather_code?.[best],
+    time:hourly.time?.[best],
+    forecast:true
+  };
+}
+
+function renderWeatherForDate(target=planningDate||new Date()){
+  const wbox=document.getElementById('weatherBox');
+  if(!wbox)return;
+
+  const w=weatherAtDate(target);
+  if(!w){
+    wbox.textContent='指定日時の天気予報は取得範囲外です。';
+    return;
+  }
+
+  const state=weatherState(w);
+  const temp=Number.isFinite(Number(w.temperature_2m))?`${w.temperature_2m}℃`:'気温不明';
+  const precip=Number.isFinite(Number(w.precipitation))?`${w.precipitation}mm`:'不明';
+  const prefix=sameLocalDay(target,new Date())?'現在':'予報';
+
+  wbox.textContent=`${prefix}：${state} ${temp} ・ 降水 ${precip}`;
+}
+
 async function updateWeatherFor(lat,lon,label=''){
   const wbox=document.getElementById('weatherBox');
   try{
     wbox.textContent='天気を取得中…';
-    const url=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,precipitation,rain,snowfall,weather_code&timezone=Asia%2FTokyo`;
+    const url=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,precipitation,rain,snowfall,weather_code&hourly=temperature_2m,precipitation,rain,snowfall,weather_code&forecast_days=3&timezone=Asia%2FTokyo`;
     const r=await fetch(url);
     const j=await r.json();
+
     weather=j.current||null;
-    if(weather){
-      const state=weatherState(weather);
-      wbox.textContent=`${state} ${weather.temperature_2m}℃ ・ 降水 ${weather.precipitation ?? 0}mm`;
-      renderMobility();
-    }else{
-      wbox.textContent='天気情報を取得できませんでした。';
-    }
+    weatherForecast={
+      current:j.current||null,
+      hourly:j.hourly||null
+    };
+
+    renderWeatherForDate(selectedPlanDate()||new Date());
+    renderMobility();
   }catch(e){
+    weatherForecast=null;
     wbox.textContent='天気取得に失敗しました。プラン判定は続けられます。';
   }
 }
@@ -3702,14 +3759,22 @@ function companionAllows(ev){
 }
 
 function weatherAdjustment(ev){
-  if(!sameLocalDay(planningDate,new Date())) return {score:0,reason:''};
-  if(!weather) return {score:0,reason:''};
-  const rainy=(weather.rain||0)>0 || (weather.precipitation||0)>0;
-  const snowy=(weather.snowfall||0)>0;
+  const w=weatherAtDate(planningDate);
+  if(!w) return {score:0,reason:''};
+
+  const rainy=(Number(w.rain)||0)>0 || (Number(w.precipitation)||0)>0;
+  const snowy=(Number(w.snowfall)||0)>0;
   const indoor=ev.indoor===true || (ev.categories||[]).includes('屋内') || (ev.categories||[]).includes('雨OK');
-  if((rainy||snowy) && indoor) return {score:25,reason:snowy?'雪なので屋内候補を優先':'雨なので屋内候補を優先'};
-  if((rainy||snowy) && !indoor) return {score:-30,reason:snowy?'雪のため屋外候補は優先度低め':'雨のため屋外候補は優先度低め'};
-  if(!rainy && !snowy && !indoor) return {score:8,reason:'天候が落ち着いているので屋外も候補'};
+
+  if((rainy||snowy) && indoor){
+    return {score:25,reason:snowy?'指定時刻は雪予報なので屋内候補を優先':'指定時刻は雨予報なので屋内候補を優先'};
+  }
+  if((rainy||snowy) && !indoor){
+    return {score:-30,reason:snowy?'指定時刻は雪予報のため屋外候補は優先度低め':'指定時刻は雨予報のため屋外候補は優先度低め'};
+  }
+  if(!rainy && !snowy && !indoor){
+    return {score:8,reason:'指定時刻の天気が落ち着いているため屋外も候補'};
+  }
   return {score:0,reason:''};
 }
 
@@ -5638,6 +5703,7 @@ async function buildPlans(){
    box.innerHTML=''; return;
  }
  planningDate=selected;
+ renderWeatherForDate(planningDate);
 
  // Freeze "from / to / return" at the moment the search starts.
  // Async route checks must never be affected by later UI state changes.
