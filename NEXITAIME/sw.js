@@ -1,34 +1,75 @@
-const CACHE='nexitaime-beta1-0-analytics';
-const ASSETS=[
+const CACHE_NAME = 'nexitaime-shell-v11';
+
+const SHELL = [
   './',
   './index.html',
-  './events.json',
-  './train_timetable.json','./north_shinano_timetable.json',
-  './bus_timetable.json',
-  './bus_mainline.json',
-  './bus_extended.json',
-  './places.json',
-  './mobility_services.json','./bus_routes.json',
-  './manifest.json',
-  './assets/favicon.svg',
+  './manifest.webmanifest',
   './assets/favicon-32.png',
+  './assets/favicon-48.png',
   './assets/apple-touch-icon.png',
   './assets/icon-192.png',
   './assets/icon-512.png',
-  './assets/joetsu-hero-clean.png'
+  './assets/joetsu-hero-clean.png',
+  './assets/joetsu-hero.png'
 ];
-self.addEventListener('install',e=>{
-  e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting()));
+
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then(cache => cache.addAll(SHELL))
+      .then(() => self.skipWaiting())
+  );
 });
-self.addEventListener('activate',e=>{
-  e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));
+
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    caches.keys()
+      .then(keys => Promise.all(
+        keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
+      ))
+      .then(() => self.clients.claim())
+  );
 });
-self.addEventListener('fetch',e=>{
-  const u=new URL(e.request.url);
-  if(u.origin!==location.origin) return;
-  e.respondWith(fetch(e.request).then(r=>{
-    const copy=r.clone();
-    caches.open(CACHE).then(c=>c.put(e.request,copy));
-    return r;
-  }).catch(()=>caches.match(e.request)));
+
+function isDataOrPage(request) {
+  const url = new URL(request.url);
+  return request.mode === 'navigate'
+    || url.pathname.endsWith('.json')
+    || url.pathname.endsWith('/index.html')
+    || url.pathname.endsWith('/NEXITAIME/')
+    || url.pathname.endsWith('/NEXITAIME');
+}
+
+self.addEventListener('fetch', event => {
+  const request = event.request;
+  if (request.method !== 'GET') return;
+
+  const url = new URL(request.url);
+
+  // Do not cache API calls or third-party services.
+  if (url.origin !== self.location.origin || url.pathname.includes('/api/')) return;
+
+  if (isDataOrPage(request)) {
+    event.respondWith(
+      fetch(request)
+        .then(response => {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(request, copy));
+          return response;
+        })
+        .catch(() => caches.match(request).then(r => r || caches.match('./index.html')))
+    );
+    return;
+  }
+
+  event.respondWith(
+    caches.match(request).then(cached => {
+      if (cached) return cached;
+      return fetch(request).then(response => {
+        const copy = response.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(request, copy));
+        return response;
+      });
+    })
+  );
 });

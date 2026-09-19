@@ -42,7 +42,6 @@ footer{text-align:center;color:#9aa6b5;font-size:10px;padding:26px 0}
 .nearest-line{font-weight:800;color:#0f172a;margin-top:6px}
 .service-distance{font-size:12px;font-weight:700;color:#475569;margin-top:5px}
 </style>
-<link href="./manifest.json" rel="manifest"/>
 <meta content="#f7fbff" name="theme-color"/>
 <meta content="yes" name="apple-mobile-web-app-capable"/>
 <meta content="default" name="apple-mobile-web-app-status-bar-style"/>
@@ -424,9 +423,6 @@ main{
   }
 }
 </style>
-<link href="./assets/favicon.svg" rel="icon" type="image/svg+xml"/>
-<link href="./assets/favicon-32.png" rel="icon" sizes="32x32" type="image/png"/>
-<link href="./assets/apple-touch-icon.png" rel="apple-touch-icon"/>
 <style id="v37-hero-title-fix">
 /* Desktop/tablet: keep the main headline on one line */
 @media (min-width: 701px){
@@ -1401,6 +1397,15 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
   }
 }
 </style>
+
+<link rel="icon" type="image/png" sizes="32x32" href="./assets/favicon-32.png?v=11">
+<link rel="icon" type="image/png" sizes="48x48" href="./assets/favicon-48.png?v=11">
+<link rel="apple-touch-icon" sizes="180x180" href="./assets/apple-touch-icon.png?v=11">
+<link rel="manifest" href="./manifest.webmanifest?v=11">
+<meta name="theme-color" content="#0b2347">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="NEXITAIME">
 
 </head>
 <body>
@@ -4878,5 +4883,14 @@ document.addEventListener('DOMContentLoaded',()=>{
   try{ renderFavoriteTray(); }catch(_){}
 });
 </script>
+
+<script id="nexitaime-pwa-register">
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js', { scope: './' }).catch(() => {});
+  });
+}
+</script>
+
 </body>
 </html>
