@@ -1422,6 +1422,66 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
 }
 </style>
 
+
+<style id="line-share-green-v14">
+[data-share-action="line"]{
+  background:#06C755 !important;
+  border-color:#06C755 !important;
+  color:#fff !important;
+  box-shadow:0 4px 12px rgba(6,199,85,.18);
+}
+[data-share-action="line"]:hover,
+[data-share-action="line"]:focus-visible{
+  background:#05b94f !important;
+  border-color:#05b94f !important;
+  color:#fff !important;
+}
+[data-share-action="line"]:active{
+  transform:translateY(1px);
+}
+</style>
+
+
+<style id="transit-guide-v15">
+.transit-guide{
+  margin:10px 0 12px;
+  padding:12px;
+  border:1px solid #dbe7ef;
+  border-radius:14px;
+  background:#f8fbfd;
+}
+.transit-guide-title{
+  font-size:11px;
+  font-weight:950;
+  color:#173f66;
+  margin-bottom:8px;
+}
+.transit-guide-row{
+  display:grid;
+  grid-template-columns:24px 1fr;
+  gap:8px;
+  align-items:start;
+}
+.transit-guide-row + .transit-guide-row{margin-top:8px}
+.transit-guide-num{
+  width:22px;height:22px;border-radius:999px;
+  display:grid;place-items:center;
+  background:#173f66;color:#fff;
+  font-size:9px;font-weight:950;
+}
+.transit-guide-main{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  font-size:10px;
+  color:#53697b;
+}
+.transit-guide-main strong{
+  font-size:11px;
+  color:#203f58;
+}
+</style>
+
 </head>
 <body>
 <div class="app">
@@ -4018,6 +4078,40 @@ function startDateForScoring(start){
   return d;
 }
 
+
+function isAllAutoSearch(){
+  return destinationArea==='any' && mood==='any' && transport==='auto';
+}
+
+function nearbyAreasForOrigin(name){
+  const map={
+    '上越妙高':['joetsumyoko','south','takada','itakura','myoko_arai'],
+    '高田':['takada','kasugayama','joetsumyoko','sanwa','kiyosato'],
+    '直江津':['naoetsu','kasugayama','ogata','takada','nadachi'],
+    '妙高高原':['myoko_kogen','myoko_akakura','myoko_arai']
+  };
+  return map[name]||[];
+}
+
+function stagedAutoCandidates(events, ctx){
+  const nearby=new Set(nearbyAreasForOrigin(ctx?.origin||origin));
+  const preferredKinds=new Set(['food','cafe','sightseeing','nature','onsen','active','event']);
+
+  const ranked=(events||[]).map((ev,i)=>{
+    const kind=itineraryCategory(ev);
+    let score=0;
+    if(nearby.has(ev.area)) score+=80;
+    if(preferredKinds.has(kind)) score+=20;
+    if(ev?.provider==='hotpepper') score+=8;
+    if(ev?.always_open) score+=4;
+    return {ev,i,score};
+  }).sort((a,b)=>b.score-a.score || a.i-b.i);
+
+  const first=ranked.slice(0,24).map(x=>x.ev);
+  const rest=ranked.slice(24).map(x=>x.ev);
+  return {first,rest};
+}
+
 async function scoreEventSet(events, modes, start, deadline, ctx){
   let rows=[];
   for(const ev of events){
@@ -4061,6 +4155,70 @@ async function scoreEventSet(events, modes, start, deadline, ctx){
     }
   }
   return dedupeCandidates(rows);
+}
+
+
+function transitLegDetails(leg, fromName, toName){
+  if(!leg)return null;
+  const dep=Number.isFinite(leg.dep)?fmt(leg.dep):(leg[fromName]||'');
+  const arr=Number.isFinite(leg.arr)?fmt(leg.arr):(leg[toName]||'');
+  const kind=leg.kind||'';
+  const line=leg.lineName||leg.n||'公共交通';
+
+  let vehicle='🚉';
+  if(kind==='bus') vehicle='🚌';
+  else if(kind==='train') vehicle='🚃';
+
+  return {
+    from:fromName,
+    to:toName,
+    dep,
+    arr,
+    line,
+    vehicle
+  };
+}
+
+function renderTransitGuide(plan,ctx){
+  const actualOut=plan.out?.kind||plan.mode;
+  const actualBack=plan.back?.kind||plan.mode;
+  const usesTransit=['public','train','bus'].includes(plan.mode) ||
+    ['train','bus'].includes(actualOut) ||
+    ['train','bus'].includes(actualBack) ||
+    plan.multimodal;
+
+  if(!usesTransit)return '';
+
+  const rows=[];
+
+  if(plan.multimodal && plan.transferHub){
+    const a=transitLegDetails(plan.out,ctx.origin,plan.transferHub);
+    if(a) rows.push(a);
+
+    const b=transitLegDetails(plan.back,plan.transferHub,plan.returnTo||ctx.returnTo);
+    if(b) rows.push(b);
+  }else{
+    const a=transitLegDetails(plan.out,ctx.origin,plan.dest);
+    if(a) rows.push(a);
+
+    const b=transitLegDetails(plan.back,plan.dest,plan.returnTo||ctx.returnTo);
+    if(b) rows.push(b);
+  }
+
+  if(!rows.length)return '';
+
+  return `<div class="transit-guide">
+    <div class="transit-guide-title">🚉 公共交通の乗り方</div>
+    ${rows.map((r,i)=>`
+      <div class="transit-guide-row">
+        <div class="transit-guide-num">${i+1}</div>
+        <div class="transit-guide-main">
+          <strong>${esc(r.from)} ${esc(r.dep)} 乗車</strong>
+          <span>${esc(r.vehicle)} ${esc(r.line)}</span>
+          <strong>${esc(r.to)} ${esc(r.arr)} 下車</strong>
+        </div>
+      </div>`).join('')}
+  </div>`;
 }
 
 function planStartLabel(){
@@ -4908,7 +5066,18 @@ async function buildPlans(){
    : (transport==='mobilitycar' ? ['carshare','rentalcar'] : [transport]);
 
  // 1) Exact requested conditions
- scored=await scoreEventSet(events,requestedModes,start,deadline,searchCtx);
+ if(isAllAutoSearch()){
+   const staged=stagedAutoCandidates(events,searchCtx);
+   scored=await scoreEventSet(staged.first,requestedModes,start,deadline,searchCtx);
+
+   // If we already have enough useful candidates, do not scan the whole region.
+   if(scored.length<6 && staged.rest.length){
+     const extra=await scoreEventSet(staged.rest.slice(0,24),requestedModes,start,deadline,searchCtx);
+     scored=dedupeCandidates([...scored,...extra]);
+   }
+ }else{
+   scored=await scoreEventSet(events,requestedModes,start,deadline,searchCtx);
+ }
 
  // 2) Explicitly selected transport is strict.
  // Never silently switch to private car / taxi / another mode.
@@ -5034,6 +5203,7 @@ async function buildPlans(){
    const eventInfo=eventInfoHtml(p.ev);
    const providerInfo=providerInfoHtml(p.ev);
    const scheduleHtml=renderPlanSchedule(p,searchCtx);
+   const transitGuideHtml=renderTransitGuide(p,searchCtx);
    const serviceNote=p.service?`<div class="note">利用候補：${esc(p.service.name)}${p.accessMinutes?`（拠点まで徒歩 約${p.accessMinutes}分）`:''}</div>`:'';
    const itineraryHtml=renderSimpleItinerary(p.itinerary);
    const totalCost=totalPlanCost(p);
@@ -5071,6 +5241,7 @@ async function buildPlans(){
      ${totalCostHtml}
      ${serviceNote}
      ${scheduleHtml}
+     ${transitGuideHtml}
      ${itineraryHtml}
      <div class="plan-map-wrap">
        <div id="${routeMapId}" class="plan-map"></div>
