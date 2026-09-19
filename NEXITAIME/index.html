@@ -1398,14 +1398,29 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
 }
 </style>
 
-<link rel="icon" type="image/png" sizes="32x32" href="./assets/favicon-32.png?v=11">
-<link rel="icon" type="image/png" sizes="48x48" href="./assets/favicon-48.png?v=11">
-<link rel="apple-touch-icon" sizes="180x180" href="./assets/apple-touch-icon.png?v=11">
-<link rel="manifest" href="./manifest.webmanifest?v=11">
+<link rel="icon" type="image/png" sizes="32x32" href="./assets/favicon-32.png?v=12">
+<link rel="icon" type="image/png" sizes="48x48" href="./assets/favicon-48.png?v=12">
+<link rel="apple-touch-icon" sizes="180x180" href="./assets/apple-touch-icon.png?v=12">
+<link rel="manifest" href="./manifest.webmanifest?v=12">
 <meta name="theme-color" content="#0b2347">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="NEXITAIME">
+
+
+<style id="mixed-itinerary-v13">
+.itinerary-category{
+  display:inline-flex;
+  align-items:center;
+  padding:2px 6px;
+  border-radius:999px;
+  background:#eef6fb;
+  color:#44677f;
+  font-size:9px;
+  font-weight:900;
+  white-space:nowrap;
+}
+</style>
 
 </head>
 <body>
@@ -3056,7 +3071,17 @@ function choosePlannedStay(ev,availableMinutes){
   const pref=stayPreference(ev);
   const available=Math.floor(Number(availableMinutes)||0);
   if(available<pref.min)return null;
-  return Math.max(pref.min,Math.min(pref.recommended,pref.max,available));
+
+  // Short searches stay near the recommended duration.
+  // When the user gives us more time, use some of that room up to the venue's max.
+  if(available<=pref.recommended) return Math.max(pref.min,available);
+
+  const extra=available-pref.recommended;
+  const stretch=Math.round(extra*0.55);
+  return Math.max(
+    pref.min,
+    Math.min(pref.max, pref.recommended+stretch, available)
+  );
 }
 
 function firstTransitReturnAfter(a,b,earliest,deadline,eventEnd,mode){
@@ -3623,15 +3648,176 @@ const ITINERARY_SPOTS=[
   {area:'myoko_akakura',name:'赤倉温泉街',stay:40}
 ];
 
-function buildSimpleItinerary(plan){
+function itineraryCategory(ev){
+  const text=[ev?.title,ev?.venue,ev?.summary,...(ev?.categories||[])].filter(Boolean).join(' ');
+  if(/ラーメン|定食|海鮮|寿司|そば|うどん|中華|洋食|食堂|ごはん|グルメ|飲食|食べる/.test(text)) return 'food';
+  if(/カフェ|喫茶|コーヒー|珈琲|スイーツ|ジェラート|甘味/.test(text)) return 'cafe';
+  if(/温泉|サウナ|風呂|入浴|温浴/.test(text)) return 'onsen';
+  if(/博物館|美術館|展示|資料館|科学館|水族館|歴史|文化|史跡|城|神社|寺|町家|観光|雁木/.test(text)) return 'sightseeing';
+  if(/公園|自然|景色|絶景|展望|海|山|高原|滝/.test(text)) return 'nature';
+  if(/散歩|散策|歩く|ウォーキング|トレッキング|登山|ハイキング|スポーツ|体験|アクティビティ|サイクリング/.test(text)) return 'active';
+  if(ev?.start_date || ev?.source) return 'event';
+  return 'other';
+}
+
+function itineraryCategoryLabel(kind){
+  return {
+    food:'🍴 食事',cafe:'☕ カフェ',onsen:'♨️ 温泉',
+    sightseeing:'🏯 観光',nature:'🌿 景色・自然',
+    active:'🚶 アクティブ',event:'🎪 イベント',other:'📍 立ち寄り'
+  }[kind]||'📍 立ち寄り';
+}
+
+function itineraryStayFor(ev){
+  const pref=stayPreference(ev);
+  const kind=itineraryCategory(ev);
+  if(kind==='food') return Math.min(60,Math.max(35,pref.recommended));
+  if(kind==='cafe') return Math.min(50,Math.max(30,pref.recommended));
+  if(kind==='sightseeing') return Math.min(60,Math.max(25,pref.recommended));
+  if(kind==='nature') return Math.min(50,Math.max(25,pref.recommended));
+  if(kind==='onsen') return Math.min(90,Math.max(60,pref.recommended));
+  if(kind==='active') return Math.min(75,Math.max(35,pref.recommended));
+  if(kind==='event') return Math.min(75,Math.max(30,Number(ev?.recommended_stay_min)||pref.recommended));
+  return Math.min(45,Math.max(25,pref.recommended));
+}
+
+function itineraryCandidateAvailable(ev, arrive, leave){
+  try{
+    if(!eventIsAvailableAt(ev,planningDate)) return false;
+    const availability=spotAvailability(ev,arrive,leave,planningDate);
+    return availability?.ok!==false;
+  }catch(_){
+    return true;
+  }
+}
+
+function mixedCandidatePool(plan, candidateEvents){
+  const primary=plan.ev;
+  const primaryId=primary?.id||primary?.title;
+  const destStation=plan.dest;
+  return (candidateEvents||EVENTS)
+    .filter(ev=>{
+      if(!ev) return false;
+      const id=ev.id||ev.title;
+      if(id===primaryId) return false;
+      if(!areaStation[ev.area]) return false;
+      // Keep extra stops local to the same destination/station area.
+      if(areaStation[ev.area]!==destStation && ev.area!==primary?.area) return false;
+      if(!budgetAllows(ev) || !companionAllows(ev)) return false;
+      return true;
+    });
+}
+
+function buildSimpleItinerary(plan,candidateEvents=[],freeMinutes=120){
   const area=plan.ev?.area;
-  const pool=ITINERARY_SPOTS.filter(s=>s.area===area);
+  const legacyPool=ITINERARY_SPOTS.filter(s=>s.area===area);
   if(!Number.isFinite(plan.stay) || plan.stay<30)return null;
 
   const isTimedEvent=!!(plan.ev?.start_date || plan.ev?.source);
+  const mixedMode=(mood==='any');
   let remain=plan.stay, t=plan.arrive, rows=[];
 
-  // Event plans should visibly include the event itself first.
+  // In recommendation mode, represent the main destination explicitly,
+  // then use remaining time for different categories nearby.
+  if(mixedMode){
+    const primaryKind=itineraryCategory(plan.ev);
+    const primaryStay=Math.min(
+      remain,
+      Math.max(25, Math.min(itineraryStayFor(plan.ev), Math.max(30,Math.floor(remain*0.48))))
+    );
+
+    rows.push({
+      name:plan.ev?.title||plan.ev?.venue||plan.dest,
+      stay:primaryStay,
+      arrive:t,
+      leave:t+primaryStay,
+      move:0,
+      kind:isTimedEvent?'event':'spot',
+      category:primaryKind,
+      categoryLabel:itineraryCategoryLabel(primaryKind)
+    });
+    t+=primaryStay;
+    remain-=primaryStay;
+
+    // Number of stops grows with the user's available time.
+    let targetStops=2;
+    if(freeMinutes>=180) targetStops=3;
+    if(freeMinutes>=300) targetStops=4;
+
+    const candidates=mixedCandidatePool(plan,candidateEvents);
+    const usedKinds=new Set([primaryKind]);
+    const usedIds=new Set([plan.ev?.id||plan.ev?.title]);
+
+    // Prefer category diversity: food + sightseeing/nature/cafe/onsen etc.
+    while(rows.length<targetStops && remain>=30){
+      let best=null, bestScore=-9999;
+
+      for(const ev of candidates){
+        const id=ev.id||ev.title;
+        if(usedIds.has(id)) continue;
+
+        const kind=itineraryCategory(ev);
+        const move=rows.length?10:0;
+        let stay=itineraryStayFor(ev);
+        stay=Math.min(stay,remain-move);
+        if(stay<25) continue;
+
+        const arrive=t+move;
+        const leave=arrive+stay;
+        if(!itineraryCandidateAvailable(ev,arrive,leave)) continue;
+
+        let score=0;
+        if(!usedKinds.has(kind)) score+=80;
+        if(kind==='food' && !usedKinds.has('food')) score+=35;
+        if(kind==='cafe' && rows.length>=2) score+=20;
+        if(['sightseeing','nature'].includes(kind) && ![...usedKinds].some(k=>['sightseeing','nature'].includes(k))) score+=30;
+        if(kind===primaryKind) score-=35;
+        score+=Math.min(20,stay/3);
+
+        if(score>bestScore){
+          bestScore=score;
+          best={ev,kind,move,stay,arrive,leave};
+        }
+      }
+
+      if(!best) break;
+
+      rows.push({
+        name:best.ev.title||best.ev.venue,
+        stay:best.stay,
+        arrive:best.arrive,
+        leave:best.leave,
+        move:best.move,
+        kind:best.kind==='event'?'event':'spot',
+        category:best.kind,
+        categoryLabel:itineraryCategoryLabel(best.kind),
+        sourceEv:best.ev
+      });
+      t=best.leave;
+      remain-=best.move+best.stay;
+      usedKinds.add(best.kind);
+      usedIds.add(best.ev.id||best.ev.title);
+    }
+
+    // If real candidate data was sparse, fill with known nearby micro-stops.
+    for(const s of legacyPool){
+      if(rows.length>=targetStops || remain<30) break;
+      if(rows.some(r=>r.name===s.name)) continue;
+      const move=10;
+      if(remain<s.stay+move) continue;
+      t+=move;
+      rows.push({
+        ...s,arrive:t,leave:t+s.stay,move,kind:'spot',
+        category:'sightseeing',categoryLabel:'🏯 観光'
+      });
+      t+=s.stay;
+      remain-=s.stay+move;
+    }
+
+    return rows.length?rows:null;
+  }
+
+  // Specific moods keep the existing focused itinerary behavior.
   if(isTimedEvent){
     const eventStay=Math.min(
       Math.max(30, Number(plan.ev?.recommended_stay_min)||45),
@@ -3643,31 +3829,31 @@ function buildSimpleItinerary(plan){
       arrive:t,
       leave:t+eventStay,
       move:0,
-      kind:'event'
+      kind:'event',
+      category:'event',
+      categoryLabel:'🎪 イベント'
     });
     t+=eventStay;
     remain-=eventStay;
   }
 
-  // Add one or more nearby area stops only when enough time remains.
-  for(const s of pool){
+  for(const s of legacyPool){
     const move=rows.length?8:0;
     if(remain < s.stay+move)continue;
     t+=move;
-    rows.push({...s,arrive:t,leave:t+s.stay,move,kind:'spot'});
+    rows.push({...s,arrive:t,leave:t+s.stay,move,kind:'spot',category:'sightseeing',categoryLabel:'🏯 観光'});
     t+=s.stay;
     remain-=s.stay+move;
     if(rows.length>=4)break;
   }
 
-  // Non-event flexible activities keep the old behavior.
-  if(!rows.length && pool.length){
+  if(!rows.length && legacyPool.length){
     remain=plan.stay; t=plan.arrive;
-    for(const s of pool){
+    for(const s of legacyPool){
       const move=rows.length?8:0;
       if(remain < s.stay+move)continue;
       t+=move;
-      rows.push({...s,arrive:t,leave:t+s.stay,move,kind:'spot'});
+      rows.push({...s,arrive:t,leave:t+s.stay,move,kind:'spot',category:'sightseeing',categoryLabel:'🏯 観光'});
       t+=s.stay; remain-=s.stay+move;
       if(rows.length>=4)break;
     }
@@ -3676,10 +3862,15 @@ function buildSimpleItinerary(plan){
 }
 function renderSimpleItinerary(rows){
   if(!rows?.length)return '';
+  const kinds=new Set(rows.map(s=>s.category).filter(Boolean));
   const hasEvent=rows.some(s=>s.kind==='event');
-  const title=hasEvent?'🎪 イベント＋周辺スポット':'🗺️ この時間で回れる周遊プラン';
+  const mixed=kinds.size>=2;
+  const title=mixed
+    ? '✨ 食・観光などを組み合わせたおすすめ周遊'
+    : (hasEvent?'🎪 イベント＋周辺スポット':'🗺️ この時間で回れる周遊プラン');
+
   return `<div class="itinerary"><div class="itinerary-title">${title}</div>`+
-    rows.map((s,i)=>`${i?`<div class="itinerary-travel">↳ 移動 約${s.move}分</div>`:''}<div class="itinerary-step"><div class="itinerary-num">${i+1}</div><div class="itinerary-main"><strong>${s.kind==='event'?'🎪 ':''}${esc(s.name)}</strong><span>${fmt(s.arrive)}〜${fmt(s.leave)} ・ 滞在 ${s.stay}分</span></div><div class="itinerary-time">${s.stay}分</div></div>`).join('')+
+    rows.map((s,i)=>`${i?`<div class="itinerary-travel">↳ 移動 約${s.move}分</div>`:''}<div class="itinerary-step"><div class="itinerary-num">${i+1}</div><div class="itinerary-main"><strong>${s.categoryLabel?`<span class="itinerary-category">${esc(s.categoryLabel)}</span> `:''}${esc(s.name)}</strong><span>${fmt(s.arrive)}〜${fmt(s.leave)} ・ 滞在 ${s.stay}分</span></div><div class="itinerary-time">${s.stay}分</div></div>`).join('')+
     `</div>`;
 }
 
@@ -3842,12 +4033,29 @@ async function scoreEventSet(events, modes, start, deadline, ctx){
         c.eventTiming=timing;
         const usableMinutes=Math.max(1,deadline-start);
         const planMinutes=Math.max(1,c.finish-start);
-        const timeUseRatio=Math.min(1.5,planMinutes/usableMinutes);
-        // Prefer plans that make meaningful use of the selected free time.
-        // This makes 90-minute and 240-minute searches rank differently.
-        const timeFitScore=Math.max(0,32-Math.abs(timeUseRatio-0.72)*48);
+
+        // The ideal plan length changes with the amount of free time.
+        // Short windows favor compact nearby plans; long windows favor plans
+        // that actually use the extra time instead of returning the same 60-minute outing.
+        let targetRatio=0.72;
+        if(usableMinutes>=150) targetRatio=0.80;
+        if(usableMinutes>=240) targetRatio=0.86;
+        if(usableMinutes>=330) targetRatio=0.90;
+
+        const targetMinutes=usableMinutes*targetRatio;
+        const timeGap=Math.abs(planMinutes-targetMinutes);
+        const timeFitScore=Math.max(0,120-timeGap*1.25);
+
         c.timeFitScore=Math.round(timeFitScore);
-        c.preferenceScore=wa.score + (timing?.score||0) + (companion==='any'?0:12) + (budget==='any'?0:8) + timeFitScore;
+        c.planMinutes=planMinutes;
+        c.targetMinutes=Math.round(targetMinutes);
+        c.preferenceScore=
+          timeFitScore
+          + wa.score
+          + (timing?.score||0)
+          + (companion==='any'?0:12)
+          + (budget==='any'?0:8);
+
         rows.push(c);
       }
     }
@@ -3866,8 +4074,9 @@ function planStartLabel(){
 function sortCandidates(rows){
   return rows.sort((a,b)=>{
     if((b.preferenceScore||0)!==(a.preferenceScore||0))return (b.preferenceScore||0)-(a.preferenceScore||0);
+    if((b.timeFitScore||0)!==(a.timeFitScore||0))return (b.timeFitScore||0)-(a.timeFitScore||0);
+    if((b.planMinutes||0)!==(a.planMinutes||0))return (b.planMinutes||0)-(a.planMinutes||0);
     if(b.stay!==a.stay)return b.stay-a.stay;
-    if(b.spare!==a.spare)return b.spare-a.spare;
     return a.arrive-b.arrive;
   });
 }
@@ -4610,6 +4819,18 @@ function syncSearchStateFromControls(){
   if(companionEl) companion=companionEl.value;
 }
 
+let lastSearchSnapshot=null;
+
+function currentSearchSnapshot(free,buffer,top){
+  return {
+    free,
+    buffer,
+    ids:(top||[]).map(p=>p.ev?.id||p.ev?.title||p.dest),
+    stays:(top||[]).map(p=>Number(p.stay)||0),
+    modes:(top||[]).map(p=>p.modeLabel||p.mode||'')
+  };
+}
+
 async function buildPlans(){
  syncSearchStateFromControls();
  try{ trackNexitaime('search_start',{freeMinutes:Number(document.getElementById('free')?.value)||120,buffer:Number(document.getElementById('buffer')?.value)||15}); }catch(_){}
@@ -4734,8 +4955,19 @@ async function buildPlans(){
    uniquePlans.push(row);
  }
  const top=uniquePlans.slice(0,3);
- top.forEach(p=>p.itinerary=buildSimpleItinerary(p));
+ top.forEach(p=>p.itinerary=buildSimpleItinerary(p,candidateEvents,free));
  clearTimeout(searchWatchdog);
+
+ const previousSnapshot=lastSearchSnapshot;
+ const nextSnapshot=currentSearchSnapshot(free,buffer,top);
+ const changedPlaces=previousSnapshot
+   ? JSON.stringify(previousSnapshot.ids)!==JSON.stringify(nextSnapshot.ids)
+   : false;
+ const changedStays=previousSnapshot
+   ? JSON.stringify(previousSnapshot.stays)!==JSON.stringify(nextSnapshot.stays)
+   : false;
+ const freeChanged=previousSnapshot ? previousSnapshot.free!==nextSnapshot.free : false;
+ lastSearchSnapshot=nextSnapshot;
 
  if(!top.length){
    try{ trackNexitaime('search_result',{resultCount:0}); }catch(_){}
@@ -4760,7 +4992,14 @@ async function buildPlans(){
  const routeSummary=`${searchCtx.origin} → ${destinationGroupLabel(searchCtx.destination)} → ${searchCtx.returnTo}`;
  if(relaxationLevel===0){
    if(transport==='auto'){
-     summary.innerHTML=`<h2>今の条件で${top.length}案あります</h2><p><strong>${routeSummary}</strong><br>${planStartLabel()}出発・空き時間${free}分・帰着後の余裕${buffer}分を確保します。<br><small>現在の条件で再検索しました。</small></p>`;
+     {
+     let changeNote='現在の条件で再検索しました。';
+     if(freeChanged && changedPlaces) changeNote='空き時間に合わせて、おすすめ候補を組み直しました。';
+     else if(freeChanged && changedStays) changeNote='候補は近いままですが、空き時間に合わせて滞在時間を組み直しました。';
+     else if(freeChanged) changeNote='空き時間を再判定しました。この条件では同じ候補が最適でした。';
+
+     summary.innerHTML=`<h2>今の条件で${top.length}案あります</h2><p><strong>${routeSummary}</strong><br>${planStartLabel()}出発・空き時間${free}分・帰着後の余裕${buffer}分を確保します。<br><small>${changeNote}</small></p>`;
+   }
    }else{
      summary.innerHTML=`<h2>${MODE_LABELS[transport]||transport}で${top.length}案あります</h2><p><strong>${routeSummary}</strong><br>指定した出発地・行き先・帰着先を固定して判定しました。</p>`;
    }
