@@ -2093,6 +2093,23 @@ async function routeMinutesCoords(mode,pa,pb){
   return Math.max(5,Math.ceil(min/5)*5);
 }
 
+
+function routeMinutesCoordsFast(mode,pa,pb){
+  if(!pa||!pb)return null;
+  const straightKm=haversine(pa.lat,pa.lon,pb.lat,pb.lon);
+  if(straightKm<0.05)return 0;
+  const km=straightKm*1.2;
+
+  if(mode==='walk') return Math.max(1,Math.ceil(km/4.8*60));
+  if(mode==='bike') return Math.max(1,Math.ceil(km/15*60));
+
+  let min=(km/35*60)*1.25 + 5;
+  if(mode==='carshare') min += 8;
+  if(mode==='rentalcar') min += 20;
+  if(mode==='taxi') min += 5;
+  return Math.max(5,Math.ceil(min/5)*5);
+}
+
 function routePointForEvent(ev,dest){
   const lat=Number(ev?.lat), lon=Number(ev?.lng ?? ev?.lon);
   if(Number.isFinite(lat) && Number.isFinite(lon)) return {lat,lon};
@@ -2854,8 +2871,10 @@ async function evaluateDirectMode(ev,dest,mode,start,deadline,ctx){
   const fromPoint=PLACES[from];
   const destPoint=routePointForEvent(ev,dest);
   const backPoint=PLACES[backTo];
-  const oneWay=(fromPoint&&destPoint) ? await routeMinutesCoords(mode,fromPoint,destPoint) : await routeMinutes(mode,from,dest);
-  const backWay=(destPoint&&backPoint) ? await routeMinutesCoords(mode,destPoint,backPoint) : await routeMinutes(mode,dest,backTo);
+  const dynamicShop=ev?.provider==='hotpepper';
+  const directRoute=dynamicShop ? routeMinutesCoordsFast : routeMinutesCoords;
+  const oneWay=(fromPoint&&destPoint) ? await directRoute(mode,fromPoint,destPoint) : await routeMinutes(mode,from,dest);
+  const backWay=(destPoint&&backPoint) ? await directRoute(mode,destPoint,backPoint) : await routeMinutes(mode,dest,backTo);
   if(oneWay==null || backWay==null)return null;
 
   const svc=await getModeService(mode);
@@ -4390,7 +4409,7 @@ async function fetchHotPepperRestaurants(){
     clearTimeout(timer);
     if(!res.ok)return [];
     const data=await res.json();
-    return dedupeHotPepperRows(Array.isArray(data?.restaurants)?data.restaurants:[]);
+    return dedupeHotPepperRows(Array.isArray(data?.restaurants)?data.restaurants:[]).slice(0,10);
   }catch(_){
     return [];
   }
@@ -4432,6 +4451,11 @@ async function buildPlans(){
 
  const start=planningDate.getHours()*60+planningDate.getMinutes(), hardEnd=start+free, deadline=hardEnd-buffer;
  summary.innerHTML='<h2>候補を比較中…</h2><p>移動時間・時刻表・戻り余裕を確認しています。</p>';
+ const searchWatchdog=setTimeout(()=>{
+   if(summary.textContent.includes('候補を比較中')){
+     summary.innerHTML='<h2>検索に時間がかかっています</h2><p>外部サービスの応答が遅いため、もう一度お試しください。検索条件は変更していません。</p>';
+   }
+ },12000);
  const adjustPanel=document.getElementById('planAdjustPanel');
  if(adjustPanel){
    adjustPanel.hidden=true;
@@ -4508,6 +4532,7 @@ async function buildPlans(){
  }
  const top=uniquePlans.slice(0,3);
  top.forEach(p=>p.itinerary=buildSimpleItinerary(p));
+ clearTimeout(searchWatchdog);
 
  if(!top.length){
    try{ trackNexitaime('search_result',{resultCount:0}); }catch(_){}
