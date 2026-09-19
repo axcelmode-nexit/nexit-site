@@ -3195,18 +3195,51 @@ function findBestTransitReturn(a,b,earliest,deadline,eventEnd,mode){
   return best;
 }
 
+
+const MAX_PUBLIC_LAST_MILE_WALK_MIN=25;
+
+function publicLastMileForEvent(ev,dest){
+  const stationPoint=PLACES?.[dest]||null;
+  const venuePoint=routePointForEvent(ev,dest);
+  if(!stationPoint || !venuePoint){
+    return {mode:'walk',minutes:0,km:0,label:'徒歩',station:dest,venue:ev?.venue||ev?.title||dest,known:false};
+  }
+
+  const km=haversine(stationPoint.lat,stationPoint.lon,venuePoint.lat,venuePoint.lon)*1.2;
+  const minutes=km<0.05 ? 0 : Math.max(1,Math.ceil(km/4.8*60));
+
+  return {
+    mode:'walk',
+    minutes,
+    km,
+    label:'徒歩',
+    station:dest,
+    venue:ev?.venue||ev?.title||dest,
+    known:true
+  };
+}
+
 async function evaluateTransitMode(ev,dest,mode,start,deadline,ctx){
   const from=ctx.origin;
   const backTo=ctx.returnTo;
   const out=chooseTransportMode(from,dest,start,mode);
   if(!out)return null;
 
+  const lastMile=publicLastMileForEvent(ev,dest);
+
+  // A public-transport plan is not considered feasible if the station-to-venue
+  // walk alone is too long. In "おまかせ", taxi/car-share candidates are scored
+  // separately rather than silently changing an explicit public-transport plan.
+  if(lastMile.known && lastMile.minutes>MAX_PUBLIC_LAST_MILE_WALK_MIN)return null;
+
   const eventStart=ev.start_time?mins(ev.start_time):null;
   const eventEnd=ev.end_time?mins(ev.end_time):null;
   const window=availabilityWindow(ev,planningDate);
   if(window.closed)return null;
 
-  let arrive=out.arr;
+  const stationArrive=out.arr;
+  let arrive=stationArrive+lastMile.minutes;
+
   if(eventStart!=null && arrive<eventStart)arrive=eventStart;
   if(window.open!=null && arrive<window.open)arrive=window.open;
 
@@ -3214,35 +3247,51 @@ async function evaluateTransitMode(ev,dest,mode,start,deadline,ctx){
   if(cutoff!=null && arrive>=cutoff)return null;
 
   const pref=stayPreference(ev);
-  const earliestBack=arrive+pref.min;
-  const targetBack=arrive+pref.recommended;
+  const earliestVenueLeave=arrive+pref.min;
+  const targetVenueLeave=arrive+pref.recommended;
+
   let effectiveEnd=eventEnd;
   if(window.close!=null)effectiveEnd=effectiveEnd==null ? window.close : Math.min(effectiveEnd,window.close);
-  if(effectiveEnd!=null && earliestBack>effectiveEnd)return null;
+  if(effectiveEnd!=null && earliestVenueLeave>effectiveEnd)return null;
 
-  // Prefer the first public-transport departure after the recommended stay.
-  // If that cannot return before the deadline, fall back to the first departure
-  // after the venue's minimum useful stay.
-  let back=firstTransitReturnAfter(dest,backTo,targetBack,deadline,effectiveEnd,mode);
-  if(!back)back=firstTransitReturnAfter(dest,backTo,earliestBack,deadline,effectiveEnd,mode);
+  // Return transit must be searched after walking back from the venue to the station.
+  const earliestStationReady=earliestVenueLeave+lastMile.minutes;
+  const targetStationReady=targetVenueLeave+lastMile.minutes;
+
+  let back=firstTransitReturnAfter(dest,backTo,targetStationReady,deadline,null,mode);
+  if(!back)back=firstTransitReturnAfter(dest,backTo,earliestStationReady,deadline,null,mode);
   if(!back)return null;
 
-  const stay=Math.floor(back.dep-arrive);
+  const venueLeave=back.dep-lastMile.minutes;
+  if(effectiveEnd!=null && venueLeave>effectiveEnd)return null;
+
+  const stay=Math.floor(venueLeave-arrive);
   if(stay<pref.min)return null;
 
-  const availability=spotAvailability(ev,arrive,back.dep,planningDate);
+  const availability=spotAvailability(ev,arrive,venueLeave,planningDate);
   if(!availability.ok)return null;
 
   const transitReason=out.kind==='bus'
-    ? `公開時刻表で帰着まで確認できる${out.n}利用案`
-    : (mode==='public'?'電車とバスを比較して選んだ公共交通案':'公開時刻表で帰着まで確認できる電車案');
+    ? `公開時刻表と${dest}から目的地までの徒歩${lastMile.minutes}分を含めて帰着まで確認した${out.n}利用案`
+    : (mode==='public'
+      ? `電車・バスと${dest}から目的地までの徒歩${lastMile.minutes}分を含めて判定した公共交通案`
+      : `公開時刻表と${dest}から目的地までの徒歩${lastMile.minutes}分を含めて帰着まで確認した電車案`);
 
   const transportCost=await estimateTransportCost(mode,from,dest,backTo,null,out.kind,back.kind);
 
   return {
     ev,dest,returnTo:backTo,mode,modeLabel:MODE_LABELS[mode],modeIcon:MODE_ICONS[mode],
-    out,back,arrive,finish:back.arr,spare:deadline-back.arr,stay,feasible:true,
-    transportCost,availability,
+    out,back,
+    stationArrive,
+    arrive,
+    venueLeave,
+    finish:back.arr,
+    spare:deadline-back.arr,
+    stay,
+    feasible:true,
+    transportCost,
+    availability,
+    lastMile,
     reason:transitReason
   };
 }
@@ -3700,13 +3749,17 @@ function renderPlanSchedule(plan, ctx){
   const from=ctx?.origin||origin;
   const back=plan.returnTo||ctx?.returnTo||resolvedReturnStation(ctx);
   const outDep=plan.out?.[from]||'';
-  const outArr=plan.out?.[plan.dest]||'';
-  const backDep=plan.back?.[plan.dest]||'';
+  const outArr=Number.isFinite(plan.arrive)?fmt(plan.arrive):(plan.out?.[plan.dest]||'');
+  const backDep=Number.isFinite(plan.venueLeave)?fmt(plan.venueLeave):(plan.back?.[plan.dest]||'');
   const backArr=plan.back?.[back]||'';
+  const lastMileNote=plan.lastMile?.minutes
+    ? `${plan.dest}から${plan.lastMile.label} 約${plan.lastMile.minutes}分を含む`
+    : '';
+
   const rows=[
     {icon:'🚩',title:`${from}を出発`,time:outDep,sub:plan.modeLabel||''},
-    {icon:'📍',title:plan.ev?.venue||plan.ev?.title||plan.dest,time:outArr,sub:`滞在 約${plan.stay}分`},
-    {icon:'↩️',title:'帰路へ',time:backDep,sub:plan.modeLabel||''},
+    {icon:'📍',title:plan.ev?.venue||plan.ev?.title||plan.dest,time:outArr,sub:[`滞在 約${plan.stay}分`,lastMileNote].filter(Boolean).join('・')},
+    {icon:'↩️',title:'目的地を出発',time:backDep,sub:lastMileNote||plan.modeLabel||''},
     {icon:'🏁',title:`${back}に到着`,time:backArr,sub:`帰着後の余裕 約${Math.max(0,(plan.spare||0)+buffer)}分`}
   ];
   return `<div class="plan-schedule"><div class="plan-schedule-title">🗓️ おすすめプラン</div>${rows.map((r,i)=>`<div class="schedule-row"><div class="schedule-dot">${i+1}</div><div class="schedule-main"><strong>${r.icon} ${esc(r.title)}</strong>${r.sub?`<span>${esc(r.sub)}</span>`:''}</div><div class="schedule-time">${esc(r.time)}</div></div>`).join('')}</div>`;
@@ -4223,31 +4276,61 @@ function renderTransitGuide(plan,ctx){
 
   if(plan.multimodal && plan.transferHub){
     const a=transitLegDetails(plan.out,ctx.origin,plan.transferHub);
-    if(a) rows.push(a);
+    if(a) rows.push({...a,type:'transit'});
 
     const b=transitLegDetails(plan.back,plan.transferHub,plan.returnTo||ctx.returnTo);
-    if(b) rows.push(b);
+    if(b) rows.push({...b,type:'transit'});
   }else{
     const a=transitLegDetails(plan.out,ctx.origin,plan.dest);
-    if(a) rows.push(a);
+    if(a) rows.push({...a,type:'transit'});
+
+    if(plan.lastMile?.minutes){
+      rows.push({
+        type:'lastmile',
+        from:plan.dest,
+        to:plan.ev?.venue||plan.ev?.title||'目的地',
+        minutes:plan.lastMile.minutes,
+        dep:Number.isFinite(plan.stationArrive)?fmt(plan.stationArrive):(plan.out?.[plan.dest]||''),
+        arr:Number.isFinite(plan.arrive)?fmt(plan.arrive):''
+      });
+      rows.push({
+        type:'lastmile-back',
+        from:plan.ev?.venue||plan.ev?.title||'目的地',
+        to:plan.dest,
+        minutes:plan.lastMile.minutes,
+        dep:Number.isFinite(plan.venueLeave)?fmt(plan.venueLeave):'',
+        arr:Number.isFinite(plan.back?.dep)?fmt(plan.back.dep):''
+      });
+    }
 
     const b=transitLegDetails(plan.back,plan.dest,plan.returnTo||ctx.returnTo);
-    if(b) rows.push(b);
+    if(b) rows.push({...b,type:'transit'});
   }
 
   if(!rows.length)return '';
 
   return `<div class="transit-guide">
     <div class="transit-guide-title">🚉 公共交通の乗り方</div>
-    ${rows.map((r,i)=>`
-      <div class="transit-guide-row">
+    ${rows.map((r,i)=>{
+      if(r.type==='lastmile' || r.type==='lastmile-back'){
+        return `<div class="transit-guide-row">
+          <div class="transit-guide-num">${i+1}</div>
+          <div class="transit-guide-main">
+            <strong>${esc(r.from)} ${esc(r.dep)} 出発</strong>
+            <span>🚶 徒歩 約${r.minutes}分</span>
+            <strong>${esc(r.to)} ${esc(r.arr)} 到着</strong>
+          </div>
+        </div>`;
+      }
+      return `<div class="transit-guide-row">
         <div class="transit-guide-num">${i+1}</div>
         <div class="transit-guide-main">
           <strong>${esc(r.from)} ${esc(r.dep)} 乗車</strong>
           <span>${esc(r.vehicle)} ${esc(r.line)}</span>
           <strong>${esc(r.to)} ${esc(r.arr)} 下車</strong>
         </div>
-      </div>`).join('')}
+      </div>`;
+    }).join('')}
   </div>`;
 }
 
@@ -5279,9 +5362,9 @@ async function buildPlans(){
        <div class="route-map-note">S＝出発、1〜4＝立ち寄り順、G＝帰着。地図の経路は目安です。徒歩・自転車・公共交通では実際の経路が異なる場合があります。</div>
      </div>
      <div class="timeline">
-       <div class="leg"><div>行き</div><div><strong>${p.modeIcon||''} ${esc(p.out.n)}</strong><br>${searchCtx.origin} → ${p.dest}</div><div>${p.out[searchCtx.origin]} → ${p.out[p.dest]}</div></div>
-       <div class="leg"><div>滞在</div><div><strong>${p.dest}周辺</strong><br><span class="stay-guide">目安 ${stayPreference(p.ev).recommended}分</span></div><div>約${p.stay}分</div></div>
-       <div class="leg"><div>帰り</div><div><strong>${p.modeIcon||''} ${esc(p.back.n)}</strong><br>${esc(p.destLabel||p.dest)} → ${p.returnTo||origin}</div><div>${p.back[p.dest]} → ${p.back[p.returnTo||origin]}</div></div>
+       <div class="leg"><div>行き</div><div><strong>${p.modeIcon||''} ${esc(p.out.n)}</strong><br>${searchCtx.origin} → ${p.dest}${p.lastMile?.minutes?` → 🚶 ${esc(p.ev?.venue||p.ev?.title||'目的地')} 約${p.lastMile.minutes}分`:''}</div><div>${p.out[searchCtx.origin]} → ${Number.isFinite(p.arrive)?fmt(p.arrive):(p.out[p.dest]||'')}</div></div>
+       <div class="leg"><div>滞在</div><div><strong>${esc(p.ev?.venue||p.dest)}周辺</strong><br><span class="stay-guide">目安 ${stayPreference(p.ev).recommended}分</span></div><div>約${p.stay}分</div></div>
+       <div class="leg"><div>帰り</div><div><strong>${p.modeIcon||''} ${esc(p.back.n)}</strong><br>${esc(p.ev?.venue||p.dest)}${p.lastMile?.minutes?` → 🚶 ${esc(p.dest)} 約${p.lastMile.minutes}分`:''} → ${p.returnTo||origin}</div><div>${Number.isFinite(p.venueLeave)?fmt(p.venueLeave):(p.back[p.dest]||'')} → ${p.back[p.returnTo||origin]}</div></div>
      </div>
      <div class="meta" style="margin-top:8px">ルート：${esc(searchCtx.origin)} → ${p.multimodal?`${esc(p.transferHub)}（乗換） → `:''}${esc(p.dest)} → ${p.multimodal?`${esc(p.transferHub)}（乗換） → `:''}${esc(p.returnTo||searchCtx.returnTo)}<br>帰着後の余裕：${Math.max(0,p.spare+buffer)}分</div>
      <div class="plan-save-row">
