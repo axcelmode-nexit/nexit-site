@@ -2,6 +2,7 @@ const API_URL = "https://webservice.recruit.co.jp/hotpepper/gourmet/v1/";
 
 const ALLOWED_DESTINATIONS = new Set(["any","central","kasugayama","sea","east","mountain","myoko"]);
 const ALLOWED_MOODS = new Set(["food","cafe"]);
+const ALLOWED_ORIGINS = new Set(["上越妙高","高田","直江津","妙高高原"]);
 const ALLOWED_KINDS = new Set(["any","ラーメン","定食","海鮮","寿司","そば","カフェ","中華","洋食"]);
 
 // Search points are intentionally coarse. GPS coordinates are never sent from the browser.
@@ -46,11 +47,13 @@ export async function onRequest(context) {
     ? url.searchParams.get("destination") : "any";
   const mood = ALLOWED_MOODS.has(url.searchParams.get("mood"))
     ? url.searchParams.get("mood") : "food";
+  const origin = ALLOWED_ORIGINS.has(url.searchParams.get("origin"))
+    ? url.searchParams.get("origin") : "上越妙高";
   const kind = ALLOWED_KINDS.has(url.searchParams.get("kind"))
-    ? url.searchParams.get("kind") : "any";
+    ? url.searchParams.get("kind") : "ラーメン";
 
   const cacheUrl = new URL(request.url);
-  cacheUrl.search = new URLSearchParams({destination,mood,kind}).toString();
+  cacheUrl.search = new URLSearchParams({destination,origin,mood,kind}).toString();
   const cacheKey = new Request(cacheUrl.toString(), {method:"GET"});
   const cache = globalThis.caches?.default;
   if (cache) {
@@ -59,7 +62,7 @@ export async function onRequest(context) {
   }
 
   try {
-    const centers = centersFor(destination);
+    const centers = centersFor(destination, origin);
     const keyword = keywordFor(mood, kind);
     const responses = await Promise.all(centers.map(c => queryCenter(env.HOTPEPPER_API_KEY, c, keyword)));
     const byId = new Map();
@@ -83,6 +86,7 @@ export async function onRequest(context) {
       ok:true,
       provider:"hotpepper",
       destination,
+      origin,
       kind,
       restaurants
     }, 200, 900);
@@ -93,13 +97,21 @@ export async function onRequest(context) {
   }
 }
 
-function centersFor(destination) {
-  if (destination !== "any") return CENTERS[destination] || CENTERS.central;
-  return [
-    CENTERS.central[0], CENTERS.central[1],
-    CENTERS.kasugayama[0], CENTERS.sea[0],
-    CENTERS.myoko[0], CENTERS.myoko[1]
-  ];
+function centersFor(destination, origin) {
+  if (destination !== "any") {
+    const rows = CENTERS[destination] || CENTERS.central;
+    return rows.slice(0, 2);
+  }
+
+  // "おまかせ" destination should not query the entire region.
+  // Search only the selected category around the user's coarse starting station.
+  const near = {
+    "上越妙高":[CENTERS.central[1], CENTERS.central[0]],
+    "高田":[CENTERS.central[0], CENTERS.kasugayama[0]],
+    "直江津":[CENTERS.sea[0], CENTERS.kasugayama[0]],
+    "妙高高原":[CENTERS.myoko[1], CENTERS.myoko[2]]
+  };
+  return near[origin] || near["上越妙高"];
 }
 
 function keywordFor(mood, kind) {
@@ -123,7 +135,7 @@ async function queryCenter(key, center, keyword) {
     lat:String(center.lat),
     lng:String(center.lng),
     range:"5",
-    count:"30",
+    count:"15",
     order:"4",
     format:"json"
   });
