@@ -1350,7 +1350,14 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
 .food-subfilters{margin-top:12px;padding:12px;border:1px solid #e7edf2;border-radius:16px;background:#fbfdff}
 .food-subfilters[hidden]{display:none!important}
 #foodKinds .chip{font-size:11px}
-@media(max-width:700px){#foodKinds .chip{flex:1 1 calc(50% - 10px)!important;justify-content:center}}
+.mood-subfilters{margin-top:12px;padding:12px;border:1px solid #e7edf2;border-radius:16px;background:#fbfdff}
+.mood-subfilters[hidden]{display:none!important}
+#onsenKinds .chip,#sightseeingKinds .chip,#activeKinds .chip{font-size:11px}
+@media(max-width:700px){
+  #foodKinds .chip,#onsenKinds .chip,#sightseeingKinds .chip,#activeKinds .chip{
+    flex:1 1 calc(50% - 10px)!important;justify-content:center
+  }
+}
 </style>
 
 <style id="hotpepper-integration-style">
@@ -1478,10 +1485,39 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
     <button class="chip" data-food-kind="海鮮">🐟 海鮮</button>
     <button class="chip" data-food-kind="寿司">🍣 寿司</button>
     <button class="chip" data-food-kind="そば">🥢 そば・うどん</button>
-    <button class="chip" data-food-kind="カフェ">☕ カフェ</button>
     <button class="chip" data-food-kind="中華">🥟 中華</button>
     <button class="chip" data-food-kind="洋食">🍝 洋食</button>
   </div>
+</div>
+
+<div class="mood-subfilters" id="onsenSubfilters" hidden>
+  <div class="group-subtitle" style="margin-top:12px">温泉・サウナの種類</div>
+  <div class="chips wrap" id="onsenKinds">
+    <button class="chip active" data-onsen-kind="温泉">♨️ 温泉</button>
+    <button class="chip" data-onsen-kind="サウナ">🧖 サウナ</button>
+    <button class="chip" data-onsen-kind="日帰り風呂">🛁 日帰り風呂</button>
+  </div>
+</div>
+
+<div class="mood-subfilters" id="sightseeingSubfilters" hidden>
+  <div class="group-subtitle" style="margin-top:12px">観光の種類</div>
+  <div class="chips wrap" id="sightseeingKinds">
+    <button class="chip active" data-sight-kind="歴史・文化">🏯 歴史・文化</button>
+    <button class="chip" data-sight-kind="景色・絶景">🌄 景色・絶景</button>
+    <button class="chip" data-sight-kind="博物館・展示">🏛️ 博物館・展示</button>
+    <button class="chip" data-sight-kind="街歩き">🚶 街歩き</button>
+  </div>
+</div>
+
+<div class="mood-subfilters" id="activeSubfilters" hidden>
+  <div class="group-subtitle" style="margin-top:12px">体を動かす種類</div>
+  <div class="chips wrap" id="activeKinds">
+    <button class="chip active" data-active-kind="散歩・ウォーキング">🚶 散歩・ウォーキング</button>
+    <button class="chip" data-active-kind="公園">🌳 公園</button>
+    <button class="chip" data-active-kind="トレッキング">🥾 トレッキング</button>
+    <button class="chip" data-active-kind="アクティビティ">🏃 アクティビティ</button>
+  </div>
+</div>
 </div></div><div class="group-part group-part-divider">
 <div class="group-subtitle">予算・同行者</div>
 <div class="grid">
@@ -1663,7 +1699,7 @@ const GAS_PRICE_YEN_PER_L=180;      // conservative reference, not a live price
 const REAL_WORLD_KM_PER_L=9;         // short-trip / city-driving assumption
 const SHORT_TRIP_FUEL_ALLOWANCE_YEN=100; // warm-up / idling / detour allowance
 
-let EVENTS=[], RESTAURANTS=[], TRAIN={up:[],down:[]}, SHINANO={up:[],down:[]}, BUS={trips:[]}, BUS_MAIN={weekday:{},holiday:{}}, BUS_EXT={routes:[]}, PLACES={}, MOBILITY=[], origin='上越妙高', destinationArea='any', returnTarget='same', timingMode='now', planningDate=new Date(), mood='any', foodKind='ラーメン', transport='auto', budget='any', companion='any', currentPos=null, weather=null, mobilityMap=null, mobilityMarkers=[], currentPosMarker=null, nearestService=null;
+let EVENTS=[], RESTAURANTS=[], TRAIN={up:[],down:[]}, SHINANO={up:[],down:[]}, BUS={trips:[]}, BUS_MAIN={weekday:{},holiday:{}}, BUS_EXT={routes:[]}, PLACES={}, MOBILITY=[], origin='上越妙高', destinationArea='any', returnTarget='same', timingMode='now', planningDate=new Date(), mood='any', foodKind='ラーメン', onsenKind='温泉', sightseeingKind='歴史・文化', activeKind='散歩・ウォーキング', transport='auto', budget='any', companion='any', currentPos=null, weather=null, mobilityMap=null, mobilityMarkers=[], currentPosMarker=null, nearestService=null;
 
 Promise.all([
  fetch('./events_auto.json',{cache:'no-store'}).then(r=>r.ok?r.json():Promise.reject()).catch(()=>fetch('./events.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>[])),
@@ -1739,12 +1775,37 @@ updateTimingUI();
 document.querySelectorAll('#moods .chip').forEach(b=>b.onclick=()=>{
  document.querySelectorAll('#moods .chip').forEach(x=>x.classList.remove('active'));
  b.classList.add('active'); mood=b.dataset.mood;
- const foodBox=document.getElementById('foodSubfilters');
- if(foodBox) foodBox.hidden=mood!=='food';
+ const boxes={
+   food:'foodSubfilters',
+   onsen:'onsenSubfilters',
+   sightseeing:'sightseeingSubfilters',
+   active:'activeSubfilters'
+ };
+ Object.values(boxes).forEach(id=>{
+   const el=document.getElementById(id);
+   if(el) el.hidden=true;
+ });
+ const targetId=boxes[mood];
+ if(targetId){
+   const target=document.getElementById(targetId);
+   if(target) target.hidden=false;
+ }
 });
 document.querySelectorAll('#foodKinds .chip').forEach(b=>b.onclick=()=>{
  document.querySelectorAll('#foodKinds .chip').forEach(x=>x.classList.remove('active'));
  b.classList.add('active'); foodKind=b.dataset.foodKind||'any';
+});
+document.querySelectorAll('#onsenKinds .chip').forEach(b=>b.onclick=()=>{
+ document.querySelectorAll('#onsenKinds .chip').forEach(x=>x.classList.remove('active'));
+ b.classList.add('active'); onsenKind=b.dataset.onsenKind||'温泉';
+});
+document.querySelectorAll('#sightseeingKinds .chip').forEach(b=>b.onclick=()=>{
+ document.querySelectorAll('#sightseeingKinds .chip').forEach(x=>x.classList.remove('active'));
+ b.classList.add('active'); sightseeingKind=b.dataset.sightKind||'歴史・文化';
+});
+document.querySelectorAll('#activeKinds .chip').forEach(b=>b.onclick=()=>{
+ document.querySelectorAll('#activeKinds .chip').forEach(x=>x.classList.remove('active'));
+ b.classList.add('active'); activeKind=b.dataset.activeKind||'散歩・ウォーキング';
 });
 document.querySelectorAll('#transport .chip').forEach(b=>b.onclick=()=>{
  document.querySelectorAll('#transport .chip').forEach(x=>x.classList.remove('active'));
@@ -3175,6 +3236,33 @@ function foodKindMatches(ev){
   return cats.some(c=>c===foodKind || c.includes(foodKind));
 }
 
+function secondaryMoodMatches(ev){
+  const cats=(ev.categories||[]).map(v=>String(v));
+  const text=[ev.title,ev.venue,ev.summary,...cats].filter(Boolean).join(' ');
+
+  if(mood==='onsen'){
+    if(onsenKind==='サウナ') return /サウナ/.test(text);
+    if(onsenKind==='日帰り風呂') return /日帰り|入浴|風呂|温浴/.test(text);
+    return /温泉/.test(text);
+  }
+
+  if(mood==='sightseeing'){
+    if(sightseeingKind==='歴史・文化') return /歴史|文化|史跡|城|神社|寺|町家|謙信/.test(text);
+    if(sightseeingKind==='景色・絶景') return /景色|絶景|展望|海|山|高原|眺望/.test(text);
+    if(sightseeingKind==='博物館・展示') return /博物館|美術館|展示|資料館|科学館|水族館/.test(text);
+    if(sightseeingKind==='街歩き') return /街歩き|散策|雁木|町並み|通り|商店街/.test(text);
+  }
+
+  if(mood==='active'){
+    if(activeKind==='散歩・ウォーキング') return /散歩|散策|歩く|ウォーキング|街歩き/.test(text);
+    if(activeKind==='公園') return /公園/.test(text);
+    if(activeKind==='トレッキング') return /トレッキング|登山|ハイキング|山歩き/.test(text);
+    if(activeKind==='アクティビティ') return /アクティビティ|スポーツ|体験|サイクリング|スキー|SUP|カヤック/.test(text);
+  }
+
+  return true;
+}
+
 function companionAllows(ev){
   if(companion==='any') return true;
   if(companion==='solo') return ev.solo_friendly!==false;
@@ -4495,7 +4583,7 @@ async function buildPlans(){
  let events=candidateEvents.filter(ev=>eventIsAvailableAt(ev,planningDate)).filter(budgetAllows).filter(companionAllows);
  if(destinationArea!=='any')events=events.filter(destinationMatchesEvent);
  if(mood!=='any')events=events.filter(ev=>moodMatches(ev,mood));
- events=events.filter(foodKindMatches);
+ events=events.filter(foodKindMatches).filter(secondaryMoodMatches);
 
  // Food/cafe can contain many API + static shops. Keep the transport comparison
  // responsive by scoring the most relevant subset first.
@@ -4530,7 +4618,7 @@ async function buildPlans(){
  if(!scored.length && mood!=='any'){
    let relaxed=candidateEvents.filter(ev=>eventIsAvailableAt(ev,planningDate)).filter(budgetAllows).filter(companionAllows);
    if(destinationArea!=='any') relaxed=relaxed.filter(destinationMatchesEvent);
-   relaxed=relaxed.filter(foodKindMatches);
+   relaxed=relaxed.filter(foodKindMatches).filter(secondaryMoodMatches);
    scored=await scoreEventSet(relaxed,requestedModes,start,deadline,searchCtx);
    if(scored.length) relaxationLevel=2;
  }
