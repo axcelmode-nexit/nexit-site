@@ -3835,7 +3835,14 @@ async function scoreEventSet(events, modes, start, deadline, ctx){
         c.weatherReason=wa.reason;
         const timing=eventTimingMeta(ev,startDateForScoring(start));
         c.eventTiming=timing;
-        c.preferenceScore=wa.score + (timing?.score||0) + (companion==='any'?0:12) + (budget==='any'?0:8);
+        const usableMinutes=Math.max(1,deadline-start);
+        const planMinutes=Math.max(1,c.finish-start);
+        const timeUseRatio=Math.min(1.5,planMinutes/usableMinutes);
+        // Prefer plans that make meaningful use of the selected free time.
+        // This makes 90-minute and 240-minute searches rank differently.
+        const timeFitScore=Math.max(0,32-Math.abs(timeUseRatio-0.72)*48);
+        c.timeFitScore=Math.round(timeFitScore);
+        c.preferenceScore=wa.score + (timing?.score||0) + (companion==='any'?0:12) + (budget==='any'?0:8) + timeFitScore;
         rows.push(c);
       }
     }
@@ -4568,7 +4575,38 @@ function providerInfoHtml(ev){
   return `<div class="hotpepper-provider-badge">Hot Pepper掲載店</div>${detail}`;
 }
 
+
+function syncSearchStateFromControls(){
+  const activeOrigin=document.querySelector('#origins .chip.active');
+  const activeDestination=document.querySelector('#destinations .chip.active');
+  const activeReturn=document.querySelector('#returns .chip.active');
+  const activeTiming=document.querySelector('#timing .chip.active');
+  const activeMood=document.querySelector('#moods .chip.active');
+  const activeFood=document.querySelector('#foodKinds .chip.active');
+  const activeOnsen=document.querySelector('#onsenKinds .chip.active');
+  const activeSight=document.querySelector('#sightseeingKinds .chip.active');
+  const activeActivity=document.querySelector('#activeKinds .chip.active');
+  const activeTransport=document.querySelector('#transport .chip.active');
+
+  if(activeOrigin?.dataset.station) origin=activeOrigin.dataset.station;
+  if(activeDestination?.dataset.dest) destinationArea=activeDestination.dataset.dest;
+  if(activeReturn?.dataset.return) returnTarget=activeReturn.dataset.return;
+  if(activeTiming?.dataset.timing) timingMode=activeTiming.dataset.timing;
+  if(activeMood?.dataset.mood) mood=activeMood.dataset.mood;
+  if(activeFood?.dataset.foodKind) foodKind=activeFood.dataset.foodKind;
+  if(activeOnsen?.dataset.onsenKind) onsenKind=activeOnsen.dataset.onsenKind;
+  if(activeSight?.dataset.sightKind) sightseeingKind=activeSight.dataset.sightKind;
+  if(activeActivity?.dataset.activeKind) activeKind=activeActivity.dataset.activeKind;
+  if(activeTransport?.dataset.mode) transport=activeTransport.dataset.mode;
+
+  const budgetEl=document.getElementById('budget');
+  const companionEl=document.getElementById('companion');
+  if(budgetEl) budget=budgetEl.value;
+  if(companionEl) companion=companionEl.value;
+}
+
 async function buildPlans(){
+ syncSearchStateFromControls();
  try{ trackNexitaime('search_start',{freeMinutes:Number(document.getElementById('free')?.value)||120,buffer:Number(document.getElementById('buffer')?.value)||15}); }catch(_){}
  const free=Number(document.getElementById('free').value)||120;
  const buffer=Math.max(10,Number(document.getElementById('buffer').value)||15);
@@ -4594,9 +4632,9 @@ async function buildPlans(){
  };
 
  const start=planningDate.getHours()*60+planningDate.getMinutes(), hardEnd=start+free, deadline=hardEnd-buffer;
- summary.innerHTML='<h2>候補を比較中…</h2><p>移動時間・時刻表・戻り余裕を確認しています。</p>';
+ summary.innerHTML='<h2>条件を見直して再検索中…</h2><p>空き時間・移動手段・時刻表・戻り余裕をもう一度判定しています。</p>';
  const searchWatchdog=setTimeout(()=>{
-   if(summary.textContent.includes('候補を比較中')){
+   if(summary.textContent.includes('再検索中')){
      summary.innerHTML='<h2>検索に時間がかかっています</h2><p>外部サービスの応答が遅いため、処理を継続しています。検索条件は変更していません。</p>';
    }
  },10000);
@@ -4717,7 +4755,7 @@ async function buildPlans(){
  const routeSummary=`${searchCtx.origin} → ${destinationGroupLabel(searchCtx.destination)} → ${searchCtx.returnTo}`;
  if(relaxationLevel===0){
    if(transport==='auto'){
-     summary.innerHTML=`<h2>今の条件で${top.length}案あります</h2><p><strong>${routeSummary}</strong><br>${planStartLabel()}出発・空き時間${free}分・帰着後の余裕${buffer}分を確保します。</p>`;
+     summary.innerHTML=`<h2>今の条件で${top.length}案あります</h2><p><strong>${routeSummary}</strong><br>${planStartLabel()}出発・空き時間${free}分・帰着後の余裕${buffer}分を確保します。<br><small>現在の条件で再検索しました。</small></p>`;
    }else{
      summary.innerHTML=`<h2>${MODE_LABELS[transport]||transport}で${top.length}案あります</h2><p><strong>${routeSummary}</strong><br>指定した出発地・行き先・帰着先を固定して判定しました。</p>`;
    }
