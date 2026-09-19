@@ -2033,7 +2033,7 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
 </section>
 
 <div class="hotpepper-credit">Powered by <a href="https://webservice.recruit.co.jp/" target="_blank" rel="noopener">ホットペッパーグルメ Webサービス</a></div>
-<footer data-build="v49">NEXITAIME 〜上越版〜 · Powered by 
+<footer data-build="v50">NEXITAIME 〜上越版〜 · Powered by 
 <a href="https://axcelmode-nexit.jp/" target="_blank" rel="noopener">AXCEL MODE NEXIT</a> · Beta1.0
 <section class="operator-card" aria-label="運営会社">
   <div class="operator-card-inner">
@@ -5045,8 +5045,8 @@ function stagedAutoCandidates(events, ctx){
     return {ev,i,score};
   }).sort((a,b)=>b.score-a.score || a.i-b.i);
 
-  const first=ranked.slice(0,16).map(x=>x.ev);
-  const rest=ranked.slice(16).map(x=>x.ev);
+  const first=ranked.slice(0,28).map(x=>x.ev);
+  const rest=ranked.slice(28).map(x=>x.ev);
   return {first,rest};
 }
 
@@ -6539,26 +6539,43 @@ function mergeCandidateEvents(staticRows=[],liveRows=[]){
 }
 
 async function fetchHotPepperRestaurants(){
-  if(mood!=='food') return [];
+  // Live gourmet data should enrich both explicit food searches and おまかせ searches.
+  if(!['food','any'].includes(mood)) return [];
+
   const endpoint=window.NEXITAIME_GOURMET_ENDPOINT;
   if(!endpoint)return [];
-  try{
-    const qs=new URLSearchParams({
-      destination:destinationArea||'any',
-      origin:origin||'上越妙高',
-      mood:'food',
-      kind:(foodKind||'ラーメン')
-    });
-    const controller=new AbortController();
-    const timer=setTimeout(()=>controller.abort(),1400);
-    const res=await fetch(`${endpoint}?${qs.toString()}`,{signal:controller.signal,headers:{Accept:'application/json'}});
-    clearTimeout(timer);
-    if(!res.ok)return [];
-    const data=await res.json();
-    return dedupeHotPepperRows(Array.isArray(data?.restaurants)?data.restaurants:[]).slice(0,10);
-  }catch(_){
-    return [];
-  }
+
+  const kinds=(mood==='food' && foodKind!=='any')
+    ? [foodKind]
+    : ['ラーメン','定食','海鮮','寿司','そば','中華','洋食','カフェ'];
+
+  const fetchOne=async(kind)=>{
+    try{
+      const qs=new URLSearchParams({
+        destination:destinationArea||'any',
+        origin:origin||'上越妙高',
+        mood:'food',
+        kind:kind||'any'
+      });
+      const controller=new AbortController();
+      const timer=setTimeout(()=>controller.abort(),1800);
+      const res=await fetch(`${endpoint}?${qs.toString()}`,{
+        signal:controller.signal,
+        headers:{Accept:'application/json'}
+      });
+      clearTimeout(timer);
+      if(!res.ok)return [];
+      const data=await res.json();
+      return Array.isArray(data?.restaurants)?data.restaurants:[];
+    }catch(_){
+      return [];
+    }
+  };
+
+  // Query the categories in parallel, dedupe, then keep a wider live pool.
+  // The final recommendation engine still applies destination/time/hours/route checks.
+  const batches=await Promise.all(kinds.map(fetchOne));
+  return dedupeHotPepperRows(batches.flat()).slice(0,50);
 }
 
 function providerInfoHtml(ev){
@@ -6729,7 +6746,7 @@ async function buildPlans(){
 
    // If we already have enough useful candidates, do not scan the whole region.
    if(scored.length<5 && staged.rest.length){
-     const extra=await scoreEventSet(staged.rest.slice(0,16),requestedModes,start,deadline,searchCtx);
+     const extra=await scoreEventSet(staged.rest.slice(0,28),requestedModes,start,deadline,searchCtx);
      scored=dedupeCandidates([...scored,...extra]);
    }
  }else{
