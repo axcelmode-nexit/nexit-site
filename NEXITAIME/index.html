@@ -1529,6 +1529,23 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
 }
 </style>
 
+
+<style id="quick-adjust-v20">
+.adjust-presets{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;
+}
+.adjust-preset{
+  min-height:42px;
+  text-align:center;
+}
+@media(max-width:620px){
+  .adjust-presets{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .adjust-preset{text-align:left}
+}
+</style>
+
 </head>
 <body>
 <div class="app">
@@ -1753,11 +1770,15 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
   </button>
   <div class="plan-adjust-body" id="planAdjustBody">
     <div class="adjust-presets">
-      <button type="button" class="adjust-preset" data-adjust="shorter">⏱ 30分短く</button>
+      <button type="button" class="adjust-preset" data-adjust="food">🍴 食事を入れる</button>
+      <button type="button" class="adjust-preset" data-adjust="sightseeing">🏯 観光を増やす</button>
       <button type="button" class="adjust-preset" data-adjust="near">📍 もっと近場</button>
-      <button type="button" class="adjust-preset" data-adjust="rain">🌧 雨でもOK</button>
-      <button type="button" class="adjust-preset" data-adjust="food">🍴 ごはんを入れる</button>
+      <button type="button" class="adjust-preset" data-adjust="lesswalk">🚶 徒歩を減らす</button>
+      <button type="button" class="adjust-preset" data-adjust="cheaper">💴 予算を下げる</button>
+      <button type="button" class="adjust-preset" data-adjust="longer">⏱ 30分長く</button>
+      <button type="button" class="adjust-preset" data-adjust="shorter">⏱ 30分短く</button>
       <button type="button" class="adjust-preset" data-adjust="public">🚉 公共交通だけ</button>
+      <button type="button" class="adjust-preset" data-adjust="rain">🌧 雨でもOK</button>
     </div>
     <div class="adjust-freeform">
       <input id="adjustText" type="text" maxlength="80" placeholder="例：温泉にして、30分短く" />
@@ -3976,6 +3997,11 @@ function buildSimpleItinerary(plan,candidateEvents=[],freeMinutes=120){
 
         let score=0;
         if(!usedKinds.has(kind)) score+=80;
+
+        const quickPref=window.NEXITAIME_QUICK_PREFERENCE||'';
+        if(quickPref==='food' && kind==='food') score+=95;
+        if(quickPref==='sightseeing' && ['sightseeing','nature'].includes(kind)) score+=95;
+
         if(kind==='food' && !usedKinds.has('food')) score+=35;
         if(kind==='cafe' && rows.length>=2) score+=20;
         if(['sightseeing','nature'].includes(kind) && ![...usedKinds].some(k=>['sightseeing','nature'].includes(k))) score+=30;
@@ -4877,28 +4903,74 @@ function showAdjustFeedback(message){
   el.textContent=message||'';
 }
 
+
+function lowerBudgetOneStep(){
+  const el=document.getElementById('budget');
+  if(!el)return null;
+  const values=['any','20000','10000','5000','3000','1000','0'];
+  const current=String(el.value||'any');
+  let idx=values.indexOf(current);
+  if(idx<0)idx=0;
+  const next=values[Math.min(values.length-1,idx+1)];
+  el.value=next;
+  budget=next;
+  return el.options[el.selectedIndex]?.textContent||next;
+}
+
+function reduceWalking(){
+  // Avoid silently forcing one exact mode; remove walk as the chosen mode,
+  // and prefer powered/public options through automatic comparison.
+  if(transport==='walk'){
+    setTransportChoice('auto');
+  }else if(transport==='auto'){
+    setTransportChoice('public');
+  }else{
+    setTransportChoice('auto');
+  }
+}
+
+function resetToMixedRecommendation(){
+  setMoodChoice('any');
+}
+
 async function applyPlanAdjustment(kind){
   const changes=[];
 
   if(kind==='shorter'){
     setFreeMinutes(currentFreeMinutes()-30);
     changes.push('空き時間を30分短く');
+  }else if(kind==='longer'){
+    setFreeMinutes(currentFreeMinutes()+30);
+    changes.push('空き時間を30分長く');
   }else if(kind==='near'){
     setDestinationChoice('any');
     setTransportChoice('walk');
-    changes.push('行き先をおまかせ・徒歩で近場優先');
+    changes.push('近場を優先');
+  }else if(kind==='lesswalk'){
+    reduceWalking();
+    changes.push('徒歩を減らす');
   }else if(kind==='rain'){
     setMoodChoice('rain');
     changes.push('雨でもOK');
   }else if(kind==='food'){
-    setMoodChoice('food');
-    changes.push('ごはん');
+    // Keep "おすすめ" semantics so food can be mixed with sightseeing.
+    resetToMixedRecommendation();
+    window.NEXITAIME_QUICK_PREFERENCE='food';
+    changes.push('食事を含む周遊');
+  }else if(kind==='sightseeing'){
+    resetToMixedRecommendation();
+    window.NEXITAIME_QUICK_PREFERENCE='sightseeing';
+    changes.push('観光を多めに');
+  }else if(kind==='cheaper'){
+    const label=lowerBudgetOneStep();
+    changes.push(label?`予算を${label}に`:'予算を下げる');
   }else if(kind==='public'){
     setTransportChoice('public');
     changes.push('公共交通だけ');
   }
 
   showAdjustFeedback(changes.length?`${changes.join('、')}で再提案します。`:'条件を変更できませんでした。');
+  try{ trackNexitaime('quick_adjust',{kind}); }catch(_){}
   await buildPlans();
 }
 
@@ -5468,6 +5540,7 @@ async function buildPlans(){
  }).join('');
  bindPlanShareButtons(top,searchCtx);
  bindFavoriteButtons(top,searchCtx);
+ window.NEXITAIME_QUICK_PREFERENCE='';
  renderFavoriteTray();
 
 
