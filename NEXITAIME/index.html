@@ -1592,6 +1592,23 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
 .visited-history-row span{color:#8795a3}
 </style>
 
+
+<style id="transit-detail-v23">
+.transit-transfer{
+  display:inline-block;
+  margin-top:4px;
+  font-size:10px;
+  font-weight:900;
+  color:#3c6f90;
+}
+.transit-guide-note{
+  margin-top:8px;
+  font-size:9px;
+  line-height:1.5;
+  color:#8795a3;
+}
+</style>
+
 </head>
 <body>
 <div class="app">
@@ -2141,7 +2158,11 @@ function findTrain(a,b,after){
       n:`${first.n} → ${second.n}`,
       dep:first.dep,arr:second.arr,kind:'train',
       [a]:fmt(first.dep),[b]:fmt(second.arr),
-      connection:'妙高高原',lineName:'妙高はねうまライン＋北しなの線'
+      connection:'妙高高原',lineName:'妙高はねうまライン＋北しなの線',
+      segments:[
+        {from:a,to:'妙高高原',dep:first.dep,arr:first.arr,lineName:'妙高はねうまライン',trainName:first.n||'列車'},
+        {from:'妙高高原',to:b,dep:second.dep,arr:second.arr,lineName:'北しなの線',trainName:second.n||'列車'}
+      ]
     };
   }
   if(aN && bT){
@@ -2153,7 +2174,11 @@ function findTrain(a,b,after){
       n:`${first.n} → ${second.n}`,
       dep:first.dep,arr:second.arr,kind:'train',
       [a]:fmt(first.dep),[b]:fmt(second.arr),
-      connection:'妙高高原',lineName:'北しなの線＋妙高はねうまライン'
+      connection:'妙高高原',lineName:'北しなの線＋妙高はねうまライン',
+      segments:[
+        {from:a,to:'妙高高原',dep:first.dep,arr:first.arr,lineName:'北しなの線',trainName:first.n||'列車'},
+        {from:'妙高高原',to:b,dep:second.dep,arr:second.arr,lineName:'妙高はねうまライン',trainName:second.n||'列車'}
+      ]
     };
   }
   return null;
@@ -2203,6 +2228,7 @@ function findMainlineBus(a,b,after){
     if(dep>=after){
       return {
         n:'上越大通り線',
+        lineName:'上越大通り線',
         dep,arr,
         kind:'bus',
         [a]:pair[0],
@@ -2225,6 +2251,7 @@ function findExtendedBus(a,b,after){
       const dep=mins(trip.stops[si].time),arr=mins(trip.stops[di].time);
       if(dep>=after)candidates.push({
         n:`${route.route_name}（${route.route_number}）`,routeName:route.route_name,routeNumber:route.route_number,
+        lineName:`${route.route_name}（${route.route_number}）`,
         dep,arr,kind:'bus',[a]:trip.stops[si].time,[b]:trip.stops[di].time
       });
     }
@@ -2246,7 +2273,7 @@ function findBus(a,b,after){
     const di=tr.stops.findIndex(s=>s.name===bb);
     if(si<0||di<0||di<=si)continue;
     const dep=mins(tr.stops[si].time), arr=mins(tr.stops[di].time);
-    if(dep>=after)candidates.push({n:'佐渡汽船連絡バス',dep,arr,kind:'bus',[a]:tr.stops[si].time,[b]:tr.stops[di].time});
+    if(dep>=after)candidates.push({n:'佐渡汽船連絡バス',lineName:'佐渡汽船連絡バス',dep,arr,kind:'bus',[a]:tr.stops[si].time,[b]:tr.stops[di].time});
   }
   candidates.sort((x,y)=>x.arr-y.arr||x.dep-y.dep);
   return candidates[0]||null;
@@ -4460,7 +4487,9 @@ function transitLegDetails(leg, fromName, toName){
     dep,
     arr,
     line,
-    vehicle
+    vehicle,
+    connection:leg.connection||'',
+    segments:Array.isArray(leg.segments)?leg.segments:[]
   };
 }
 
@@ -4476,15 +4505,33 @@ function renderTransitGuide(plan,ctx){
 
   const rows=[];
 
-  if(plan.multimodal && plan.transferHub){
-    const a=transitLegDetails(plan.out,ctx.origin,plan.transferHub);
-    if(a) rows.push({...a,type:'transit'});
+  const addTransitLeg=(leg,from,to)=>{
+    const detail=transitLegDetails(leg,from,to);
+    if(!detail)return;
 
-    const b=transitLegDetails(plan.back,plan.transferHub,plan.returnTo||ctx.returnTo);
-    if(b) rows.push({...b,type:'transit'});
+    if(detail.segments.length){
+      detail.segments.forEach((seg,idx)=>{
+        rows.push({
+          type:'transit',
+          from:seg.from,
+          to:seg.to,
+          dep:Number.isFinite(seg.dep)?fmt(seg.dep):'',
+          arr:Number.isFinite(seg.arr)?fmt(seg.arr):'',
+          vehicle:'🚃',
+          line:seg.lineName||seg.trainName||'列車',
+          transferAfter:idx<detail.segments.length-1 ? detail.connection : ''
+        });
+      });
+    }else{
+      rows.push({...detail,type:'transit'});
+    }
+  };
+
+  if(plan.multimodal && plan.transferHub){
+    addTransitLeg(plan.out,ctx.origin,plan.transferHub);
+    addTransitLeg(plan.back,plan.transferHub,plan.returnTo||ctx.returnTo);
   }else{
-    const a=transitLegDetails(plan.out,ctx.origin,plan.dest);
-    if(a) rows.push({...a,type:'transit'});
+    addTransitLeg(plan.out,ctx.origin,plan.dest);
 
     if(plan.lastMile?.minutes){
       rows.push({
@@ -4505,8 +4552,7 @@ function renderTransitGuide(plan,ctx){
       });
     }
 
-    const b=transitLegDetails(plan.back,plan.dest,plan.returnTo||ctx.returnTo);
-    if(b) rows.push({...b,type:'transit'});
+    addTransitLeg(plan.back,plan.dest,plan.returnTo||ctx.returnTo);
   }
 
   if(!rows.length)return '';
@@ -4530,9 +4576,11 @@ function renderTransitGuide(plan,ctx){
           <strong>${esc(r.from)} ${esc(r.dep)} 乗車</strong>
           <span>${esc(r.vehicle)} ${esc(r.line)}</span>
           <strong>${esc(r.to)} ${esc(r.arr)} 下車</strong>
+          ${r.transferAfter?`<span class="transit-transfer">↔ ${esc(r.transferAfter)}で乗換</span>`:''}
         </div>
       </div>`;
     }).join('')}
+    <div class="transit-guide-note">※ アプリ内の公共交通表示は収録済みの主要駅・主要停留所ベースです。乗り場番号・細かな停留所位置・臨時変更は公式情報で確認してください。</div>
   </div>`;
 }
 
