@@ -756,3 +756,14 @@ Cloudflare Pages側で Analytics Engine binding `ANALYTICS` を追加すると
 - 公共交通は推奨滞在時間の後に乗れる便を優先し、難しい場合だけ最低滞在時間まで短縮
 - 結果画面に「目安 XX分」を表示
 - 空き時間が長くても、必要以上に現地滞在を引き延ばさない
+
+
+## Hot Pepper グルメサーチAPI連携
+
+- 「ごはん」「カフェ」検索時に `/api/nexitaime-gourmet` を呼び出し
+- 静的 `restaurants.json` とAPI店舗を重複除去して合流
+- API店舗の緯度経度で移動時間を判定
+- API障害・未設定時は静的データだけで継続
+- ブラウザへAPIキーは配信しない
+- GPS座標はHot Pepper中継APIへ送信しない（エリア中心点で検索）
+- Powered by ホットペッパーグルメ Webサービス のクレジット表示を追加

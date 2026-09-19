@@ -735,6 +735,30 @@ main{
     font-size:18px;
   }
 }
+.service-site-btn{
+  width:auto;
+  min-width:118px;
+  height:40px;
+  padding:0 13px;
+  border-radius:999px;
+  gap:7px;
+  font-size:12px;
+  font-weight:900;
+  white-space:nowrap;
+}
+.service-site-btn .service-site-arrow{
+  font-size:14px;
+  opacity:.72;
+}
+@media (max-width:700px){
+  .service-site-btn{
+    width:auto;
+    min-width:116px;
+    height:40px;
+    padding:0 12px;
+    font-size:12px;
+  }
+}
 </style>
 
 
@@ -1247,6 +1271,8 @@ main{
 <script id="nexitaime-ai-config">
 window.NEXITAIME_AI_ENDPOINT =
   "https://axcelmode-nexit-ai.pages.dev/api/nexitaime-adjust";
+window.NEXITAIME_GOURMET_ENDPOINT =
+  "https://axcelmode-nexit-ai.pages.dev/api/nexitaime-gourmet";
 </script>
 
 
@@ -1332,6 +1358,13 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
 .food-subfilters[hidden]{display:none!important}
 #foodKinds .chip{font-size:11px}
 @media(max-width:700px){#foodKinds .chip{flex:1 1 calc(50% - 10px)!important;justify-content:center}}
+</style>
+
+<style id="hotpepper-integration-style">
+.hotpepper-provider-badge{display:inline-flex;align-items:center;margin:7px 0 4px;padding:4px 8px;border-radius:999px;background:#fff4f4;border:1px solid #ffd2d2;color:#b72929;font-size:9px;font-weight:900}
+.hotpepper-shop-meta{margin:3px 0 7px;color:#728394;font-size:9px;line-height:1.55}
+.hotpepper-credit{margin:18px 0 8px;text-align:center;color:#8795a3;font-size:9px}
+.hotpepper-credit a{color:#6d8192;text-decoration:underline}
 </style>
 </head>
 <body>
@@ -1556,6 +1589,8 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
 </div>
 <div class="note">鉄道は妙高はねうまライン公開時刻表を利用。バスは上越大通り線・佐渡汽船連絡バス・教育大学線・春日山／佐内線・山麓線の主要区間をアプリ内判定します。運休・遅延・臨時変更は上の公式運行情報を優先してください。イベントは events_auto.json があれば自動更新データを優先します。</div>
 </section>
+
+<div class="hotpepper-credit">Powered by <a href="https://webservice.recruit.co.jp/" target="_blank" rel="noopener">ホットペッパーグルメ Webサービス</a></div>
 <footer>NEXITAIME 〜上越版〜 · Powered by 
 <a href="https://axcelmode-nexit.jp/" target="_blank" rel="noopener">AXCEL MODE NEXIT</a> · Beta1.0
 <section class="operator-card" aria-label="運営会社">
@@ -2066,6 +2101,8 @@ async function routeMinutesCoords(mode,pa,pb){
 }
 
 function routePointForEvent(ev,dest){
+  const lat=Number(ev?.lat), lon=Number(ev?.lng ?? ev?.lon);
+  if(Number.isFinite(lat) && Number.isFinite(lon)) return {lat,lon};
   const venue=ev?.venue;
   if(venue && SPOT_COORDS?.[venue]) return SPOT_COORDS[venue];
   return PLACES?.[dest]||null;
@@ -2439,7 +2476,7 @@ async function renderMobility(){
       ${s.stock?`<div class="meta">${s.stock}</div>`:''}
       ${s.price?`<div class="meta">${s.price}</div>`:''}
       ${s.closed_note?`<div class="note">${s.closed_note}</div>`:''}
-      <div class="actions service-actions">${phone}<a href="${s.url}" target="_blank" rel="noopener" class="service-icon-btn" aria-label="公式サイトで確認" title="公式サイトで確認">↗︎</a></div>
+      <div class="actions service-actions">${phone}<a href="${s.url}" target="_blank" rel="noopener" class="service-icon-btn service-site-btn" aria-label="公式サイトで確認" title="公式サイトで確認"><span aria-hidden="true">🌐</span><span>公式サイト</span><span class="service-site-arrow" aria-hidden="true">↗</span></a></div>
     </div>`;
   };
 
@@ -3187,7 +3224,7 @@ function planStops(plan,ctx){
       // The first event row uses the event title, while its map point is the venue.
       if(s.kind==='event'){
         const venue=plan.ev?.venue||plan.dest;
-        coord=placeCoord(venue)||placeCoord(plan.dest);
+        coord=routePointForEvent(plan.ev,plan.dest)||placeCoord(venue)||placeCoord(plan.dest);
         markerName=plan.ev?.venue||s.name;
       }else{
         coord=placeCoord(s.name);
@@ -3204,7 +3241,7 @@ function planStops(plan,ctx){
     });
   }else{
     const destLabel=plan.ev?.venue||plan.dest;
-    add(destLabel,'spot','1',placeCoord(destLabel)||placeCoord(plan.dest),{itineraryNo:1,stay:Number(plan.stay)||0});
+    add(destLabel,'spot','1',routePointForEvent(plan.ev,plan.dest)||placeCoord(destLabel)||placeCoord(plan.dest),{itineraryNo:1,stay:Number(plan.stay)||0});
   }
 
   if(plan.multimodal && plan.transferHub){
@@ -4324,6 +4361,57 @@ function bindPlanAdjustPanel(){
   }
 }
 
+
+function normalizeShopName(value){
+  return String(value||'')
+    .toLowerCase()
+    .replace(/[\s　・･\-‐‑–—ー_（）()「」『』【】\[\]]+/g,'')
+    .replace(/店$/,'');
+}
+
+function dedupeHotPepperRows(rows=[]){
+  const staticNames=new Set(RESTAURANTS.flatMap(r=>[r.title,r.venue]).map(normalizeShopName).filter(Boolean));
+  const seen=new Set();
+  return rows.filter(row=>{
+    const key=row.hotpepper_id || normalizeShopName(row.venue||row.title);
+    const nameKey=normalizeShopName(row.venue||row.title);
+    if(!key || seen.has(key) || staticNames.has(nameKey))return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+async function fetchHotPepperRestaurants(){
+  if(!['food','cafe'].includes(mood)) return [];
+  const endpoint=window.NEXITAIME_GOURMET_ENDPOINT;
+  if(!endpoint)return [];
+  try{
+    const qs=new URLSearchParams({
+      destination:destinationArea||'any',
+      mood:mood||'food',
+      kind:(mood==='food' ? (foodKind||'any') : 'カフェ')
+    });
+    const controller=new AbortController();
+    const timer=setTimeout(()=>controller.abort(),7000);
+    const res=await fetch(`${endpoint}?${qs.toString()}`,{signal:controller.signal,headers:{Accept:'application/json'}});
+    clearTimeout(timer);
+    if(!res.ok)return [];
+    const data=await res.json();
+    return dedupeHotPepperRows(Array.isArray(data?.restaurants)?data.restaurants:[]);
+  }catch(_){
+    return [];
+  }
+}
+
+function providerInfoHtml(ev){
+  if(ev?.provider!=='hotpepper')return '';
+  const bits=[];
+  if(ev.hours_text)bits.push(`営業時間：${esc(ev.hours_text)}`);
+  if(ev.closed_text)bits.push(`定休日：${esc(ev.closed_text)}`);
+  const detail=bits.length?`<div class="hotpepper-shop-meta">${bits.join('<br>')}</div>`:'';
+  return `<div class="hotpepper-provider-badge">Hot Pepper掲載店</div>${detail}`;
+}
+
 async function buildPlans(){
  try{ trackNexitaime('search_start',{freeMinutes:Number(document.getElementById('free')?.value)||120,buffer:Number(document.getElementById('buffer')?.value)||15}); }catch(_){}
  const free=Number(document.getElementById('free').value)||120;
@@ -4365,7 +4453,9 @@ async function buildPlans(){
    summary.scrollIntoView({behavior:'smooth', block:'start'});
  });
 
- let events=EVENTS.filter(ev=>eventIsAvailableAt(ev,planningDate)).filter(budgetAllows).filter(companionAllows);
+ const hotpepperEvents=await fetchHotPepperRestaurants();
+ const candidateEvents=hotpepperEvents.length ? [...EVENTS,...hotpepperEvents] : EVENTS;
+ let events=candidateEvents.filter(ev=>eventIsAvailableAt(ev,planningDate)).filter(budgetAllows).filter(companionAllows);
  if(destinationArea!=='any')events=events.filter(destinationMatchesEvent);
  if(mood!=='any')events=events.filter(ev=>moodMatches(ev,mood));
  events=events.filter(foodKindMatches);
@@ -4385,7 +4475,7 @@ async function buildPlans(){
 
  // 3) If still none, relax mood while keeping destination/budget/companion AND transport.
  if(!scored.length && mood!=='any'){
-   let relaxed=EVENTS.filter(ev=>eventIsAvailableAt(ev,planningDate)).filter(budgetAllows).filter(companionAllows);
+   let relaxed=candidateEvents.filter(ev=>eventIsAvailableAt(ev,planningDate)).filter(budgetAllows).filter(companionAllows);
    if(destinationArea!=='any') relaxed=relaxed.filter(destinationMatchesEvent);
    relaxed=relaxed.filter(foodKindMatches);
    scored=await scoreEventSet(relaxed,requestedModes,start,deadline,searchCtx);
@@ -4482,6 +4572,7 @@ async function buildPlans(){
    const rank=idx===0&&transport==='auto'?'<span class="status">おすすめ</span>':'<span class="status">間に合う</span>';
    const recommendationHtml=renderRecommendationBadges(p,idx);
    const eventInfo=eventInfoHtml(p.ev);
+   const providerInfo=providerInfoHtml(p.ev);
    const scheduleHtml=renderPlanSchedule(p,searchCtx);
    const serviceNote=p.service?`<div class="note">利用候補：${esc(p.service.name)}${p.accessMinutes?`（拠点まで徒歩 約${p.accessMinutes}分）`:''}</div>`:'';
    const itineraryHtml=renderSimpleItinerary(p.itinerary);
@@ -4510,6 +4601,7 @@ async function buildPlans(){
      <h3>${esc(p.ev.title)}</h3>
      ${eventInfo}
      <div class="meta">📍 ${esc(p.ev.area_name)} · ${esc(p.ev.venue||'')}</div>
+     ${providerInfo}
      <p>${esc(p.ev.summary||'')}</p>
      <div class="note" style="margin-bottom:6px"><strong>この案の理由：</strong>${esc([p.reason,p.weatherReason,companionReason(p.ev)].filter(Boolean).join('・')||'時間内に収まるため')}</div>
      <div class="meta">🎫 ${esc(costLabel(p.ev))}${p.ev.indoor?' · 🏠 屋内':''}</div>
@@ -4539,7 +4631,7 @@ async function buildPlans(){
        <button type="button" class="share-btn" data-share-action="line" data-share-idx="${idx}">LINE</button>
        <button type="button" class="share-btn" data-share-action="copy" data-share-idx="${idx}">📋 内容をコピー</button>
      </div>
-     <div class="links"><a href="${p.ev.url}" target="_blank" rel="noopener">イベント詳細を見る</a></div>
+     <div class="links"><a href="${p.ev.url}" target="_blank" rel="noopener">${p.ev.provider==='hotpepper'?'ホットペッパーで店舗を見る':'詳細を見る'}</a></div>
    </div>`;
  }).join('');
  bindPlanShareButtons(top,searchCtx);
