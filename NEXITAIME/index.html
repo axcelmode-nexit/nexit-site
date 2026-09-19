@@ -4342,61 +4342,103 @@ function stagedAutoCandidates(events, ctx){
     return {ev,i,score};
   }).sort((a,b)=>b.score-a.score || a.i-b.i);
 
-  const first=ranked.slice(0,24).map(x=>x.ev);
-  const rest=ranked.slice(24).map(x=>x.ev);
+  const first=ranked.slice(0,16).map(x=>x.ev);
+  const rest=ranked.slice(16).map(x=>x.ev);
   return {first,rest};
+}
+
+
+function autoModesForEvent(ev,dest,modes,ctx,start,deadline){
+  // Explicitly selected transport must never be changed.
+  if(transport!=='auto') return modes;
+
+  const fromPoint=PLACES?.[ctx?.origin||origin];
+  const destPoint=routePointForEvent(ev,dest);
+  if(!fromPoint || !destPoint) return modes;
+
+  const km=haversine(fromPoint.lat,fromPoint.lon,destPoint.lat,destPoint.lon)*1.2;
+  const usable=Math.max(30,deadline-start);
+
+  // Don't waste time evaluating obviously unsuitable modes for every candidate.
+  if(km<=1.2){
+    return modes.filter(m=>['walk','bike','public','taxi'].includes(m));
+  }
+  if(km<=4){
+    return modes.filter(m=>['bike','public','taxi','carshare'].includes(m));
+  }
+  if(km<=12){
+    return modes.filter(m=>['public','taxi','carshare','rentalcar','multimodal'].includes(m));
+  }
+
+  // Very long trips need meaningful free time; otherwise public/taxi only.
+  if(usable<150){
+    return modes.filter(m=>['public','taxi'].includes(m));
+  }
+  return modes.filter(m=>['public','taxi','carshare','rentalcar','multimodal'].includes(m));
+}
+
+async function evaluateEventModes(ev,dest,modes,start,deadline,ctx){
+  const selected=autoModesForEvent(ev,dest,modes,ctx,start,deadline);
+  if(!selected.length)return [];
+
+  const rows=await Promise.all(
+    selected.map(mode=>evaluateMode(ev,dest,mode,start,deadline,ctx).catch(()=>null))
+  );
+  return rows.filter(Boolean);
 }
 
 async function scoreEventSet(events, modes, start, deadline, ctx){
   let rows=[];
+
   for(const ev of events){
     const dest=areaStation[ev.area];
     if(!dest)continue;
-    for(const mode of modes){
-      const c=await evaluateMode(ev,dest,mode,start,deadline,ctx);
-      if(c&&c.feasible){
-        const wa=weatherAdjustment(ev);
-        c.weatherScore=wa.score;
-        c.weatherReason=wa.reason;
-        const timing=eventTimingMeta(ev,startDateForScoring(start));
-        c.eventTiming=timing;
-        const usableMinutes=Math.max(1,deadline-start);
-        const planMinutes=Math.max(1,c.finish-start);
 
-        // The ideal plan length changes with the amount of free time.
-        // Short windows favor compact nearby plans; long windows favor plans
-        // that actually use the extra time instead of returning the same 60-minute outing.
-        let targetRatio=0.72;
-        if(usableMinutes>=150) targetRatio=0.80;
-        if(usableMinutes>=240) targetRatio=0.86;
-        if(usableMinutes>=330) targetRatio=0.90;
+    const evaluated=await evaluateEventModes(ev,dest,modes,start,deadline,ctx);
 
-        const targetMinutes=usableMinutes*targetRatio;
-        const timeGap=Math.abs(planMinutes-targetMinutes);
-        const timeFitScore=Math.max(0,120-timeGap*1.25);
+    for(const c of evaluated){
+      if(!c?.feasible)continue;
 
-        c.timeFitScore=Math.round(timeFitScore);
-        c.planMinutes=planMinutes;
-        c.targetMinutes=Math.round(targetMinutes);
-        const hoursConfidenceScore=c.availability?.verified===false ? -22 : 0;
-        c.hoursConfidenceScore=hoursConfidenceScore;
+      const wa=weatherAdjustment(ev);
+      c.weatherScore=wa.score;
+      c.weatherReason=wa.reason;
+      const timing=eventTimingMeta(ev,startDateForScoring(start));
+      c.eventTiming=timing;
+      const usableMinutes=Math.max(1,deadline-start);
+      const planMinutes=Math.max(1,c.finish-start);
 
-        const visitedScore=(mood==='any' && isVisitedEvent(ev)) ? -45 : 0;
-        c.visitedScore=visitedScore;
+      let targetRatio=0.72;
+      if(usableMinutes>=150) targetRatio=0.80;
+      if(usableMinutes>=240) targetRatio=0.86;
+      if(usableMinutes>=330) targetRatio=0.90;
 
-        c.preferenceScore=
-          timeFitScore
-          + wa.score
-          + (timing?.score||0)
-          + (companion==='any'?0:12)
-          + (budget==='any'?0:8)
-          + hoursConfidenceScore
-          + visitedScore;
+      const targetMinutes=usableMinutes*targetRatio;
+      const timeGap=Math.abs(planMinutes-targetMinutes);
+      const timeFitScore=Math.max(0,120-timeGap*1.25);
 
-        rows.push(c);
-      }
+      c.timeFitScore=Math.round(timeFitScore);
+      c.planMinutes=planMinutes;
+      c.targetMinutes=Math.round(targetMinutes);
+
+      const hoursConfidenceScore=c.availability?.verified===false ? -22 : 0;
+      c.hoursConfidenceScore=hoursConfidenceScore;
+
+      const visitedScore=(mood==='any' && isVisitedEvent(ev)) ? -45 : 0;
+      c.visitedScore=visitedScore;
+
+      c.preferenceScore=
+        timeFitScore
+        + wa.score
+        + (timing?.score||0)
+        + (companion==='any'?0:12)
+        + (budget==='any'?0:8)
+        + hoursConfidenceScore
+        + visitedScore;
+
+      rows.push(c);
     }
   }
+
   return dedupeCandidates(rows);
 }
 
@@ -5398,7 +5440,7 @@ async function buildPlans(){
  };
 
  const start=planningDate.getHours()*60+planningDate.getMinutes(), hardEnd=start+free, deadline=hardEnd-buffer;
- summary.innerHTML='<h2>条件を見直して再検索中…</h2><p>空き時間・移動手段・時刻表・戻り余裕をもう一度判定しています。</p>';
+ summary.innerHTML='<h2>条件を見直して再検索中…</h2><p>近い候補から順に、移動時間・時刻表・戻り余裕を判定しています。</p>';
  const searchWatchdog=setTimeout(()=>{
    if(summary.textContent.includes('再検索中')){
      summary.innerHTML='<h2>検索に時間がかかっています</h2><p>外部サービスの応答が遅いため、処理を継続しています。検索条件は変更していません。</p>';
@@ -5453,8 +5495,8 @@ async function buildPlans(){
    scored=await scoreEventSet(staged.first,requestedModes,start,deadline,searchCtx);
 
    // If we already have enough useful candidates, do not scan the whole region.
-   if(scored.length<6 && staged.rest.length){
-     const extra=await scoreEventSet(staged.rest.slice(0,24),requestedModes,start,deadline,searchCtx);
+   if(scored.length<5 && staged.rest.length){
+     const extra=await scoreEventSet(staged.rest.slice(0,16),requestedModes,start,deadline,searchCtx);
      scored=dedupeCandidates([...scored,...extra]);
    }
  }else{
