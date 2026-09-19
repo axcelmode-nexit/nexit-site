@@ -1897,7 +1897,7 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
 </section>
 
 <div class="hotpepper-credit">Powered by <a href="https://webservice.recruit.co.jp/" target="_blank" rel="noopener">ホットペッパーグルメ Webサービス</a></div>
-<footer>NEXITAIME 〜上越版〜 · Powered by 
+<footer data-build="v32">NEXITAIME 〜上越版〜 · Powered by 
 <a href="https://axcelmode-nexit.jp/" target="_blank" rel="noopener">AXCEL MODE NEXIT</a> · Beta1.0
 <section class="operator-card" aria-label="運営会社">
   <div class="operator-card-inner">
@@ -4834,6 +4834,122 @@ function planStartLabel(){
   return `${d.getMonth()+1}/${d.getDate()} ${fmt(d.getHours()*60+d.getMinutes())}`;
 }
 
+
+function finalPlanGuard(plan,ctx,start,deadline){
+  const reasons=[];
+  const finite=(v)=>Number.isFinite(Number(v));
+  const arrive=Number(plan?.arrive);
+  const finish=Number(plan?.finish);
+  const stay=Number(plan?.stay);
+  const spare=Number(plan?.spare);
+
+  if(!finite(arrive) || !finite(finish) || !finite(stay)) reasons.push('時刻または滞在時間が不正');
+  if(finite(arrive) && finite(start) && arrive<Number(start)) reasons.push('到着が出発より前');
+  if(finite(finish) && finite(arrive) && finish<arrive) reasons.push('帰着が到着より前');
+  if(finite(stay) && stay<=0) reasons.push('滞在時間が0分以下');
+  if(finite(deadline) && finite(finish) && finish>Number(deadline)) reasons.push('帰着期限超過');
+  if(finite(spare) && spare<0) reasons.push('戻り余裕不足');
+
+  const expectedBack=ctx?.returnTo;
+  const actualBack=plan?.returnTo||expectedBack;
+  if(expectedBack && actualBack!==expectedBack) reasons.push('帰着先不一致');
+
+  if(ctx?.destination && ctx.destination!=='any'){
+    const allowed=new Set(DEST_GROUPS[ctx.destination]?.areas||[]);
+    if(plan?.ev?.area && !allowed.has(plan.ev.area)) reasons.push('指定エリア外');
+  }
+
+  if(transport!=='auto'){
+    const actual=plan?.mode;
+    if(transport==='public'){
+      if(!['public','train','bus'].includes(actual)) reasons.push('指定移動手段と不一致');
+    }else if(actual!==transport){
+      reasons.push('指定移動手段と不一致');
+    }
+  }
+
+  if(['public','train','bus'].includes(plan?.mode)){
+    const stationArrive=Number(plan?.stationArrive);
+    const lastMile=Number(plan?.lastMile?.minutes||0);
+    if(lastMile>0 && finite(stationArrive) && finite(arrive) && arrive<=stationArrive){
+      reasons.push('駅から目的地までの移動時間不足');
+    }
+
+    const venueLeave=Number(plan?.venueLeave);
+    const backDep=Number(plan?.back?.dep);
+    if(lastMile>0 && finite(venueLeave) && finite(backDep) && backDep<=venueLeave){
+      reasons.push('目的地から駅までの戻り時間不足');
+    }
+  }
+
+  const itinerary=Array.isArray(plan?.itinerary)?plan.itinerary:[];
+  let prev=null;
+  for(const row of itinerary){
+    const rArr=Number(row?.arrive);
+    const rLeave=Number(row?.leave);
+    const rStay=Number(row?.stay);
+    const rMove=Number(row?.move||0);
+
+    if(!finite(rArr) || !finite(rLeave) || !finite(rStay)){
+      reasons.push('周遊内の時刻不正');
+      break;
+    }
+    if(rStay<=0 || rLeave<rArr){
+      reasons.push('周遊内の滞在時間不正');
+      break;
+    }
+    if(prev){
+      if(rArr<Number(prev.leave)){
+        reasons.push('立ち寄り時刻が重複');
+        break;
+      }
+      if(rMove>0 && rArr<Number(prev.leave)+rMove){
+        reasons.push('立ち寄り間の移動時間不足');
+        break;
+      }
+      if(!itineraryCategoriesCanFollow(prev.category,row.category)){
+        reasons.push('不自然な連続立ち寄り');
+        break;
+      }
+    }
+    if(row?.sourceEv){
+      const av=spotAvailability(row.sourceEv,rArr,rLeave,planningDate);
+      if(av?.ok===false){
+        reasons.push('営業時間外の立ち寄り');
+        break;
+      }
+    }
+    prev=row;
+  }
+
+  if(plan?.ev && finite(arrive)){
+    const venueLeave=finite(plan?.venueLeave) ? Number(plan.venueLeave) : arrive+Math.max(0,stay||0);
+    const av=spotAvailability(plan.ev,arrive,venueLeave,planningDate);
+    if(av?.ok===false) reasons.push('営業時間条件不成立');
+  }
+
+  return {ok:reasons.length===0,reasons:[...new Set(reasons)]};
+}
+
+function filterFinalPlans(rows,ctx,start,deadline){
+  const accepted=[];
+  const rejected=[];
+  for(const plan of rows||[]){
+    const check=finalPlanGuard(plan,ctx,start,deadline);
+    if(check.ok) accepted.push(plan);
+    else rejected.push({plan,reasons:check.reasons});
+  }
+  try{
+    if(rejected.length){
+      console.info('NEXITAIME final plan guard rejected:',rejected.map(x=>({
+        title:x.plan?.ev?.title||x.plan?.ev?.venue||x.plan?.dest,
+        reasons:x.reasons
+      })));
+    }
+  }catch(_){}
+  return accepted;
+}
+
 function sortCandidates(rows){
   return rows.sort((a,b)=>{
     if((b.preferenceScore||0)!==(a.preferenceScore||0))return (b.preferenceScore||0)-(a.preferenceScore||0);
@@ -5842,8 +5958,14 @@ async function buildPlans(){
    seenPlan.add(key);
    uniquePlans.push(row);
  }
- const top=uniquePlans.slice(0,3);
- top.forEach(p=>p.itinerary=buildSimpleItinerary(p,candidateEvents,free));
+ const guardedPlans=[];
+ for(const row of uniquePlans){
+   row.itinerary=buildSimpleItinerary(row,candidateEvents,free);
+   const checked=filterFinalPlans([row],searchCtx,start,deadline);
+   if(checked.length) guardedPlans.push(row);
+   if(guardedPlans.length>=3) break;
+ }
+ const top=guardedPlans;
  clearTimeout(searchWatchdog);
 
  const previousSnapshot=lastSearchSnapshot;
