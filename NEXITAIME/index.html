@@ -2624,7 +2624,7 @@ const MODE_LABELS={
   walk:'徒歩',bike:'レンタル自転車',multimodal:'複合移動'
 };
 const MODE_ICONS={privatecar:'🚗',mobilitycar:'🚙',carshare:'🚙',rentalcar:'🚘',train:'🚃',bus:'🚌',public:'🚉',taxi:'🚕',walk:'🚶',bike:'🚲',multimodal:'🔀'};
-const AUTO_MODES=['privatecar','carshare','rentalcar','public','multimodal','taxi','walk','bike'];
+const AUTO_MODES=['carshare','rentalcar','public','multimodal','taxi','walk','bike'];
 
 async function getModeService(mode){
   if(!['carshare','rentalcar','taxi','bike'].includes(mode))return {service:null,access:0};
@@ -4639,7 +4639,7 @@ async function buildPlans(){
  let relaxationLevel=0;
  const requestedModes=transport==='auto'
    ? (['food','cafe'].includes(mood)
-       ? ['privatecar','carshare','public','taxi','walk','bike']
+       ? ['carshare','public','taxi','walk','bike']
        : AUTO_MODES)
    : (transport==='mobilitycar' ? ['carshare','rentalcar'] : [transport]);
 
