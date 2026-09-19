@@ -1947,7 +1947,7 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
 </section>
 
 <div class="hotpepper-credit">Powered by <a href="https://webservice.recruit.co.jp/" target="_blank" rel="noopener">ホットペッパーグルメ Webサービス</a></div>
-<footer data-build="v44">NEXITAIME 〜上越版〜 · Powered by 
+<footer data-build="v46">NEXITAIME 〜上越版〜 · Powered by 
 <a href="https://axcelmode-nexit.jp/" target="_blank" rel="noopener">AXCEL MODE NEXIT</a> · Beta1.0
 <section class="operator-card" aria-label="運営会社">
   <div class="operator-card-inner">
@@ -4642,7 +4642,8 @@ function buildSimpleItinerary(plan,candidateEvents=[],freeMinutes=120){
         if(!itineraryCategoriesCanFollow(previousKind,kind)) continue;
 
         const prevPoint=rows[rows.length-1]?.point || itineraryPointForEvent(plan.ev,plan.dest);
-        const nextPoint=itineraryPointForEvent(ev,plan.dest);
+        const nextPoint=exactPointForEvent(ev);
+        if(!prevPoint || !nextPoint) continue;
         const move=rows.length ? itineraryMoveMinutes(plan,prevPoint,nextPoint) : 0;
         if(move==null) continue;
 
@@ -4670,7 +4671,7 @@ function buildSimpleItinerary(plan,candidateEvents=[],freeMinutes=120){
 
         if(score>bestScore){
           bestScore=score;
-          best={ev,kind,move,stay,arrive,leave,point:itineraryPointForEvent(ev,plan.dest)};
+          best={ev,kind,move,stay,arrive,leave,point:nextPoint};
         }
       }
 
@@ -5001,6 +5002,87 @@ async function evaluateEventModes(ev,dest,modes,start,deadline,ctx){
   return rows.filter(Boolean);
 }
 
+
+function transitTransferCount(leg){
+  if(!leg)return 0;
+  const segments=Array.isArray(leg.segments)?leg.segments:[];
+  return Math.max(0,segments.length-1);
+}
+
+function transitConnectionGaps(leg){
+  const segments=Array.isArray(leg?.segments)?leg.segments:[];
+  const gaps=[];
+  for(let i=1;i<segments.length;i++){
+    const prev=segments[i-1],cur=segments[i];
+    if(Number.isFinite(prev?.arr) && Number.isFinite(cur?.dep)){
+      gaps.push(cur.dep-prev.arr);
+    }
+  }
+  return gaps;
+}
+
+function routeCommonSenseAdjustment(plan,start,deadline,ctx){
+  let score=0;
+  const reasons=[];
+  const isAuto=transport==='auto';
+
+  const mode=plan?.mode;
+  const out=plan?.out;
+  const back=plan?.back;
+
+  // Public transport: account for actual waiting and transfers, not only ride time.
+  if(['public','train','bus'].includes(mode)){
+    const outWait=Number.isFinite(out?.dep)?Math.max(0,out.dep-start):0;
+    const readyBack=Number.isFinite(plan?.venueLeave)
+      ? plan.venueLeave + Number(plan?.lastMile?.minutes||0)
+      : null;
+    const backWait=(readyBack!=null && Number.isFinite(back?.dep))
+      ? Math.max(0,back.dep-readyBack)
+      : 0;
+
+    plan.outboundWaitMinutes=outWait;
+    plan.returnWaitMinutes=backWait;
+
+    if(outWait>20) score-=Math.min(35,(outWait-20)*1.2);
+    if(backWait>20) score-=Math.min(35,(backWait-20)*1.2);
+
+    const transfers=transitTransferCount(out)+transitTransferCount(back);
+    plan.transferCount=transfers;
+    if(transfers===1)score-=8;
+    if(transfers>=2)score-=20;
+
+    const gaps=[...transitConnectionGaps(out),...transitConnectionGaps(back)];
+    if(gaps.some(g=>g<5))score-=80;
+    if(gaps.some(g=>g>35))score-=12;
+
+    const lm=Number(plan?.lastMile?.minutes||0);
+    if(lm>10)score-=Math.min(30,(lm-10)*2);
+    if(isAuto && lm>20)score-=80;
+
+    if(publicTransitDataCoverage(ctx?.origin,plan?.dest)==='partial'){
+      score-=15;
+      reasons.push('時刻表データ一部収録');
+    }
+  }
+
+  // Rain/snow should affect mobility choice in auto mode.
+  const w=weatherAtDate(planningDate||new Date());
+  const rain=Number(w?.rain||w?.precipitation||0);
+  const snow=Number(w?.snowfall||0);
+  if(isAuto && mode==='bike'){
+    if(snow>0) score-=120;
+    else if(rain>=1) score-=70;
+    else if(rain>0) score-=35;
+  }
+  if(isAuto && mode==='walk'){
+    if(snow>0) score-=35;
+    else if(rain>=1) score-=22;
+    else if(rain>0) score-=10;
+  }
+
+  return {score:Math.round(score),reasons};
+}
+
 async function scoreEventSet(events, modes, start, deadline, ctx){
   let rows=[];
 
@@ -5056,6 +5138,13 @@ async function scoreEventSet(events, modes, start, deadline, ctx){
       const dataFreshnessScore=freshnessScore(ev);
       c.dataFreshnessScore=dataFreshnessScore;
 
+      const autoModePenalty=(transport==='auto' && c.mode==='taxi') ? -28 : 0;
+      c.autoModePenalty=autoModePenalty;
+
+      const routeSense=routeCommonSenseAdjustment(c,start,deadline,ctx);
+      c.routeSenseScore=routeSense.score;
+      c.routeSenseReasons=routeSense.reasons;
+
       c.preferenceScore=
         timeFitScore
         + wa.score
@@ -5065,7 +5154,9 @@ async function scoreEventSet(events, modes, start, deadline, ctx){
         + hoursConfidenceScore
         + visitedScore
         + dataFreshnessScore
-        + proximityModeScore;
+        + proximityModeScore
+        + autoModePenalty
+        + routeSense.score;
 
       rows.push(c);
     }
@@ -5246,6 +5337,12 @@ function finalPlanGuard(plan,ctx,start,deadline){
   }
 
   if(plan?.mode==='bike'){
+    const selectedWeather=weatherAtDate(planningDate||new Date());
+    const rain=Number(selectedWeather?.rain||selectedWeather?.precipitation||0);
+    const snow=Number(selectedWeather?.snowfall||0);
+    if(transport==='auto' && snow>0) reasons.push('降雪時のレンタサイクル');
+    if(transport==='auto' && rain>=1) reasons.push('降雨時のレンタサイクル');
+
     const text=[plan?.ev?.title,plan?.ev?.venue,plan?.ev?.summary].filter(Boolean).join(' ');
     const mountainLike=
       ['yasuzuka','oshima','itakura','kiyosato','maki','myoko_kogen','myoko_akakura','myoko_lotte'].includes(plan?.ev?.area) ||
@@ -5276,6 +5373,34 @@ function finalPlanGuard(plan,ctx,start,deadline){
 
     const stationArrive=Number(plan?.stationArrive);
     const lastMile=Number(plan?.lastMile?.minutes||0);
+
+    // In auto mode, a long station-to-venue walk is not a strong public-transport plan.
+    if(transport==='auto' && lastMile>20){
+      reasons.push('公共交通のラストワンマイルが長すぎる');
+    }
+
+    const outWait=Number.isFinite(plan?.out?.dep)?Math.max(0,Number(plan.out.dep)-Number(start)):0;
+    const readyBack=Number.isFinite(Number(plan?.venueLeave))
+      ? Number(plan.venueLeave)+lastMile
+      : null;
+    const backWait=(readyBack!=null && Number.isFinite(plan?.back?.dep))
+      ? Math.max(0,Number(plan.back.dep)-readyBack)
+      : 0;
+
+    if(transport==='auto' && outWait>60){
+      reasons.push('公共交通の出発待ちが長すぎる');
+    }
+    if(transport==='auto' && backWait>60){
+      reasons.push('公共交通の帰り待ちが長すぎる');
+    }
+
+    const transferGaps=[
+      ...transitConnectionGaps(plan?.out),
+      ...transitConnectionGaps(plan?.back)
+    ];
+    if(transferGaps.some(g=>g<5)){
+      reasons.push('公共交通の乗換時間不足');
+    }
     if(lastMile>0 && finite(stationArrive) && finite(arrive) && arrive<=stationArrive){
       reasons.push('駅から目的地までの移動時間不足');
     }
@@ -5312,6 +5437,35 @@ function finalPlanGuard(plan,ctx,start,deadline){
         reasons.push('立ち寄り間の移動時間不足');
         break;
       }
+
+      // Recalculate a conservative geometric minimum independently.
+      if(prev?.point && row?.point){
+        const localMode=itineraryLocalMode(plan);
+        const geometricMin=routeMinutesCoordsFast(localMode,prev.point,row.point);
+        if(Number.isFinite(geometricMin) && rMove+2<geometricMin){
+          reasons.push('立ち寄り間の移動時間が距離に対して短すぎる');
+          break;
+        }
+
+        const straightKm=haversine(prev.point.lat,prev.point.lon,row.point.lat,row.point.lon);
+        if(localMode==='walk' && (geometricMin>20 || straightKm>1.6)){
+          reasons.push('周遊の徒歩移動が長すぎる');
+          break;
+        }
+        if(localMode==='bike'){
+          const rowText=[row?.name,row?.sourceEv?.venue,row?.sourceEv?.summary].filter(Boolean).join(' ');
+          const mountainLike=/光ヶ原|高原|山麓|山頂|スキー場|トレッキング/.test(rowText) ||
+            ['yasuzuka','oshima','itakura','kiyosato','maki','myoko_kogen','myoko_akakura','myoko_lotte'].includes(row?.sourceEv?.area);
+          if(straightKm>8 || geometricMin>40 || mountainLike){
+            reasons.push('周遊の自転車移動が現実的でない');
+            break;
+          }
+        }
+      }else{
+        reasons.push('立ち寄り地点の位置情報不足');
+        break;
+      }
+
       if(!itineraryCategoriesCanFollow(prev.category,row.category)){
         reasons.push('不自然な連続立ち寄り');
         break;
@@ -5440,6 +5594,11 @@ function selectDiverseTopPlans(rows,freeMinutes,count=3){
 
     for(let i=0;i<pool.length;i++){
       const row=pool[i];
+
+      if(transport==='auto' && row.mode==='taxi' && selected.some(x=>x.mode==='taxi')){
+        continue;
+      }
+
       const baseScore=
         Number(row.preferenceScore||0)
         + Number(row.timeFitScore||0)*0.2;
@@ -5449,6 +5608,10 @@ function selectDiverseTopPlans(rows,freeMinutes,count=3){
         bestValue=value;
         bestIndex=i;
       }
+    }
+
+    if(bestValue===-Infinity){
+      bestIndex=0;
     }
 
     const next=pool.splice(bestIndex,1)[0];
@@ -6506,7 +6669,19 @@ async function buildPlans(){
    // Keep a wider valid pool so the top 3 can be diversified intelligently.
    if(guardedPlans.length>=12) break;
  }
- const top=selectDiverseTopPlans(guardedPlans,free,3);
+
+ let topPool=guardedPlans;
+ if(transport==='auto'){
+   const nonTaxi=guardedPlans.filter(p=>p.mode!=='taxi');
+   // If we already have at least two realistic non-taxi choices,
+   // keep taxi as a fallback rather than letting it dominate the top 3.
+   if(nonTaxi.length>=2){
+     const taxiFallback=guardedPlans.filter(p=>p.mode==='taxi').slice(0,1);
+     topPool=[...nonTaxi,...taxiFallback];
+   }
+ }
+
+ const top=selectDiverseTopPlans(topPool,free,3);
  clearTimeout(searchWatchdog);
 
  const previousSnapshot=lastSearchSnapshot;
