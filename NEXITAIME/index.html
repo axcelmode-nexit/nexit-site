@@ -1946,7 +1946,7 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
 </section>
 
 <div class="hotpepper-credit">Powered by <a href="https://webservice.recruit.co.jp/" target="_blank" rel="noopener">ホットペッパーグルメ Webサービス</a></div>
-<footer data-build="v47">NEXITAIME 〜上越版〜 · Powered by 
+<footer data-build="v48">NEXITAIME 〜上越版〜 · Powered by 
 <a href="https://axcelmode-nexit.jp/" target="_blank" rel="noopener">AXCEL MODE NEXIT</a> · Beta1.0
 <section class="operator-card" aria-label="運営会社">
   <div class="operator-card-inner">
@@ -4770,7 +4770,9 @@ function buildSimpleItinerary(plan,candidateEvents=[],freeMinutes=120){
   return rows.length?rows:null;
 }
 function renderSimpleItinerary(rows){
-  if(!rows?.length)return '';
+  // A single stop is already represented by the main recommendation card.
+  // Only show the separate itinerary panel when there are 2+ stops.
+  if(!rows?.length || rows.length<2)return '';
   const kinds=new Set(rows.map(s=>s.category).filter(Boolean));
   const hasEvent=rows.some(s=>s.kind==='event');
   const mixed=kinds.size>=2;
@@ -6663,6 +6665,9 @@ async function buildPlans(){
  const guardedPlans=[];
  for(const row of uniquePlans){
    row.itinerary=buildSimpleItinerary(row,candidateEvents,free);
+   if(Array.isArray(row.itinerary) && row.itinerary.length<2){
+     row.itinerary=null;
+   }
    const checked=filterFinalPlans([row],searchCtx,start,deadline);
    if(checked.length) guardedPlans.push(row);
    // Keep a wider valid pool so the top 3 can be diversified intelligently.
