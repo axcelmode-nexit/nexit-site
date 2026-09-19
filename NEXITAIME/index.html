@@ -1947,7 +1947,7 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
 </section>
 
 <div class="hotpepper-credit">Powered by <a href="https://webservice.recruit.co.jp/" target="_blank" rel="noopener">ホットペッパーグルメ Webサービス</a></div>
-<footer data-build="v35">NEXITAIME 〜上越版〜 · Powered by 
+<footer data-build="v38">NEXITAIME 〜上越版〜 · Powered by 
 <a href="https://axcelmode-nexit.jp/" target="_blank" rel="noopener">AXCEL MODE NEXIT</a> · Beta1.0
 <section class="operator-card" aria-label="運営会社">
   <div class="operator-card-inner">
@@ -3349,19 +3349,73 @@ async function evaluateDirectMode(ev,dest,mode,start,deadline,ctx){
   const fromPoint=PLACES[from];
   const destPoint=routePointForEvent(ev,dest);
   const backPoint=PLACES[backTo];
-  const cats=ev?.categories||[];
-  const foodPlace=ev?.provider==='hotpepper' || cats.some(c=>['食','ごはん','グルメ','飲食','ラーメン','定食','海鮮','寿司','そば','うどん','カフェ','中華','洋食'].some(k=>String(c).includes(k)));
-  const directRoute=foodPlace ? routeMinutesCoordsFast : routeMinutesCoords;
-  const oneWay=(fromPoint&&destPoint) ? await directRoute(mode,fromPoint,destPoint) : await routeMinutes(mode,from,dest);
-  const backWay=(destPoint&&backPoint) ? await directRoute(mode,destPoint,backPoint) : await routeMinutes(mode,dest,backTo);
-  if(oneWay==null || backWay==null)return null;
 
   const svc=await getModeService(mode);
   if(['carshare','rentalcar','taxi','bike'].includes(mode) && !svc)return null;
 
+  const service=svc?.service||null;
+  const servicePoint=(service && Number.isFinite(Number(service.lat)) && Number.isFinite(Number(service.lon)))
+    ? {lat:Number(service.lat),lon:Number(service.lon)}
+    : null;
+
+  // Rental bicycle should not be proposed when the bike port and destination
+  // are within an easy walking distance. In that case walking is the natural option.
+  if(mode==='bike' && servicePoint && destPoint){
+    const serviceToVenueKm=haversine(servicePoint.lat,servicePoint.lon,destPoint.lat,destPoint.lon);
+    if(serviceToVenueKm<0.8)return null;
+  }
+
+  if(mode==='bike'){
+    const text=[ev?.title,ev?.venue,ev?.summary].filter(Boolean).join(' ');
+    const mountainLike=
+      ['mountain','myoko'].includes(destinationArea) ||
+      ['yasuzuka','oshima','itakura','kiyosato','maki','myoko_kogen','myoko_akakura','myoko_lotte'].includes(ev?.area) ||
+      /光ヶ原|高原|山麓|山頂|スキー場|トレッキング/.test(text);
+
+    if(mountainLike){
+      // Do not suggest ordinary rental bicycles for mountain/highland destinations.
+      return null;
+    }
+  }
+
+  const cats=ev?.categories||[];
+  const foodPlace=ev?.provider==='hotpepper' || cats.some(c=>['食','ごはん','グルメ','飲食','ラーメン','定食','海鮮','寿司','そば','うどん','カフェ','中華','洋食'].some(k=>String(c).includes(k)));
+  const directRoute=foodPlace ? routeMinutesCoordsFast : routeMinutesCoords;
+
+  // For station-based mobility, calculate the actual riding/driving leg from
+  // the mobility service location when coordinates are known.
+  const outboundStart=(['bike','carshare','rentalcar'].includes(mode) && servicePoint) ? servicePoint : fromPoint;
+  const returnEnd=(['bike','carshare','rentalcar'].includes(mode) && servicePoint && backTo===from) ? servicePoint : backPoint;
+
+  const oneWay=(outboundStart&&destPoint)
+    ? await directRoute(mode,outboundStart,destPoint)
+    : await routeMinutes(mode,from,dest);
+  const backWay=(destPoint&&returnEnd)
+    ? await directRoute(mode,destPoint,returnEnd)
+    : await routeMinutes(mode,dest,backTo);
+
+  if(oneWay==null || backWay==null)return null;
+
+  // Rental bicycles are intended for nearby urban trips, not long mountain access.
+  // Reject overly long bike legs even if the free-time window would technically fit.
+  if(mode==='bike'){
+    const straightKm=(outboundStart&&destPoint)
+      ? haversine(outboundStart.lat,outboundStart.lon,destPoint.lat,destPoint.lon)
+      : null;
+
+    // Conservative cap for ordinary rental bicycles:
+    // roughly <= 8 km one-way and <= 40 min riding.
+    if((straightKm!=null && straightKm>8) || oneWay>40 || backWay>40){
+      return null;
+    }
+  }
+
   const access=svc?.access||0;
+  const pickupSetup=mode==='bike' ? 5 : 0;
+  const returnSetup=mode==='bike' ? 3 : 0;
   const returnAccess=(mode==='carshare'||mode==='rentalcar'||mode==='bike')?access:0;
-  const rawArrive=start+access+oneWay;
+
+  const rawArrive=start+access+pickupSetup+oneWay;
   const eventStart=ev.start_time?mins(ev.start_time):null;
   const eventEnd=ev.end_time?mins(ev.end_time):null;
 
@@ -3375,7 +3429,7 @@ async function evaluateDirectMode(ev,dest,mode,start,deadline,ctx){
   const cutoff=arrivalCutoffFor(ev,window);
   if(cutoff!=null && arrive>=cutoff)return null;
 
-  let latestLeave=deadline-backWay-returnAccess;
+  let latestLeave=deadline-backWay-returnSetup-returnAccess;
   if(eventEnd!=null)latestLeave=Math.min(latestLeave,eventEnd);
   if(window.close!=null)latestLeave=Math.min(latestLeave,window.close);
 
@@ -3384,27 +3438,33 @@ async function evaluateDirectMode(ev,dest,mode,start,deadline,ctx){
   if(stay==null)return null;
 
   const backDep=arrive+stay;
-  const finish=backDep+backWay+returnAccess;
-  const service=svc?.service||null;
+  const finish=backDep+backWay+returnSetup+returnAccess;
 
   const availability=spotAvailability(ev,arrive,backDep,planningDate);
   if(!availability.ok)return null;
 
   let modeReason=reasonForMode(mode,service);
+  if(mode==='bike') modeReason += '（貸出・返却の準備時間込み）';
   if(backTo!==from && mode==='rentalcar') modeReason += '（乗り捨て可否・料金は要確認）';
 
   const transportCost=await estimateTransportCost(mode,from,dest,backTo,service);
 
+  const accessText=access?`・拠点まで徒歩${access}分`:'';
+  const setupText=pickupSetup?`・貸出準備${pickupSetup}分`:'';
+
   return {
     ev,dest,destLabel:(ev?.venue||dest),returnTo:backTo,mode,modeLabel:MODE_LABELS[mode],modeIcon:MODE_ICONS[mode],
-    out:{n:MODE_LABELS[mode]+(access?`（拠点まで徒歩${access}分）`:''),kind:mode,dep:start,arr:rawArrive,[from]:fmt(start),[dest]:fmt(rawArrive)},
+    out:{
+      n:MODE_LABELS[mode]+(accessText||setupText?`（${[accessText.replace(/^・/,''),setupText.replace(/^・/,'')].filter(Boolean).join('・')}）`:''),
+      kind:mode,dep:start,arr:rawArrive,[from]:fmt(start),[dest]:fmt(rawArrive)
+    },
     back:{n:MODE_LABELS[mode],kind:mode,dep:backDep,arr:finish,[dest]:fmt(backDep),[backTo]:fmt(finish)},
     arrive,finish,spare:deadline-finish,stay,feasible:true,accessMinutes:access,service,
+    pickupSetupMinutes:pickupSetup,returnSetupMinutes:returnSetup,
     transportCost,availability,
     reason:modeReason
   };
 }
-
 
 function stayPreference(ev){
   const raw=ev?.stay_minutes||{};
@@ -5089,6 +5149,24 @@ function finalPlanGuard(plan,ctx,start,deadline){
       if(!['public','train','bus'].includes(actual)) reasons.push('指定移動手段と不一致');
     }else if(actual!==transport){
       reasons.push('指定移動手段と不一致');
+    }
+  }
+
+  if(plan?.mode==='bike'){
+    const text=[plan?.ev?.title,plan?.ev?.venue,plan?.ev?.summary].filter(Boolean).join(' ');
+    const mountainLike=
+      ['yasuzuka','oshima','itakura','kiyosato','maki','myoko_kogen','myoko_akakura','myoko_lotte'].includes(plan?.ev?.area) ||
+      /光ヶ原|高原|山麓|山頂|スキー場|トレッキング/.test(text);
+    if(mountainLike) reasons.push('レンタサイクルでは遠距離・山間部');
+
+    const s=plan.service;
+    const venuePoint=routePointForEvent(plan.ev,plan.dest);
+    const servicePoint=(Number.isFinite(Number(s.lat)) && Number.isFinite(Number(s.lon)))
+      ? {lat:Number(s.lat),lon:Number(s.lon)}
+      : null;
+    if(servicePoint && venuePoint){
+      const km=haversine(servicePoint.lat,servicePoint.lon,venuePoint.lat,venuePoint.lon);
+      if(km<0.8) reasons.push('レンタサイクル拠点から徒歩圏内');
     }
   }
 
