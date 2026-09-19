@@ -1947,7 +1947,7 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
 </section>
 
 <div class="hotpepper-credit">Powered by <a href="https://webservice.recruit.co.jp/" target="_blank" rel="noopener">ホットペッパーグルメ Webサービス</a></div>
-<footer data-build="v38">NEXITAIME 〜上越版〜 · Powered by 
+<footer data-build="v39">NEXITAIME 〜上越版〜 · Powered by 
 <a href="https://axcelmode-nexit.jp/" target="_blank" rel="noopener">AXCEL MODE NEXIT</a> · Beta1.0
 <section class="operator-card" aria-label="運営会社">
   <div class="operator-card-inner">
@@ -3584,6 +3584,8 @@ async function evaluateTransitAtStation(ev,dest,mode,start,deadline,ctx){
   const out=chooseTransportMode(from,dest,start,mode);
   if(!out)return null;
 
+  const outIsRealTransit=out.n!=='徒歩圏' && out.lineName!=='徒歩圏';
+
   const lastMile=publicLastMileForEvent(ev,dest);
 
   if(lastMile.known && lastMile.minutes>MAX_PUBLIC_LAST_MILE_WALK_MIN)return null;
@@ -3621,6 +3623,12 @@ async function evaluateTransitAtStation(ev,dest,mode,start,deadline,ctx){
   }
   if(!back)return null;
 
+  const backIsRealTransit=back.n!=='徒歩圏' && back.lineName!=='徒歩圏';
+
+  // A plan labelled as public transport must actually use a train or bus
+  // on at least one direction. Station-area walking alone is a walking plan.
+  if(!outIsRealTransit && !backIsRealTransit)return null;
+
   const venueLeave=back.dep-lastMile.minutes;
   if(effectiveEnd!=null && venueLeave>effectiveEnd)return null;
 
@@ -3630,11 +3638,12 @@ async function evaluateTransitAtStation(ev,dest,mode,start,deadline,ctx){
   const availability=spotAvailability(ev,arrive,venueLeave,planningDate);
   if(!availability.ok)return null;
 
-  const transitReason=out.kind==='bus'
-    ? `公開時刻表と${dest}から目的地までの徒歩${lastMile.minutes}分を含めて帰着まで確認した${out.n}利用案`
-    : (mode==='public'
-      ? `${dest}をアクセス駅として、電車・バスと徒歩${lastMile.minutes}分を含めて判定した公共交通案`
-      : `${dest}をアクセス駅として、公開時刻表と徒歩${lastMile.minutes}分を含めて判定した電車案`);
+  const actualTransitLabel=[
+    outIsRealTransit ? (out.kind==='bus'?'バス':'電車') : '',
+    backIsRealTransit ? (back.kind==='bus'?'バス':'電車') : ''
+  ].filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i).join('・');
+
+  const transitReason=`${dest}をアクセス駅として、${actualTransitLabel||'公共交通'}と徒歩${lastMile.minutes}分を含めて帰着まで確認した案`;
 
   const transportCost=await estimateTransportCost(mode,from,dest,backTo,null,out.kind,back.kind);
 
@@ -5171,6 +5180,12 @@ function finalPlanGuard(plan,ctx,start,deadline){
   }
 
   if(['public','train','bus'].includes(plan?.mode)){
+    const outReal=plan?.out?.n!=='徒歩圏' && plan?.out?.lineName!=='徒歩圏';
+    const backReal=plan?.back?.n!=='徒歩圏' && plan?.back?.lineName!=='徒歩圏';
+    if(!outReal && !backReal){
+      reasons.push('公共交通を実際には利用していない');
+    }
+
     const stationArrive=Number(plan?.stationArrive);
     const lastMile=Number(plan?.lastMile?.minutes||0);
     if(lastMile>0 && finite(stationArrive) && finite(arrive) && arrive<=stationArrive){
