@@ -1690,6 +1690,93 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
 }
 </style>
 
+
+<style id="result-progressive-disclosure-v49">
+.plan-quick-facts{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;
+  margin:10px 0 8px;
+}
+.plan-quick-fact{
+  min-width:0;
+  padding:9px 10px;
+  border:1px solid #e1e8ef;
+  border-radius:13px;
+  background:#f9fbfd;
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+}
+.plan-quick-fact span{
+  font-size:9px;
+  color:#8593a2;
+  font-weight:800;
+}
+.plan-quick-fact strong{
+  font-size:12px;
+  color:#24445f;
+  font-weight:950;
+  line-height:1.3;
+}
+.plan-total-hero{
+  margin:8px 0 7px;
+  font-size:15px;
+  font-weight:950;
+  color:#173653;
+}
+.plan-reason-compact{
+  margin:8px 0 10px;
+  padding:9px 11px;
+  border-radius:12px;
+  background:#f7f9fc;
+  color:#566b7e;
+  font-size:11px;
+  line-height:1.5;
+}
+.plan-reason-compact strong{color:#294a67}
+.plan-disclosure-actions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  margin:10px 0 4px;
+}
+.plan-disclosure-btn{
+  min-height:44px;
+  border:1px solid #d7e2eb;
+  border-radius:13px;
+  background:#fff;
+  color:#274965;
+  font-size:11px;
+  font-weight:950;
+  padding:9px 10px;
+}
+.plan-disclosure-btn.is-open{
+  background:#eef7ff;
+  border-color:#bcdcf0;
+  color:#1f628d;
+}
+.plan-disclosure-panel{
+  display:none;
+  margin-top:10px;
+}
+.plan-disclosure-panel.is-open{display:block}
+.plan-detail-section{
+  margin-top:10px;
+  padding-top:10px;
+  border-top:1px dashed #e2e8ee;
+}
+.plan-detail-heading{
+  margin:0 0 7px;
+  font-size:12px;
+  font-weight:950;
+  color:#294864;
+}
+@media(max-width:520px){
+  .plan-quick-facts{grid-template-columns:1fr 1fr}
+  .plan-quick-fact:first-child{grid-column:1 / -1}
+}
+</style>
 </head>
 <body>
 <div class="app">
@@ -1946,7 +2033,7 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
 </section>
 
 <div class="hotpepper-credit">Powered by <a href="https://webservice.recruit.co.jp/" target="_blank" rel="noopener">ホットペッパーグルメ Webサービス</a></div>
-<footer data-build="v48">NEXITAIME 〜上越版〜 · Powered by 
+<footer data-build="v49">NEXITAIME 〜上越版〜 · Powered by 
 <a href="https://axcelmode-nexit.jp/" target="_blank" rel="noopener">AXCEL MODE NEXIT</a> · Beta1.0
 <section class="operator-card" aria-label="運営会社">
   <div class="operator-card-inner">
@@ -6525,6 +6612,37 @@ function currentSearchSnapshot(free,buffer,top){
   };
 }
 
+
+function bindPlanDisclosures(plans,ctx){
+  document.querySelectorAll('[data-plan-disclosure]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const idx=Number(btn.dataset.planIdx);
+      const kind=btn.dataset.planDisclosure;
+      const panel=document.querySelector(`[data-plan-panel="${kind}"][data-plan-idx="${idx}"]`);
+      if(!panel)return;
+
+      const open=panel.classList.toggle('is-open');
+      btn.classList.toggle('is-open',open);
+      btn.setAttribute('aria-expanded',open?'true':'false');
+
+      if(kind==='journey'){
+        btn.textContent=open?'行程を閉じる ▲':'行程を見る ▼';
+      }else{
+        btn.textContent=open?'詳細を閉じる ▲':'詳細を見る ▼';
+      }
+
+      // Leaflet must initialize after the hidden detail panel becomes visible.
+      if(kind==='detail' && open){
+        const mapEl=panel.querySelector('.plan-map');
+        const plan=plans[idx];
+        if(mapEl && plan){
+          setTimeout(()=>renderPlanRouteMap(mapEl.id,plan,ctx),50);
+        }
+      }
+    });
+  });
+}
+
 async function buildPlans(){
  syncSearchStateFromControls();
  try{ trackNexitaime('search_start',{freeMinutes:Number(document.getElementById('free')?.value)||120,buffer:Number(document.getElementById('buffer')?.value)||15}); }catch(_){}
@@ -6771,9 +6889,12 @@ async function buildPlans(){
    const transportCostHtml=p.transportCost
      ? `<div class="cost-row"><strong>🚦 ${esc(p.transportCost.label)}</strong>${p.transportCost.note?`<span>${esc(p.transportCost.note)}</span>`:''}</div>`
      : '';
-   const totalCostHtml=totalCost!=null
+   const totalCostDetailHtml=totalCost!=null
      ? `<div class="cost-total">合計目安：約¥${Number(totalCost).toLocaleString()} <small>（施設・イベント＋交通）</small></div>`
      : '';
+   const totalCostHero=totalCost!=null
+     ? `<div class="plan-total-hero">合計目安：約¥${Number(totalCost).toLocaleString()}</div>`
+     : `<div class="plan-total-hero">合計目安：料金要確認</div>`;
    const hoursHtml=availabilityBadge(p);
    const freshnessHtml=freshnessBadge(p.ev);
    const hoursNoteHtml=p.availability?.verified===false
@@ -6789,6 +6910,12 @@ async function buildPlans(){
        : '';
      return `<span class="route-stop-chip"><strong>${esc(label)}</strong> ${esc(s.name)}${detail}</span>`;
    }).join('');
+
+   const outTime=p.out?.[searchCtx.origin] || (Number.isFinite(p.out?.dep)?fmt(p.out.dep):'');
+   const backKey=p.returnTo||searchCtx.returnTo;
+   const backTime=p.back?.[backKey] || (Number.isFinite(p.finish)?fmt(p.finish):'');
+   const reasonText=esc([p.reason,p.weatherReason,companionReason(p.ev)].filter(Boolean).join('・')||'時間内に収まるため');
+
    return `<div class="plan">${p.multimodal?`<div class="multimodal-badge">🔀 おまかせ複合移動：公共交通＋${esc(MODE_LABELS[p.lastMode]||p.lastMode)}</div>`:''}
      ${rank}
      ${recommendationHtml}
@@ -6796,60 +6923,84 @@ async function buildPlans(){
      <h3>${esc(p.ev.title)}</h3>
      ${eventInfo}
      <div class="meta">📍 ${esc(p.ev.area_name)} · ${esc(p.ev.venue||'')}</div>
-     ${providerInfo}
-     <p>${esc(p.ev.summary||'')}</p>
-     <div class="note" style="margin-bottom:6px"><strong>この案の理由：</strong>${esc([p.reason,p.weatherReason,companionReason(p.ev)].filter(Boolean).join('・')||'時間内に収まるため')}</div>
+
+     <div class="plan-quick-facts">
+       <div class="plan-quick-fact"><span>往復時間</span><strong>${esc(outTime)} → ${esc(backTime)}</strong></div>
+       <div class="plan-quick-fact"><span>滞在</span><strong>約${p.stay}分</strong></div>
+       <div class="plan-quick-fact"><span>帰着後の余裕</span><strong>約${Math.max(0,p.spare+buffer)}分</strong></div>
+     </div>
+     ${totalCostHero}
+     <div class="plan-reason-compact"><strong>この案の理由：</strong>${reasonText}</div>
      <div class="meta">🎫 ${esc(costLabel(p.ev))}${p.ev.indoor?' · 🏠 屋内':''}</div>
      ${hoursHtml}
-     ${freshnessHtml}
-     ${hoursNoteHtml}
-     ${crowdingInfoHtml}
-     ${transportCostHtml}
-     ${totalCostHtml}
-     ${serviceNote}
-     ${scheduleHtml}
-     ${transitGuideHtml}
-     ${itineraryHtml}
-     <div class="plan-map-wrap">
-       <div id="${routeMapId}" class="plan-map"></div>
-       <div class="route-stop-list">${routeStopChips}</div>
-       <div class="route-map-note">S＝出発、1〜4＝立ち寄り順、G＝帰着。地図の経路は目安です。徒歩・自転車・公共交通では実際の経路が異なる場合があります。</div>
+
+     <div class="plan-disclosure-actions">
+       <button type="button" class="plan-disclosure-btn" data-plan-disclosure="journey" data-plan-idx="${idx}" aria-expanded="false">行程を見る ▼</button>
+       <button type="button" class="plan-disclosure-btn" data-plan-disclosure="detail" data-plan-idx="${idx}" aria-expanded="false">詳細を見る ▼</button>
      </div>
-     <div class="timeline">
-       <div class="leg"><div>行き</div><div><strong>${p.modeIcon||''} ${esc(p.out.n)}</strong><br>${searchCtx.origin} → ${p.dest}${p.lastMile?.minutes?` → 🚶 ${esc(p.ev?.venue||p.ev?.title||'目的地')} 約${p.lastMile.minutes}分`:''}</div><div>${p.out[searchCtx.origin]} → ${Number.isFinite(p.arrive)?fmt(p.arrive):(p.out[p.dest]||'')}</div></div>
-       <div class="leg"><div>滞在</div><div><strong>${esc(p.ev?.venue||p.dest)}周辺</strong><br><span class="stay-guide">目安 ${stayPreference(p.ev).recommended}分</span></div><div>約${p.stay}分</div></div>
-       <div class="leg"><div>帰り</div><div><strong>${p.modeIcon||''} ${esc(p.back.n)}</strong><br>${esc(p.ev?.venue||p.dest)}${p.lastMile?.minutes?` → 🚶 ${esc(p.dest)} 約${p.lastMile.minutes}分`:''} → ${p.returnTo||origin}</div><div>${Number.isFinite(p.venueLeave)?fmt(p.venueLeave):(p.back[p.dest]||'')} → ${p.back[p.returnTo||origin]}</div></div>
+
+     <div class="plan-disclosure-panel" data-plan-panel="journey" data-plan-idx="${idx}">
+       ${scheduleHtml}
+       ${transitGuideHtml}
+       ${itineraryHtml}
      </div>
-     <div class="meta" style="margin-top:8px">ルート：${esc(searchCtx.origin)} → ${p.multimodal?`${esc(p.transferHub)}（乗換） → `:''}${esc(p.dest)} → ${p.multimodal?`${esc(p.transferHub)}（乗換） → `:''}${esc(p.returnTo||searchCtx.returnTo)}<br>帰着後の余裕：${Math.max(0,p.spare+buffer)}分</div>
-     <div class="plan-save-row">
-       <button type="button" class="favorite-btn" data-favorite-idx="${idx}">☆ お気に入り</button>
-       <button type="button" class="visited-btn ${isVisitedEvent(p.ev)?'visited':''}" data-visited-idx="${idx}">${isVisitedEvent(p.ev)?'✓ 行った':'○ 行った'}</button>
+
+     <div class="plan-disclosure-panel" data-plan-panel="detail" data-plan-idx="${idx}">
+       <div class="plan-detail-section">
+         <div class="plan-detail-heading">施設・イベント情報</div>
+         ${providerInfo}
+         <p>${esc(p.ev.summary||'')}</p>
+         ${freshnessHtml}
+         ${hoursNoteHtml}
+         ${crowdingInfoHtml}
+       </div>
+
+       <div class="plan-detail-section">
+         <div class="plan-detail-heading">料金・移動サービス</div>
+         ${transportCostHtml}
+         ${totalCostDetailHtml}
+         ${serviceNote}
+       </div>
+
+       <div class="plan-detail-section">
+         <div class="plan-detail-heading">地図・ルート</div>
+         <div class="plan-map-wrap">
+           <div id="${routeMapId}" class="plan-map"></div>
+           <div class="route-stop-list">${routeStopChips}</div>
+           <div class="route-map-note">S＝出発、1〜4＝立ち寄り順、G＝帰着。地図の経路は目安です。徒歩・自転車・公共交通では実際の経路が異なる場合があります。</div>
+         </div>
+         <div class="timeline">
+           <div class="leg"><div>行き</div><div><strong>${p.modeIcon||''} ${esc(p.out.n)}</strong><br>${searchCtx.origin} → ${p.dest}${p.lastMile?.minutes?` → 🚶 ${esc(p.ev?.venue||p.ev?.title||'目的地')} 約${p.lastMile.minutes}分`:''}</div><div>${p.out[searchCtx.origin]} → ${Number.isFinite(p.arrive)?fmt(p.arrive):(p.out[p.dest]||'')}</div></div>
+           <div class="leg"><div>滞在</div><div><strong>${esc(p.ev?.venue||p.dest)}周辺</strong><br><span class="stay-guide">目安 ${stayPreference(p.ev).recommended}分</span></div><div>約${p.stay}分</div></div>
+           <div class="leg"><div>帰り</div><div><strong>${p.modeIcon||''} ${esc(p.back.n)}</strong><br>${esc(p.ev?.venue||p.dest)}${p.lastMile?.minutes?` → 🚶 ${esc(p.dest)} 約${p.lastMile.minutes}分`:''} → ${p.returnTo||origin}</div><div>${Number.isFinite(p.venueLeave)?fmt(p.venueLeave):(p.back[p.dest]||'')} → ${p.back[p.returnTo||origin]}</div></div>
+         </div>
+         <div class="meta" style="margin-top:8px">ルート：${esc(searchCtx.origin)} → ${p.multimodal?`${esc(p.transferHub)}（乗換） → `:''}${esc(p.dest)} → ${p.multimodal?`${esc(p.transferHub)}（乗換） → `:''}${esc(p.returnTo||searchCtx.returnTo)}<br>帰着後の余裕：${Math.max(0,p.spare+buffer)}分</div>
+       </div>
+
+       <div class="plan-detail-section">
+         <div class="plan-save-row">
+           <button type="button" class="favorite-btn" data-favorite-idx="${idx}">☆ お気に入り</button>
+           <button type="button" class="visited-btn ${isVisitedEvent(p.ev)?'visited':''}" data-visited-idx="${idx}">${isVisitedEvent(p.ev)?'✓ 行った':'○ 行った'}</button>
+         </div>
+         <div class="plan-share">
+           <button type="button" class="share-btn primary-share" data-share-action="share" data-share-idx="${idx}">↗️ 共有する</button>
+           <button type="button" class="share-btn" data-share-action="line" data-share-idx="${idx}">LINE</button>
+           <button type="button" class="share-btn" data-share-action="copy" data-share-idx="${idx}">📋 内容をコピー</button>
+         </div>
+         <div class="links"><a href="${p.ev.url}" target="_blank" rel="noopener">${p.ev.provider==='hotpepper'?'ホットペッパーで店舗を見る':'公式・詳細を見る'}</a></div>
+       </div>
      </div>
-     <div class="plan-share">
-       <button type="button" class="share-btn primary-share" data-share-action="share" data-share-idx="${idx}">↗️ 共有する</button>
-       <button type="button" class="share-btn" data-share-action="line" data-share-idx="${idx}">LINE</button>
-       <button type="button" class="share-btn" data-share-action="copy" data-share-idx="${idx}">📋 内容をコピー</button>
-     </div>
-     <div class="links"><a href="${p.ev.url}" target="_blank" rel="noopener">${p.ev.provider==='hotpepper'?'ホットペッパーで店舗を見る':'詳細を見る'}</a></div>
    </div>`;
  }).join('');
  bindPlanShareButtons(top,searchCtx);
  bindFavoriteButtons(top,searchCtx);
  bindVisitedButtons(top);
+ bindPlanDisclosures(top,searchCtx);
  window.NEXITAIME_QUICK_PREFERENCE='';
  renderFavoriteTray();
 
 
- // Result cards now exist in the DOM, so Leaflet can safely initialize.
- requestAnimationFrame(()=>{
-   setTimeout(()=>{
-     const mapEls=[...box.querySelectorAll('.plan-map')];
-     top.forEach((p,idx)=>{
-       const el=mapEls[idx];
-       if(el) renderPlanRouteMap(el.id,p,searchCtx);
-     });
-   },80);
- });
+ // Route maps are initialized lazily when the user opens 「詳細を見る」.
 }
 </script>
 <script>
