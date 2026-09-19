@@ -1721,7 +1721,6 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
 <div class="chips" id="moods">
  <button class="chip active" data-mood="any">✨ おまかせ</button>
  <button class="chip" data-mood="food">🍴 ごはん</button>
- <button class="chip" data-mood="cafe">☕ カフェ</button>
  <button class="chip" data-mood="sightseeing">🏯 観光</button>
  <button class="chip" data-mood="event">🎪 イベント</button>
  <button class="chip" data-mood="nature">🌿 自然・景色</button>
@@ -1740,6 +1739,7 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
     <button class="chip" data-food-kind="そば">🥢 そば・うどん</button>
     <button class="chip" data-food-kind="中華">🥟 中華</button>
     <button class="chip" data-food-kind="洋食">🍝 洋食</button>
+    <button class="chip" data-food-kind="カフェ">☕ カフェ・スイーツ</button>
   </div>
 </div>
 
@@ -3554,44 +3554,139 @@ const MOOD_CATEGORY_MAP={
   rain:['雨OK','雨でもOK','屋内']
 };
 
+
+const CATEGORY_ALIASES={
+  food:['食','食べる','ごはん','グルメ','飲食','ランチ','ディナー','ラーメン','定食','食堂','海鮮','寿司','そば','うどん','中華','洋食'],
+  cafe:['カフェ','喫茶','コーヒー','珈琲','スイーツ','ジェラート','甘味'],
+  onsen:['温泉','サウナ','日帰り風呂','風呂','入浴','温浴'],
+  sightseeing:['観光','歴史','文化','史跡','城','神社','寺','町家','雁木','博物館','美術館','展示','資料館','科学館','水族館'],
+  nature:['自然','景色','絶景','展望','眺望','公園','高原','滝','海辺','海岸'],
+  active:['体験','アクティビティ','スポーツ','散歩','散策','ウォーキング','トレッキング','登山','ハイキング','サイクリング','スキー'],
+  event:['イベント','祭り','祭','催し','フェス'],
+  rain:['屋内','雨OK']
+};
+
+function normalizedCategories(ev){
+  return new Set((ev?.categories||[]).map(v=>String(v).trim()).filter(Boolean));
+}
+
+function hasCategoryAlias(ev,group){
+  const cats=normalizedCategories(ev);
+  const aliases=CATEGORY_ALIASES[group]||[];
+  return aliases.some(alias=>cats.has(alias));
+}
+
+function explicitPrimaryCategory(ev){
+  const raw=String(ev?.primary_category||ev?.category_primary||ev?.kind||ev?.type||'').trim().toLowerCase();
+  const map={
+    food:'food',restaurant:'food',gourmet:'food',
+    cafe:'cafe',
+    onsen:'onsen',sauna:'onsen',
+    sightseeing:'sightseeing',culture:'sightseeing',museum:'sightseeing',
+    nature:'nature',scenery:'nature',
+    active:'active',activity:'active',
+    event:'event'
+  };
+  return map[raw]||null;
+}
+
+function canonicalCategory(ev){
+  const explicit=explicitPrimaryCategory(ev);
+  if(explicit)return explicit;
+
+  // Provider metadata is stronger than free-text matching.
+  if(ev?.provider==='hotpepper'){
+    if(hasCategoryAlias(ev,'cafe'))return 'cafe';
+    return 'food';
+  }
+
+  // A dated event should remain an event unless the data explicitly says otherwise.
+  if(ev?.start_date || ev?.end_date){
+    return 'event';
+  }
+
+  for(const kind of ['food','cafe','onsen','sightseeing','nature','active','event']){
+    if(hasCategoryAlias(ev,kind))return kind;
+  }
+
+  // Fallback only when structured tags are missing.
+  const text=[ev?.title,ev?.venue,ev?.summary].filter(Boolean).join(' ');
+  if(/ラーメン|定食|海鮮|寿司|そば|うどん|中華|洋食|食堂|ごはん|グルメ/.test(text)) return 'food';
+  if(/カフェ|喫茶|コーヒー|珈琲|スイーツ|ジェラート|甘味/.test(text)) return 'cafe';
+  if(/温泉|サウナ|風呂|入浴|温浴/.test(text)) return 'onsen';
+  if(/博物館|美術館|展示|資料館|科学館|水族館|史跡|城跡|神社|寺|町家|雁木/.test(text)) return 'sightseeing';
+  if(/公園|自然|景色|絶景|展望|高原|滝|海岸/.test(text)) return 'nature';
+  if(/ウォーキング|トレッキング|登山|ハイキング|スポーツ|体験|アクティビティ|サイクリング/.test(text)) return 'active';
+
+  return ev?.source==='events_auto' ? 'event' : 'other';
+}
+
 function moodMatches(ev, selectedMood){
   if(selectedMood==='any') return true;
-  const cats=(ev.categories||[]).map(v=>String(v));
-  const words=MOOD_CATEGORY_MAP[selectedMood]||[selectedMood];
-  if(selectedMood==='rain' && ev.indoor===true) return true;
-  return words.some(word=>cats.some(cat=>cat===word || cat.includes(word) || word.includes(cat)));
+  if(selectedMood==='rain'){
+    return ev?.indoor===true || hasCategoryAlias(ev,'rain');
+  }
+
+  const canonical=canonicalCategory(ev);
+  if(selectedMood==='food') return canonical==='food' || canonical==='cafe';
+  if(selectedMood==='onsen') return canonical==='onsen';
+  if(selectedMood==='sightseeing') return canonical==='sightseeing';
+  if(selectedMood==='nature') return canonical==='nature';
+  if(selectedMood==='active') return canonical==='active';
+  if(selectedMood==='event') return canonical==='event';
+
+  return false;
 }
 
 
 function foodKindMatches(ev){
   if(mood!=='food' || foodKind==='any')return true;
-  const cats=(ev.categories||[]).map(v=>String(v));
-  if(foodKind==='そば')return cats.some(c=>c.includes('そば')||c.includes('うどん'));
-  return cats.some(c=>c===foodKind || c.includes(foodKind));
+
+  const cats=normalizedCategories(ev);
+  const text=[ev?.title,ev?.venue,ev?.summary].filter(Boolean).join(' ');
+
+  if(foodKind==='カフェ'){
+    return canonicalCategory(ev)==='cafe' ||
+      ['カフェ','喫茶','コーヒー','珈琲','スイーツ','ジェラート','甘味'].some(a=>cats.has(a) || text.includes(a));
+  }
+
+  const aliases={
+    'ラーメン':['ラーメン'],
+    '定食':['定食','食堂'],
+    '海鮮':['海鮮'],
+    '寿司':['寿司'],
+    'そば':['そば','うどん'],
+    '中華':['中華'],
+    '洋食':['洋食']
+  }[foodKind]||[foodKind];
+
+  if(aliases.some(a=>cats.has(a)))return true;
+  return aliases.some(a=>text.includes(a));
 }
 
 function secondaryMoodMatches(ev){
-  const cats=(ev.categories||[]).map(v=>String(v));
-  const text=[ev.title,ev.venue,ev.summary,...cats].filter(Boolean).join(' ');
+  const cats=normalizedCategories(ev);
+  const text=[ev?.title,ev?.venue,ev?.summary].filter(Boolean).join(' ');
+  const has=(...names)=>names.some(n=>cats.has(n));
 
   if(mood==='onsen'){
-    if(onsenKind==='サウナ') return /サウナ/.test(text);
-    if(onsenKind==='日帰り風呂') return /日帰り|入浴|風呂|温浴/.test(text);
-    return /温泉/.test(text);
+    if(onsenKind==='サウナ') return has('サウナ') || /サウナ/.test(text);
+    if(onsenKind==='日帰り風呂') return has('日帰り風呂','風呂','入浴','温浴') || /日帰り|入浴|風呂|温浴/.test(text);
+    return has('温泉') || /温泉/.test(text);
   }
 
   if(mood==='sightseeing'){
-    if(sightseeingKind==='歴史・文化') return /歴史|文化|史跡|城|神社|寺|町家|謙信/.test(text);
-    if(sightseeingKind==='景色・絶景') return /景色|絶景|展望|海|山|高原|眺望/.test(text);
-    if(sightseeingKind==='博物館・展示') return /博物館|美術館|展示|資料館|科学館|水族館/.test(text);
-    if(sightseeingKind==='街歩き') return /街歩き|散策|雁木|町並み|通り|商店街/.test(text);
+    if(sightseeingKind==='歴史・文化') return has('歴史','文化','史跡','城','神社','寺','町家','雁木') || /歴史|文化|史跡|城|神社|寺|町家|謙信/.test(text);
+    if(sightseeingKind==='景色・絶景') return has('景色','絶景','展望','眺望') || /景色|絶景|展望|眺望/.test(text);
+    if(sightseeingKind==='博物館・展示') return has('博物館','美術館','展示','資料館','科学館','水族館') || /博物館|美術館|展示|資料館|科学館|水族館/.test(text);
+    if(sightseeingKind==='街歩き') return has('街歩き','散策','雁木','町並み','商店街') || /街歩き|散策|雁木|町並み|通り|商店街/.test(text);
   }
 
   if(mood==='active'){
-    if(activeKind==='散歩・ウォーキング') return /散歩|散策|歩く|ウォーキング|街歩き/.test(text);
-    if(activeKind==='公園') return /公園/.test(text);
-    if(activeKind==='トレッキング') return /トレッキング|登山|ハイキング|山歩き/.test(text);
-    if(activeKind==='アクティビティ') return /アクティビティ|スポーツ|体験|サイクリング|スキー|SUP|カヤック/.test(text);
+    if(activeKind==='散歩・ウォーキング') return has('散歩','散策','ウォーキング','街歩き') || /散歩|散策|ウォーキング|街歩き/.test(text);
+    if(activeKind==='公園') return has('公園') || /公園/.test(text);
+    if(activeKind==='トレッキング') return has('トレッキング','登山','ハイキング') || /トレッキング|登山|ハイキング|山歩き/.test(text);
+    if(activeKind==='アクティビティ') return has('アクティビティ','スポーツ','体験','サイクリング','スキー','SUP','カヤック') || /アクティビティ|スポーツ|体験|サイクリング|スキー|SUP|カヤック/.test(text);
   }
 
   return true;
@@ -3917,6 +4012,9 @@ function eventInfoHtml(ev){
 function renderPlanSchedule(plan, ctx){
   const from=ctx?.origin||origin;
   const back=plan.returnTo||ctx?.returnTo||resolvedReturnStation(ctx);
+  const selectedBuffer=Number(ctx?.buffer ?? document.getElementById('buffer')?.value ?? 15);
+  const safeBuffer=Number.isFinite(selectedBuffer)?selectedBuffer:15;
+  const safeSpare=Number.isFinite(Number(plan?.spare))?Number(plan.spare):0;
   const outDep=plan.out?.[from]||'';
   const outArr=Number.isFinite(plan.arrive)?fmt(plan.arrive):(plan.out?.[plan.dest]||'');
   const backDep=Number.isFinite(plan.venueLeave)?fmt(plan.venueLeave):(plan.back?.[plan.dest]||'');
@@ -3929,7 +4027,7 @@ function renderPlanSchedule(plan, ctx){
     {icon:'🚩',title:`${from}を出発`,time:outDep,sub:plan.modeLabel||''},
     {icon:'📍',title:plan.ev?.venue||plan.ev?.title||plan.dest,time:outArr,sub:[`滞在 約${plan.stay}分`,lastMileNote].filter(Boolean).join('・')},
     {icon:'↩️',title:'目的地を出発',time:backDep,sub:lastMileNote||plan.modeLabel||''},
-    {icon:'🏁',title:`${back}に到着`,time:backArr,sub:`帰着後の余裕 約${Math.max(0,(plan.spare||0)+buffer)}分`}
+    {icon:'🏁',title:`${back}に到着`,time:backArr,sub:`帰着後の余裕 約${Math.max(0,Math.round(safeSpare+safeBuffer))}分`}
   ];
   return `<div class="plan-schedule"><div class="plan-schedule-title">🗓️ おすすめプラン</div>${rows.map((r,i)=>`<div class="schedule-row"><div class="schedule-dot">${i+1}</div><div class="schedule-main"><strong>${r.icon} ${esc(r.title)}</strong>${r.sub?`<span>${esc(r.sub)}</span>`:''}</div><div class="schedule-time">${esc(r.time)}</div></div>`).join('')}</div>`;
 }
@@ -3961,15 +4059,7 @@ const ITINERARY_SPOTS=[
 ];
 
 function itineraryCategory(ev){
-  const text=[ev?.title,ev?.venue,ev?.summary,...(ev?.categories||[])].filter(Boolean).join(' ');
-  if(/ラーメン|定食|海鮮|寿司|そば|うどん|中華|洋食|食堂|ごはん|グルメ|飲食|食べる/.test(text)) return 'food';
-  if(/カフェ|喫茶|コーヒー|珈琲|スイーツ|ジェラート|甘味/.test(text)) return 'cafe';
-  if(/温泉|サウナ|風呂|入浴|温浴/.test(text)) return 'onsen';
-  if(/博物館|美術館|展示|資料館|科学館|水族館|歴史|文化|史跡|城|神社|寺|町家|観光|雁木/.test(text)) return 'sightseeing';
-  if(/公園|自然|景色|絶景|展望|海|山|高原|滝/.test(text)) return 'nature';
-  if(/散歩|散策|歩く|ウォーキング|トレッキング|登山|ハイキング|スポーツ|体験|アクティビティ|サイクリング/.test(text)) return 'active';
-  if(ev?.start_date || ev?.source) return 'event';
-  return 'other';
+  return canonicalCategory(ev);
 }
 
 function itineraryCategoryLabel(kind){
@@ -3991,6 +4081,19 @@ function itineraryStayFor(ev){
   if(kind==='active') return Math.min(75,Math.max(35,pref.recommended));
   if(kind==='event') return Math.min(75,Math.max(30,Number(ev?.recommended_stay_min)||pref.recommended));
   return Math.min(45,Math.max(25,pref.recommended));
+}
+
+
+function itineraryCategoriesCanFollow(previousKind,nextKind){
+  if(!previousKind || !nextKind)return true;
+
+  // Avoid unnatural back-to-back eating stops.
+  // Cafe -> meal and meal -> cafe are allowed later in a longer itinerary
+  // only when another kind of activity is placed between them.
+  const culinary=new Set(['food','cafe']);
+  if(culinary.has(previousKind) && culinary.has(nextKind))return false;
+
+  return true;
 }
 
 function itineraryCandidateAvailable(ev, arrive, leave){
@@ -4104,6 +4207,9 @@ function buildSimpleItinerary(plan,candidateEvents=[],freeMinutes=120){
         if(usedIds.has(id)) continue;
 
         const kind=itineraryCategory(ev);
+        const previousKind=rows[rows.length-1]?.category||'';
+        if(!itineraryCategoriesCanFollow(previousKind,kind)) continue;
+
         const prevPoint=rows[rows.length-1]?.point || itineraryPointForEvent(plan.ev,plan.dest);
         const nextPoint=itineraryPointForEvent(ev,plan.dest);
         const move=rows.length ? itineraryMoveMinutes(plan,prevPoint,nextPoint) : 0;
@@ -4126,6 +4232,7 @@ function buildSimpleItinerary(plan,candidateEvents=[],freeMinutes=120){
 
         if(kind==='food' && !usedKinds.has('food')) score+=35;
         if(kind==='cafe' && rows.length>=2) score+=20;
+        if(kind==='cafe' && rows.length===1) score-=25;
         if(['sightseeing','nature'].includes(kind) && ![...usedKinds].some(k=>['sightseeing','nature'].includes(k))) score+=30;
         if(kind===primaryKind) score-=35;
         score+=Math.min(20,stay/3);
@@ -5248,7 +5355,7 @@ function parseAdjustmentText(text){
   // Mood / activity
   if(/雨|屋内/.test(t)){ setMoodChoice('rain'); changes.push('雨でもOK'); }
   else if(/ごはん|ご飯|食事|ランチ|夕食|ディナー/.test(t)){ setMoodChoice('food'); changes.push('ごはん'); }
-  else if(/カフェ|珈琲|コーヒー/.test(t)){ setMoodChoice('cafe'); changes.push('カフェ'); }
+  else if(/カフェ|珈琲|コーヒー|スイーツ/.test(t)){ setMoodChoice('food'); setFoodKindChoice('カフェ'); changes.push('カフェ・スイーツ'); }
   else if(/温泉|サウナ|風呂/.test(t)){ setMoodChoice('onsen'); changes.push('温泉・サウナ'); }
   else if(/イベント|祭|まつり/.test(t)){ setMoodChoice('event'); changes.push('イベント'); }
   else if(/景色|自然|絶景|海|山/.test(t)){ setMoodChoice('nature'); changes.push('自然・景色'); }
@@ -5282,7 +5389,11 @@ function applyStructuredAdjustment(adj){
     changes.push(`空き時間${delta>0?'+':''}${delta}分`);
   }
 
-  if(adj?.mood && ['any','food','cafe','sightseeing','event','nature','onsen','active','rain'].includes(adj.mood)){
+  if(adj?.mood==='cafe'){
+    setMoodChoice('food');
+    setFoodKindChoice('カフェ');
+    changes.push('気分：カフェ・スイーツ');
+  }else if(adj?.mood && ['any','food','sightseeing','event','nature','onsen','active','rain'].includes(adj.mood)){
     setMoodChoice(adj.mood);
     changes.push(`気分：${adj.mood}`);
   }
@@ -5437,15 +5548,15 @@ function dedupeHotPepperRows(rows=[]){
 }
 
 async function fetchHotPepperRestaurants(){
-  if(!['food','cafe'].includes(mood)) return [];
+  if(mood!=='food') return [];
   const endpoint=window.NEXITAIME_GOURMET_ENDPOINT;
   if(!endpoint)return [];
   try{
     const qs=new URLSearchParams({
       destination:destinationArea||'any',
       origin:origin||'上越妙高',
-      mood:mood||'food',
-      kind:(mood==='food' ? (foodKind||'ラーメン') : 'カフェ')
+      mood:'food',
+      kind:(foodKind||'ラーメン')
     });
     const controller=new AbortController();
     const timer=setTimeout(()=>controller.abort(),1400);
@@ -5723,7 +5834,7 @@ async function buildPlans(){
    const recommendationHtml=renderRecommendationBadges(p,idx);
    const eventInfo=eventInfoHtml(p.ev);
    const providerInfo=providerInfoHtml(p.ev);
-   const scheduleHtml=renderPlanSchedule(p,searchCtx);
+   const scheduleHtml=renderPlanSchedule(p,{...searchCtx,buffer});
    const transitGuideHtml=renderTransitGuide(p,searchCtx);
    const serviceNote=p.service?`<div class="note">利用候補：${esc(p.service.name)}${p.accessMinutes?`（拠点まで徒歩 約${p.accessMinutes}分）`:''}</div>`:'';
    const itineraryHtml=renderSimpleItinerary(p.itinerary);
