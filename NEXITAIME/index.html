@@ -1947,7 +1947,7 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
 </section>
 
 <div class="hotpepper-credit">Powered by <a href="https://webservice.recruit.co.jp/" target="_blank" rel="noopener">ホットペッパーグルメ Webサービス</a></div>
-<footer data-build="v43">NEXITAIME 〜上越版〜 · Powered by 
+<footer data-build="v44">NEXITAIME 〜上越版〜 · Powered by 
 <a href="https://axcelmode-nexit.jp/" target="_blank" rel="noopener">AXCEL MODE NEXIT</a> · Beta1.0
 <section class="operator-card" aria-label="運営会社">
   <div class="operator-card-inner">
@@ -3500,15 +3500,36 @@ function choosePlannedStay(ev,availableMinutes){
   const available=Math.floor(Number(availableMinutes)||0);
   if(available<pref.min)return null;
 
-  // Short searches stay near the recommended duration.
-  // When the user gives us more time, use some of that room up to the venue's max.
-  if(available<=pref.recommended) return Math.max(pref.min,available);
+  const kind=canonicalCategory(ev);
+  const text=[ev?.title,ev?.venue,ev?.summary,...(ev?.categories||[])].filter(Boolean).join(' ');
 
-  const extra=available-pref.recommended;
-  const stretch=Math.round(extra*0.55);
+  let minStay=pref.min;
+  let recommended=pref.recommended;
+  let maxStay=pref.max;
+
+  if(kind==='food'){
+    const quickMeal=/ラーメン|定食|食堂|そば|うどん|丼|カレー/.test(text);
+    minStay=Math.max(minStay,quickMeal?35:45);
+    recommended=Math.max(recommended,quickMeal?45:60);
+    maxStay=Math.min(maxStay,quickMeal?60:90);
+  }else if(kind==='cafe'){
+    minStay=Math.max(minStay,30);
+    recommended=Math.max(recommended,35);
+    maxStay=Math.min(maxStay,45);
+  }
+
+  if(available<minStay)return null;
+
+  if(available<=recommended){
+    return Math.max(minStay,available);
+  }
+
+  const extra=available-recommended;
+  const stretch=Math.round(extra*0.35);
+
   return Math.max(
-    pref.min,
-    Math.min(pref.max, pref.recommended+stretch, available)
+    minStay,
+    Math.min(maxStay,recommended+stretch,available)
   );
 }
 
@@ -4473,8 +4494,18 @@ function itineraryCategoryLabel(kind){
 function itineraryStayFor(ev){
   const pref=stayPreference(ev);
   const kind=itineraryCategory(ev);
-  if(kind==='food') return Math.min(60,Math.max(35,pref.recommended));
-  if(kind==='cafe') return Math.min(50,Math.max(30,pref.recommended));
+  const text=[ev?.title,ev?.venue,ev?.summary,...(ev?.categories||[])].filter(Boolean).join(' ');
+
+  if(kind==='food'){
+    const quickMeal=/ラーメン|定食|食堂|そば|うどん|丼|カレー/.test(text);
+    if(quickMeal) return Math.min(60,Math.max(45,pref.recommended));
+    return Math.min(90,Math.max(60,pref.recommended));
+  }
+
+  if(kind==='cafe'){
+    return Math.min(45,Math.max(30,pref.recommended));
+  }
+
   if(kind==='sightseeing') return Math.min(60,Math.max(25,pref.recommended));
   if(kind==='nature') return Math.min(50,Math.max(25,pref.recommended));
   if(kind==='onsen') return Math.min(90,Math.max(60,pref.recommended));
