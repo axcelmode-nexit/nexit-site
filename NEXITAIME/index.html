@@ -735,30 +735,6 @@ main{
     font-size:18px;
   }
 }
-.service-site-btn{
-  width:auto;
-  min-width:118px;
-  height:40px;
-  padding:0 13px;
-  border-radius:999px;
-  gap:7px;
-  font-size:12px;
-  font-weight:900;
-  white-space:nowrap;
-}
-.service-site-btn .service-site-arrow{
-  font-size:14px;
-  opacity:.72;
-}
-@media (max-width:700px){
-  .service-site-btn{
-    width:auto;
-    min-width:116px;
-    height:40px;
-    padding:0 12px;
-    font-size:12px;
-  }
-}
 </style>
 
 
@@ -2476,7 +2452,7 @@ async function renderMobility(){
       ${s.stock?`<div class="meta">${s.stock}</div>`:''}
       ${s.price?`<div class="meta">${s.price}</div>`:''}
       ${s.closed_note?`<div class="note">${s.closed_note}</div>`:''}
-      <div class="actions service-actions">${phone}<a href="${s.url}" target="_blank" rel="noopener" class="service-icon-btn service-site-btn" aria-label="公式サイトで確認" title="公式サイトで確認"><span aria-hidden="true">🌐</span><span>公式サイト</span><span class="service-site-arrow" aria-hidden="true">↗</span></a></div>
+      <div class="actions service-actions">${phone}<a href="${s.url}" target="_blank" rel="noopener" class="service-icon-btn" aria-label="公式サイトで確認" title="公式サイトで確認">🌐</a></div>
     </div>`;
   };
 
