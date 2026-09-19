@@ -1640,6 +1640,56 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
 }
 </style>
 
+
+<style id="data-freshness-v33">
+.freshness-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  margin:5px 0 2px;
+  padding:5px 8px;
+  border-radius:999px;
+  font-size:10px;
+  font-weight:900;
+}
+.freshness-badge.fresh{
+  background:#eef9f1;
+  color:#2f7a46;
+  border:1px solid #cfe8d6;
+}
+.freshness-badge.stale,
+.freshness-badge.unknown{
+  background:#fff7dc;
+  color:#7d6500;
+  border:1px solid #eedf9f;
+}
+.freshness-note{
+  margin:2px 0 6px;
+  font-size:9px;
+  line-height:1.45;
+  color:#8795a3;
+}
+</style>
+
+
+<style id="nearest-public-access-v34">
+.transit-access-station{
+  margin:-2px 0 8px;
+  font-size:9px;
+  font-weight:900;
+  color:#55748b;
+}
+</style>
+
+
+<style id="top3-diversity-v35">
+.recommend-badge.diversity{
+  background:#f3efff;
+  color:#6a56a5;
+  border:1px solid #ddd2ff;
+}
+</style>
+
 </head>
 <body>
 <div class="app">
@@ -1897,7 +1947,7 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
 </section>
 
 <div class="hotpepper-credit">Powered by <a href="https://webservice.recruit.co.jp/" target="_blank" rel="noopener">ホットペッパーグルメ Webサービス</a></div>
-<footer data-build="v32">NEXITAIME 〜上越版〜 · Powered by 
+<footer data-build="v35">NEXITAIME 〜上越版〜 · Powered by 
 <a href="https://axcelmode-nexit.jp/" target="_blank" rel="noopener">AXCEL MODE NEXIT</a> · Beta1.0
 <section class="operator-card" aria-label="運営会社">
   <div class="operator-card-inner">
@@ -3403,13 +3453,17 @@ function findBestTransitReturn(a,b,earliest,deadline,eventEnd,mode){
 }
 
 
+
 const MAX_PUBLIC_LAST_MILE_WALK_MIN=25;
 
 function publicLastMileForEvent(ev,dest){
   const stationPoint=PLACES?.[dest]||null;
   const venuePoint=routePointForEvent(ev,dest);
   if(!stationPoint || !venuePoint){
-    return {mode:'walk',minutes:0,km:0,label:'徒歩',station:dest,venue:ev?.venue||ev?.title||dest,known:false};
+    return {
+      mode:'walk',minutes:0,km:0,label:'徒歩',
+      station:dest,venue:ev?.venue||ev?.title||dest,known:false
+    };
   }
 
   const km=haversine(stationPoint.lat,stationPoint.lon,venuePoint.lat,venuePoint.lon)*1.2;
@@ -3426,7 +3480,45 @@ function publicLastMileForEvent(ev,dest){
   };
 }
 
-async function evaluateTransitMode(ev,dest,mode,start,deadline,ctx){
+function publicAccessStationCandidates(ev,fallbackDest){
+  const venuePoint=routePointForEvent(ev,fallbackDest);
+  const rows=[];
+  const seen=new Set();
+
+  const add=(name,priority=0)=>{
+    if(!name || seen.has(name) || !PLACES?.[name])return;
+    seen.add(name);
+    const p=PLACES[name];
+    const km=venuePoint
+      ? haversine(p.lat,p.lon,venuePoint.lat,venuePoint.lon)*1.2
+      : 999;
+    rows.push({name,km,priority});
+  };
+
+  // Always retain the area-mapped station as a fallback.
+  add(fallbackDest,100);
+
+  // Evaluate nearby rail stations for a more realistic last mile.
+  // This is intentionally station-level only; it does not invent bus-stop coordinates.
+  for(const name of stationOrder){
+    add(name,0);
+  }
+
+  rows.sort((a,b)=>{
+    if(a.km!==b.km)return a.km-b.km;
+    return b.priority-a.priority;
+  });
+
+  const nearest=rows.slice(0,4);
+  if(!nearest.some(x=>x.name===fallbackDest)){
+    const fallback=rows.find(x=>x.name===fallbackDest);
+    if(fallback)nearest.push(fallback);
+  }
+
+  return nearest.map(x=>x.name);
+}
+
+async function evaluateTransitAtStation(ev,dest,mode,start,deadline,ctx){
   const from=ctx.origin;
   const backTo=ctx.returnTo;
   const out=chooseTransportMode(from,dest,start,mode);
@@ -3434,9 +3526,6 @@ async function evaluateTransitMode(ev,dest,mode,start,deadline,ctx){
 
   const lastMile=publicLastMileForEvent(ev,dest);
 
-  // A public-transport plan is not considered feasible if the station-to-venue
-  // walk alone is too long. In "おまかせ", taxi/car-share candidates are scored
-  // separately rather than silently changing an explicit public-transport plan.
   if(lastMile.known && lastMile.minutes>MAX_PUBLIC_LAST_MILE_WALK_MIN)return null;
 
   const eventStart=ev.start_time?mins(ev.start_time):null;
@@ -3458,15 +3547,18 @@ async function evaluateTransitMode(ev,dest,mode,start,deadline,ctx){
   const targetVenueLeave=arrive+pref.recommended;
 
   let effectiveEnd=eventEnd;
-  if(window.close!=null)effectiveEnd=effectiveEnd==null ? window.close : Math.min(effectiveEnd,window.close);
+  if(window.close!=null){
+    effectiveEnd=effectiveEnd==null ? window.close : Math.min(effectiveEnd,window.close);
+  }
   if(effectiveEnd!=null && earliestVenueLeave>effectiveEnd)return null;
 
-  // Return transit must be searched after walking back from the venue to the station.
   const earliestStationReady=earliestVenueLeave+lastMile.minutes;
   const targetStationReady=targetVenueLeave+lastMile.minutes;
 
   let back=firstTransitReturnAfter(dest,backTo,targetStationReady,deadline,null,mode);
-  if(!back)back=firstTransitReturnAfter(dest,backTo,earliestStationReady,deadline,null,mode);
+  if(!back){
+    back=firstTransitReturnAfter(dest,backTo,earliestStationReady,deadline,null,mode);
+  }
   if(!back)return null;
 
   const venueLeave=back.dep-lastMile.minutes;
@@ -3481,13 +3573,14 @@ async function evaluateTransitMode(ev,dest,mode,start,deadline,ctx){
   const transitReason=out.kind==='bus'
     ? `公開時刻表と${dest}から目的地までの徒歩${lastMile.minutes}分を含めて帰着まで確認した${out.n}利用案`
     : (mode==='public'
-      ? `電車・バスと${dest}から目的地までの徒歩${lastMile.minutes}分を含めて判定した公共交通案`
-      : `公開時刻表と${dest}から目的地までの徒歩${lastMile.minutes}分を含めて帰着まで確認した電車案`);
+      ? `${dest}をアクセス駅として、電車・バスと徒歩${lastMile.minutes}分を含めて判定した公共交通案`
+      : `${dest}をアクセス駅として、公開時刻表と徒歩${lastMile.minutes}分を含めて判定した電車案`);
 
   const transportCost=await estimateTransportCost(mode,from,dest,backTo,null,out.kind,back.kind);
 
   return {
-    ev,dest,returnTo:backTo,mode,modeLabel:MODE_LABELS[mode],modeIcon:MODE_ICONS[mode],
+    ev,dest,returnTo:backTo,mode,
+    modeLabel:MODE_LABELS[mode],modeIcon:MODE_ICONS[mode],
     out,back,
     stationArrive,
     arrive,
@@ -3499,8 +3592,33 @@ async function evaluateTransitMode(ev,dest,mode,start,deadline,ctx){
     transportCost,
     availability,
     lastMile,
+    accessStation:dest,
     reason:transitReason
   };
+}
+
+async function evaluateTransitMode(ev,dest,mode,start,deadline,ctx){
+  const stations=publicAccessStationCandidates(ev,dest);
+  const candidates=[];
+
+  for(const station of stations){
+    const row=await evaluateTransitAtStation(ev,station,mode,start,deadline,ctx);
+    if(row)candidates.push(row);
+  }
+
+  if(!candidates.length)return null;
+
+  // Prefer plans that allow more useful time at the destination.
+  // For ties, prefer the shorter last mile, then earlier return.
+  candidates.sort((a,b)=>{
+    if(b.stay!==a.stay)return b.stay-a.stay;
+    const aWalk=a.lastMile?.minutes??999;
+    const bWalk=b.lastMile?.minutes??999;
+    if(aWalk!==bWalk)return aWalk-bWalk;
+    return a.finish-b.finish;
+  });
+
+  return candidates[0];
 }
 
 
@@ -3601,15 +3719,112 @@ function dedupeCandidates(rows){
 }
 
 
-function eventIsAvailableAt(ev, when=new Date()){
-  // Ordinary restaurants/spots do not have event dates.
-  // Only date-bound events should be checked with inEventRange().
+
+function dataTimestamp(ev){
+  const raw=
+    ev?.verified_at ??
+    ev?.last_verified ??
+    ev?.data_verified_at ??
+    ev?.updated_at ??
+    ev?.fetched_at ??
+    ev?._freshnessFetchedAt ??
+    null;
+
+  if(!raw)return null;
+  const d=new Date(raw);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function freshnessMeta(ev, referenceDate=planningDate||new Date()){
+  // Hot Pepper rows are fetched during the current search.
+  if(ev?.provider==='hotpepper' && ev?._freshnessFetchedAt){
+    return {
+      level:'fresh',
+      label:'今回取得した掲載情報',
+      detail:'店舗情報は検索時に外部サービスから取得しています。'
+    };
+  }
+
+  const stamp=dataTimestamp(ev);
+  if(stamp){
+    const ageDays=Math.max(0,Math.floor((referenceDate.getTime()-stamp.getTime())/86400000));
+    const dateLabel=`${stamp.getFullYear()}/${stamp.getMonth()+1}/${stamp.getDate()}`;
+
+    if(ageDays<=90){
+      return {
+        level:'fresh',
+        label:`情報確認 ${dateLabel}`,
+        detail:'登録情報の確認日が90日以内です。'
+      };
+    }
+    return {
+      level:'stale',
+      label:`最終確認 ${dateLabel}`,
+      detail:'確認から時間が経っているため、最新情報を公式情報で確認してください。'
+    };
+  }
+
   if(ev?.start_date || ev?.end_date){
-    if(!ev?.start_date || !ev?.end_date || !inEventRange(ev,when)) return false;
+    return {
+      level:'unknown',
+      label:'開催期間内・最新情報要確認',
+      detail:'開催期間は条件内ですが、最終確認日は登録されていません。'
+    };
+  }
+
+  return {
+    level:'unknown',
+    label:'最新情報を要確認',
+    detail:'最終確認日が登録されていません。'
+  };
+}
+
+function freshnessBadge(ev){
+  const f=freshnessMeta(ev);
+  const icon=f.level==='fresh'?'🟢':'🟡';
+  return `<div class="freshness-badge ${f.level}">${icon} ${esc(f.label)}</div>
+    <div class="freshness-note">${esc(f.detail)}</div>`;
+}
+
+function freshnessScore(ev){
+  const f=freshnessMeta(ev);
+  if(f.level==='fresh')return 8;
+  if(f.level==='stale')return -18;
+  return -8;
+}
+
+function eventRangeStatus(ev, when=new Date()){
+  if(!(ev?.start_date || ev?.end_date)) return {dated:false,active:true,expired:false};
+
+  if(!ev?.start_date || !ev?.end_date){
+    return {dated:true,active:false,expired:false};
+  }
+
+  const start=new Date(`${ev.start_date}T00:00:00+09:00`);
+  const end=new Date(`${ev.end_date}T23:59:59+09:00`);
+  if(Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())){
+    return {dated:true,active:false,expired:false};
+  }
+
+  return {
+    dated:true,
+    active:when>=start && when<=end,
+    expired:when>end
+  };
+}
+
+function eventIsAvailableAt(ev, when=new Date()){
+  const range=eventRangeStatus(ev,when);
+
+  // Date-bound events with incomplete/invalid dates are not safe to recommend.
+  if(range.dated && !range.active)return false;
+
+  if(range.active && (ev?.start_date || ev?.end_date)){
     const n=when.getHours()*60+when.getMinutes();
     const e=ev.end_time?mins(ev.end_time):null;
-    if(e!=null && n>e) return false;
+    if(e!=null && n>e)return false;
   }
+
   return true;
 }
 
@@ -4043,6 +4258,10 @@ function recommendationBadges(plan, idx){
   const timing=eventTimingMeta(ev);
 
   if(idx===0) badges.push({label:'✨ おすすめ',kind:'primary'});
+  if(plan.diversityRole){
+    const roleIcon=plan.diversityRole==='王道'?'🎯':plan.diversityRole==='別の過ごし方'?'🔄':'🧭';
+    badges.push({label:`${roleIcon} ${plan.diversityRole}`,kind:'diversity'});
+  }
   if(timing) badges.push({label:`🎪 ${timing.label}`,kind:'event'});
 
   if(plan.weatherReason && /雨|雪/.test(plan.weatherReason) && ev.indoor===true){
@@ -4695,6 +4914,9 @@ async function scoreEventSet(events, modes, start, deadline, ctx){
       const visitedScore=(mood==='any' && isVisitedEvent(ev)) ? -45 : 0;
       c.visitedScore=visitedScore;
 
+      const dataFreshnessScore=freshnessScore(ev);
+      c.dataFreshnessScore=dataFreshnessScore;
+
       c.preferenceScore=
         timeFitScore
         + wa.score
@@ -4702,7 +4924,8 @@ async function scoreEventSet(events, modes, start, deadline, ctx){
         + (companion==='any'?0:12)
         + (budget==='any'?0:8)
         + hoursConfidenceScore
-        + visitedScore;
+        + visitedScore
+        + dataFreshnessScore;
 
       rows.push(c);
     }
@@ -4801,6 +5024,7 @@ function renderTransitGuide(plan,ctx){
 
   return `<div class="transit-guide">
     <div class="transit-guide-title">🚉 公共交通の乗り方</div>
+    ${plan.accessStation?`<div class="transit-access-station">最寄り候補：${esc(plan.accessStation)}</div>`:''}
     ${rows.map((r,i)=>{
       if(r.type==='lastmile' || r.type==='lastmile-back'){
         return `<div class="transit-guide-row">
@@ -4958,6 +5182,105 @@ function sortCandidates(rows){
     if(b.stay!==a.stay)return b.stay-a.stay;
     return a.arrive-b.arrive;
   });
+}
+
+function planDiversityCategory(plan){
+  return canonicalCategory(plan?.ev||{});
+}
+
+function planDiversityArea(plan){
+  return plan?.ev?.area || '';
+}
+
+function planDiversityStation(plan){
+  return plan?.accessStation || plan?.dest || '';
+}
+
+function planTimeStyle(plan,freeMinutes){
+  const used=Number(plan?.planMinutes)||0;
+  const available=Math.max(1,Number(freeMinutes)||120);
+  const ratio=used/available;
+  if(ratio>=0.78)return 'full';
+  if(ratio<=0.58)return 'relaxed';
+  return 'balanced';
+}
+
+function diversityPenalty(candidate,selected,freeMinutes){
+  if(!selected.length)return 0;
+
+  const cat=planDiversityCategory(candidate);
+  const area=planDiversityArea(candidate);
+  const station=planDiversityStation(candidate);
+  const timeStyle=planTimeStyle(candidate,freeMinutes);
+  let penalty=0;
+
+  for(const picked of selected){
+    const pCat=planDiversityCategory(picked);
+    const pArea=planDiversityArea(picked);
+    const pStation=planDiversityStation(picked);
+    const pTime=planTimeStyle(picked,freeMinutes);
+
+    // Category diversity matters most when the user chose "おまかせ".
+    if(cat===pCat){
+      penalty += mood==='any' ? 34 : 8;
+    }
+    if(area && area===pArea) penalty += 15;
+    if(station && station===pStation) penalty += 8;
+    if(timeStyle===pTime) penalty += 6;
+
+    const candidateVenue=normalizeShopName(candidate?.ev?.venue||candidate?.ev?.title||'');
+    const pickedVenue=normalizeShopName(picked?.ev?.venue||picked?.ev?.title||'');
+    if(candidateVenue && candidateVenue===pickedVenue) penalty += 100;
+  }
+
+  if(isVisitedEvent(candidate?.ev)) penalty += 28;
+
+  const freshness=freshnessMeta(candidate?.ev);
+  if(freshness.level==='fresh') penalty -= 5;
+  if(candidate?.availability?.verified===true) penalty -= 4;
+
+  return penalty;
+}
+
+function selectDiverseTopPlans(rows,freeMinutes,count=3){
+  if(!rows?.length)return [];
+
+  const pool=[...rows];
+  const selected=[];
+
+  // 1st: keep the strongest original recommendation.
+  const first=pool.shift();
+  first.diversityRole='王道';
+  selected.push(first);
+
+  while(pool.length && selected.length<count){
+    let bestIndex=0;
+    let bestValue=-Infinity;
+
+    for(let i=0;i<pool.length;i++){
+      const row=pool[i];
+      const baseScore=
+        Number(row.preferenceScore||0)
+        + Number(row.timeFitScore||0)*0.2;
+      const value=baseScore-diversityPenalty(row,selected,freeMinutes);
+
+      if(value>bestValue){
+        bestValue=value;
+        bestIndex=i;
+      }
+    }
+
+    const next=pool.splice(bestIndex,1)[0];
+    if(selected.length===1){
+      next.diversityRole='別の過ごし方';
+    }else{
+      const style=planTimeStyle(next,freeMinutes);
+      next.diversityRole=style==='relaxed'?'余裕を残す案':style==='full'?'時間をしっかり使う案':'もう1つの候補';
+    }
+    selected.push(next);
+  }
+
+  return selected;
 }
 
 
@@ -5738,15 +6061,49 @@ function normalizeShopName(value){
 }
 
 function dedupeHotPepperRows(rows=[]){
-  const staticNames=new Set(RESTAURANTS.flatMap(r=>[r.title,r.venue]).map(normalizeShopName).filter(Boolean));
   const seen=new Set();
   return rows.filter(row=>{
     const key=row.hotpepper_id || normalizeShopName(row.venue||row.title);
-    const nameKey=normalizeShopName(row.venue||row.title);
-    if(!key || seen.has(key) || staticNames.has(nameKey))return false;
+    if(!key || seen.has(key))return false;
     seen.add(key);
     return true;
   });
+}
+
+function mergeCandidateEvents(staticRows=[],liveRows=[]){
+  const merged=new Map();
+
+  for(const row of staticRows){
+    const key=normalizeShopName(row?.venue||row?.title)||row?.id||Math.random().toString(36);
+    merged.set(key,row);
+  }
+
+  for(const live of liveRows){
+    const key=normalizeShopName(live?.venue||live?.title)||live?.hotpepper_id||live?.id;
+    if(!key)continue;
+
+    const prior=merged.get(key);
+    const fetchedAt=new Date().toISOString();
+
+    if(prior){
+      const categories=[...new Set([...(prior.categories||[]),...(live.categories||[])])];
+      merged.set(key,{
+        ...prior,
+        ...live,
+        categories,
+        provider:'hotpepper',
+        _freshnessFetchedAt:fetchedAt,
+        _mergedFromStatic:true
+      });
+    }else{
+      merged.set(key,{
+        ...live,
+        _freshnessFetchedAt:fetchedAt
+      });
+    }
+  }
+
+  return [...merged.values()];
 }
 
 async function fetchHotPepperRestaurants(){
@@ -5872,7 +6229,9 @@ async function buildPlans(){
  });
 
  const hotpepperEvents=await fetchHotPepperRestaurants();
- const candidateEvents=hotpepperEvents.length ? [...EVENTS,...hotpepperEvents] : EVENTS;
+ const candidateEvents=hotpepperEvents.length
+   ? mergeCandidateEvents(EVENTS,hotpepperEvents)
+   : EVENTS;
  let events=candidateEvents.filter(ev=>eventIsAvailableAt(ev,planningDate)).filter(budgetAllows).filter(companionAllows);
  if(destinationArea!=='any')events=events.filter(destinationMatchesEvent);
  if(mood!=='any')events=events.filter(ev=>moodMatches(ev,mood));
@@ -5963,9 +6322,10 @@ async function buildPlans(){
    row.itinerary=buildSimpleItinerary(row,candidateEvents,free);
    const checked=filterFinalPlans([row],searchCtx,start,deadline);
    if(checked.length) guardedPlans.push(row);
-   if(guardedPlans.length>=3) break;
+   // Keep a wider valid pool so the top 3 can be diversified intelligently.
+   if(guardedPlans.length>=12) break;
  }
- const top=guardedPlans;
+ const top=selectDiverseTopPlans(guardedPlans,free,3);
  clearTimeout(searchWatchdog);
 
  const previousSnapshot=lastSearchSnapshot;
@@ -6055,6 +6415,7 @@ async function buildPlans(){
      ? `<div class="cost-total">合計目安：約¥${Number(totalCost).toLocaleString()} <small>（施設・イベント＋交通）</small></div>`
      : '';
    const hoursHtml=availabilityBadge(p);
+   const freshnessHtml=freshnessBadge(p.ev);
    const hoursNoteHtml=p.availability?.verified===false
      ? `<div class="note hours-warning-note">営業時間を確認できていないため、出発前に公式情報をご確認ください。</div>`
      : '';
@@ -6080,6 +6441,7 @@ async function buildPlans(){
      <div class="note" style="margin-bottom:6px"><strong>この案の理由：</strong>${esc([p.reason,p.weatherReason,companionReason(p.ev)].filter(Boolean).join('・')||'時間内に収まるため')}</div>
      <div class="meta">🎫 ${esc(costLabel(p.ev))}${p.ev.indoor?' · 🏠 屋内':''}</div>
      ${hoursHtml}
+     ${freshnessHtml}
      ${hoursNoteHtml}
      ${crowdingInfoHtml}
      ${transportCostHtml}
