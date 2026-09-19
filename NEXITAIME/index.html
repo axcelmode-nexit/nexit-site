@@ -1546,6 +1546,52 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
 }
 </style>
 
+
+<style id="favorites-history-v21">
+.plan-save-row{
+  display:flex;
+  justify-content:flex-end;
+  gap:8px;
+  flex-wrap:wrap;
+}
+.visited-btn{
+  min-height:40px;
+  padding:8px 11px;
+  border:1px solid #dce5ec;
+  border-radius:12px;
+  background:#fff;
+  color:#5b6d7c;
+  font-size:10px;
+  font-weight:900;
+}
+.visited-btn.visited{
+  background:#eef9f1;
+  border-color:#b8ddc2;
+  color:#2f7a46;
+}
+.visited-history{
+  margin-top:12px;
+  padding-top:10px;
+  border-top:1px dashed #dfe7ed;
+}
+.visited-history-title{
+  margin-bottom:7px;
+  font-size:11px;
+  font-weight:950;
+  color:#2f7a46;
+}
+.visited-history-row{
+  display:flex;
+  justify-content:space-between;
+  gap:8px;
+  padding:5px 0;
+  font-size:10px;
+  color:#52677a;
+}
+.visited-history-row strong{color:#294763}
+.visited-history-row span{color:#8795a3}
+</style>
+
 </head>
 <body>
 <div class="app">
@@ -4335,13 +4381,17 @@ async function scoreEventSet(events, modes, start, deadline, ctx){
         const hoursConfidenceScore=c.availability?.verified===false ? -22 : 0;
         c.hoursConfidenceScore=hoursConfidenceScore;
 
+        const visitedScore=(mood==='any' && isVisitedEvent(ev)) ? -45 : 0;
+        c.visitedScore=visitedScore;
+
         c.preferenceScore=
           timeFitScore
           + wa.score
           + (timing?.score||0)
           + (companion==='any'?0:12)
           + (budget==='any'?0:8)
-          + hoursConfidenceScore;
+          + hoursConfidenceScore
+          + visitedScore;
 
         rows.push(c);
       }
@@ -4613,6 +4663,47 @@ function bindPlanShareButtons(plans, ctx){
 
 
 const FAVORITES_KEY='nexitaime-favorites-v1';
+const VISITED_KEY='nexitaime-visited-v1';
+
+function loadVisited(){
+  try{
+    const rows=JSON.parse(localStorage.getItem(VISITED_KEY)||'[]');
+    return Array.isArray(rows)?rows:[];
+  }catch(_){
+    return [];
+  }
+}
+
+function saveVisited(rows){
+  localStorage.setItem(VISITED_KEY,JSON.stringify(rows));
+}
+
+function visitedIdForEvent(ev){
+  return ev?.id||ev?.title||ev?.venue||'';
+}
+
+function isVisitedEvent(ev){
+  const id=visitedIdForEvent(ev);
+  if(!id)return false;
+  return loadVisited().some(x=>x.id===id);
+}
+
+function markVisitedEvent(ev,plan=null){
+  const id=visitedIdForEvent(ev);
+  if(!id)return;
+  const rows=loadVisited().filter(x=>x.id!==id);
+  rows.unshift({
+    id,
+    title:ev?.title||ev?.venue||'訪問済み',
+    venue:ev?.venue||'',
+    visitedAt:new Date().toISOString(),
+    area:ev?.area||'',
+    modeLabel:plan?.modeLabel||''
+  });
+  if(rows.length>50)rows.length=50;
+  saveVisited(rows);
+}
+
 
 function favoriteKey(plan,ctx){
   return [
@@ -4646,6 +4737,7 @@ function favoritePayload(plan,ctx){
   return {
     key:favoriteKey(plan,ctx),
     savedAt:new Date().toISOString(),
+    status:'later',
     title:plan.ev?.title||plan.ev?.venue||plan.dest,
     venue:plan.ev?.venue||plan.dest,
     origin:ctx?.origin||origin,
@@ -4676,6 +4768,7 @@ function toggleFavorite(plan,ctx,btn){
   const key=favoriteKey(plan,ctx);
   const rows=loadFavorites();
   const idx=rows.findIndex(x=>x.key===key);
+  const wasSaved=idx>=0;
   if(idx>=0){
     rows.splice(idx,1);
   }else{
@@ -4784,9 +4877,10 @@ function renderFavoriteTray(){
   }
 
   host.hidden=false;
+  const visited=loadVisited();
   host.innerHTML=`<div class="favorite-tray-card">
     <div class="favorite-tray-head">
-      <strong>★ 保存したプラン</strong>
+      <strong>★ あとで行く</strong>
       <button type="button" id="clearFavorites" class="favorite-clear">すべて削除</button>
     </div>
     <div class="favorite-list">
@@ -4804,6 +4898,10 @@ function renderFavoriteTray(){
       </div>`).join('')}
     </div>
     <div class="favorite-research-note">再検索では保存時の気分・移動手段・予算・行き先などを復元し、日時だけ「今すぐ」で再計算します。</div>
+    ${visited.length?`<div class="visited-history">
+      <div class="visited-history-title">✓ 行った場所</div>
+      ${visited.slice(0,6).map(x=>`<div class="visited-history-row"><strong>${esc(x.title)}</strong>${x.venue?`<span>${esc(x.venue)}</span>`:''}</div>`).join('')}
+    </div>`:''}
   </div>`;
 
   host.querySelectorAll('[data-fav-rerun]').forEach(btn=>{
@@ -4873,6 +4971,21 @@ function bindFavoriteButtons(plans,ctx){
     btn.classList.toggle('saved',on);
     btn.textContent=on?'★ 保存済み':'☆ お気に入り';
     btn.addEventListener('click',()=>toggleFavorite(plan,ctx,btn));
+  });
+}
+
+function bindVisitedButtons(plans){
+  document.querySelectorAll('[data-visited-idx]').forEach(btn=>{
+    const idx=Number(btn.dataset.visitedIdx);
+    const plan=plans[idx];
+    if(!plan)return;
+    btn.addEventListener('click',()=>{
+      markVisitedEvent(plan.ev,plan);
+      btn.classList.add('visited');
+      btn.textContent='✓ 行った';
+      try{ trackNexitaime('visited_mark'); }catch(_){}
+      renderFavoriteTray();
+    });
   });
 }
 
@@ -5529,6 +5642,7 @@ async function buildPlans(){
      <div class="meta" style="margin-top:8px">ルート：${esc(searchCtx.origin)} → ${p.multimodal?`${esc(p.transferHub)}（乗換） → `:''}${esc(p.dest)} → ${p.multimodal?`${esc(p.transferHub)}（乗換） → `:''}${esc(p.returnTo||searchCtx.returnTo)}<br>帰着後の余裕：${Math.max(0,p.spare+buffer)}分</div>
      <div class="plan-save-row">
        <button type="button" class="favorite-btn" data-favorite-idx="${idx}">☆ お気に入り</button>
+       <button type="button" class="visited-btn ${isVisitedEvent(p.ev)?'visited':''}" data-visited-idx="${idx}">${isVisitedEvent(p.ev)?'✓ 行った':'○ 行った'}</button>
      </div>
      <div class="plan-share">
        <button type="button" class="share-btn primary-share" data-share-action="share" data-share-idx="${idx}">↗️ 共有する</button>
@@ -5540,6 +5654,7 @@ async function buildPlans(){
  }).join('');
  bindPlanShareButtons(top,searchCtx);
  bindFavoriteButtons(top,searchCtx);
+ bindVisitedButtons(top);
  window.NEXITAIME_QUICK_PREFERENCE='';
  renderFavoriteTray();
 

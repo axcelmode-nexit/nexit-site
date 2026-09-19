@@ -1,4 +1,4 @@
-const CACHE_NAME = 'nexitaime-shell-v20';
+const CACHE_NAME = 'nexitaime-shell-v21';
 
 const SHELL = [
   './',
