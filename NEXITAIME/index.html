@@ -1619,6 +1619,27 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
 }
 </style>
 
+
+<style id="rain-chip-compact-v29">
+/* Keep 「雨でもOK」 the same compact, content-sized chip as the other mood choices. */
+#moods .chip[data-mood="rain"]{
+  flex:0 0 auto !important;
+  width:auto !important;
+  min-width:0 !important;
+  max-width:max-content !important;
+}
+@media(max-width:700px){
+  #moods .chip[data-mood="rain"]{
+    flex:0 0 auto !important;
+    min-height:44px !important;
+    padding:8px 10px !important;
+    border-radius:16px !important;
+    font-size:14px !important;
+    line-height:1.2 !important;
+  }
+}
+</style>
+
 </head>
 <body>
 <div class="app">
