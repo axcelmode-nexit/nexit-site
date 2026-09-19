@@ -1263,7 +1263,7 @@ window.NEXITAIME_AI_ENDPOINT =
 window.NEXITAIME_GOURMET_ENDPOINT =
   "https://axcelmode-nexit-ai.pages.dev/api/nexitaime-gourmet";
 </script>
-<script>window.NEXITAIME_BUILD="v62";</script>
+<script>window.NEXITAIME_BUILD="v67";</script>
 
 
 <style id="nexitaime-existing-ai-style">
@@ -2048,7 +2048,7 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
 </section>
 
 <div class="hotpepper-credit">Powered by <a href="https://webservice.recruit.co.jp/" target="_blank" rel="noopener">ホットペッパーグルメ Webサービス</a></div>
-<footer data-build="v66">NEXITAIME 〜上越版〜 · Powered by 
+<footer data-build="v67">NEXITAIME 〜上越版〜 · Powered by 
 <a href="https://axcelmode-nexit.jp/" target="_blank" rel="noopener">AXCEL MODE NEXIT</a> · Beta1.0
 <section class="operator-card" aria-label="運営会社">
   <div class="operator-card-inner">
@@ -4508,16 +4508,47 @@ async function renderPlanRouteMap(mapId,plan,ctx){
     attribution:'&copy; OpenStreetMap contributors'
   }).addTo(map);
 
+  // Spread markers that share (or nearly share) the same point.
+  // This is especially important when departure and return are the same station (S / G),
+  // or when two itinerary stops are only a few metres apart.
+  const markerOffsets=stops.map(()=>({x:0,y:0}));
+  const clustered=new Set();
+  const thresholdKm=0.035; // about 35 m
+
+  for(let i=0;i<stops.length;i++){
+    if(clustered.has(i))continue;
+    const group=[i];
+    for(let j=i+1;j<stops.length;j++){
+      if(haversine(stops[i].lat,stops[i].lon,stops[j].lat,stops[j].lon)<=thresholdKm){
+        group.push(j);
+      }
+    }
+    if(group.length>1){
+      group.forEach((idx,k)=>{
+        const angle=(-Math.PI/2)+(Math.PI*2*k/group.length);
+        const radius=group.length===2?14:18;
+        markerOffsets[idx]={
+          x:Math.round(Math.cos(angle)*radius),
+          y:Math.round(Math.sin(angle)*radius)
+        };
+        clustered.add(idx);
+      });
+    }
+  }
+
   stops.forEach((s,i)=>{
+    const offset=markerOffsets[i]||{x:0,y:0};
     const icon=L.divIcon({
       className:'',
       html:`<div class="route-num-icon route-kind-${s.kind}">${esc(s.label||String(i+1))}</div>`,
-      iconSize:[24,24],
-      iconAnchor:[12,12]
+      iconSize:[26,26],
+      // Changing the anchor moves the whole Leaflet marker/click target, not just the paint.
+      iconAnchor:[13-offset.x,13-offset.y]
     });
     const prefix=s.itineraryNo?`${s.itineraryNo}. `:(s.kind==='start'?'出発：':s.kind==='return'?'帰着：':s.kind==='transfer'?'乗換：':'');
-    const detail=s.stay?`<br>滞在 約${s.stay}分`:''; 
-    L.marker([s.lat,s.lon],{icon}).addTo(map).bindPopup(`${prefix}${esc(s.name)}${detail}`);
+    const detail=s.stay?`<br>滞在 約${s.stay}分`:'';
+    const zIndexOffset=s.kind==='start'?400:s.kind==='return'?350:s.kind==='transfer'?300:250-i;
+    L.marker([s.lat,s.lon],{icon,zIndexOffset}).addTo(map).bindPopup(`${prefix}${esc(s.name)}${detail}`);
   });
 
   const geometry=await fetchRouteGeometry(stops,plan);
@@ -4528,7 +4559,7 @@ async function renderPlanRouteMap(mapId,plan,ctx){
         ? {weight:4,opacity:.55,dashArray:'7 7'}
         : {weight:5,opacity:.75}
     ).addTo(map);
-    map.fitBounds(line.getBounds(),{padding:[22,22]});
+    map.fitBounds(line.getBounds(),{padding:[38,38]});
 
     if(geometry.label){
       const note=document.createElement('div');
@@ -4537,7 +4568,7 @@ async function renderPlanRouteMap(mapId,plan,ctx){
       el.parentElement?.appendChild(note);
     }
   }else{
-    map.fitBounds(L.latLngBounds(stops.map(s=>[s.lat,s.lon])),{padding:[22,22]});
+    map.fitBounds(L.latLngBounds(stops.map(s=>[s.lat,s.lon])),{padding:[38,38]});
   }
 
   map.invalidateSize(true);
