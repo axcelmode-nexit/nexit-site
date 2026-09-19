@@ -1366,6 +1366,42 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
 .hotpepper-credit{margin:18px 0 8px;text-align:center;color:#8795a3;font-size:9px}
 .hotpepper-credit a{color:#6d8192;text-decoration:underline}
 </style>
+
+<style id="secondary-filter-button-size-fix">
+#foodKinds,
+#onsenKinds,
+#sightseeingKinds,
+#activeKinds{
+  display:grid !important;
+  grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+  gap:10px !important;
+}
+
+#foodKinds .chip,
+#onsenKinds .chip,
+#sightseeingKinds .chip,
+#activeKinds .chip{
+  width:100% !important;
+  min-width:0 !important;
+  min-height:44px !important;
+  margin:0 !important;
+  padding:8px 10px !important;
+  justify-content:center !important;
+  text-align:center !important;
+  flex:none !important;
+}
+
+@media(max-width:700px){
+  #foodKinds .chip,
+  #onsenKinds .chip,
+  #sightseeingKinds .chip,
+  #activeKinds .chip{
+    min-height:44px !important;
+    font-size:11px !important;
+  }
+}
+</style>
+
 </head>
 <body>
 <div class="app">
