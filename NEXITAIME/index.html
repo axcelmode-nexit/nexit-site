@@ -2885,8 +2885,9 @@ async function evaluateDirectMode(ev,dest,mode,start,deadline,ctx){
   const fromPoint=PLACES[from];
   const destPoint=routePointForEvent(ev,dest);
   const backPoint=PLACES[backTo];
-  const dynamicShop=ev?.provider==='hotpepper';
-  const directRoute=dynamicShop ? routeMinutesCoordsFast : routeMinutesCoords;
+  const cats=ev?.categories||[];
+  const foodPlace=ev?.provider==='hotpepper' || cats.some(c=>['食','ごはん','グルメ','飲食','ラーメン','定食','海鮮','寿司','そば','うどん','カフェ','中華','洋食'].some(k=>String(c).includes(k)));
+  const directRoute=foodPlace ? routeMinutesCoordsFast : routeMinutesCoords;
   const oneWay=(fromPoint&&destPoint) ? await directRoute(mode,fromPoint,destPoint) : await routeMinutes(mode,from,dest);
   const backWay=(destPoint&&backPoint) ? await directRoute(mode,destPoint,backPoint) : await routeMinutes(mode,dest,backTo);
   if(oneWay==null || backWay==null)return null;
@@ -3128,10 +3129,14 @@ function dedupeCandidates(rows){
 
 
 function eventIsAvailableAt(ev, when=new Date()){
-  if(!inEventRange(ev,when)) return false;
-  const n=when.getHours()*60+when.getMinutes();
-  const e=ev.end_time?mins(ev.end_time):null;
-  if(e!=null && n>e) return false;
+  // Ordinary restaurants/spots do not have event dates.
+  // Only date-bound events should be checked with inEventRange().
+  if(ev?.start_date || ev?.end_date){
+    if(!ev?.start_date || !ev?.end_date || !inEventRange(ev,when)) return false;
+    const n=when.getHours()*60+when.getMinutes();
+    const e=ev.end_time?mins(ev.end_time):null;
+    if(e!=null && n>e) return false;
+  }
   return true;
 }
 
@@ -4418,7 +4423,7 @@ async function fetchHotPepperRestaurants(){
       kind:(mood==='food' ? (foodKind||'any') : 'カフェ')
     });
     const controller=new AbortController();
-    const timer=setTimeout(()=>controller.abort(),7000);
+    const timer=setTimeout(()=>controller.abort(),1800);
     const res=await fetch(`${endpoint}?${qs.toString()}`,{signal:controller.signal,headers:{Accept:'application/json'}});
     clearTimeout(timer);
     if(!res.ok)return [];
@@ -4493,18 +4498,24 @@ async function buildPlans(){
 
  // Food/cafe can contain many API + static shops. Keep the transport comparison
  // responsive by scoring the most relevant subset first.
- if(['food','cafe'].includes(mood) && events.length>18){
+ if(['food','cafe'].includes(mood) && events.length>12){
    events=events
-     .map((ev,i)=>({ev,i,providerBoost:ev?.provider==='hotpepper'?2:0}))
-     .sort((a,b)=>b.providerBoost-a.providerBoost || a.i-b.i)
-     .slice(0,18)
+     .map((ev,i)=>({
+       ev,i,
+       exactFood:foodKindMatches(ev)?1:0,
+       staticBoost:ev?.provider==='hotpepper'?0:1
+     }))
+     .sort((a,b)=>b.exactFood-a.exactFood || b.staticBoost-a.staticBoost || a.i-b.i)
+     .slice(0,12)
      .map(x=>x.ev);
  }
 
  let scored=[];
  let relaxationLevel=0;
  const requestedModes=transport==='auto'
-   ? AUTO_MODES
+   ? (['food','cafe'].includes(mood)
+       ? ['privatecar','carshare','public','taxi','walk','bike']
+       : AUTO_MODES)
    : (transport==='mobilitycar' ? ['carshare','rentalcar'] : [transport]);
 
  // 1) Exact requested conditions
