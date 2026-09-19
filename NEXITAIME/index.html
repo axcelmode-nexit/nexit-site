@@ -1947,7 +1947,7 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
 </section>
 
 <div class="hotpepper-credit">Powered by <a href="https://webservice.recruit.co.jp/" target="_blank" rel="noopener">ホットペッパーグルメ Webサービス</a></div>
-<footer data-build="v39">NEXITAIME 〜上越版〜 · Powered by 
+<footer data-build="v42">NEXITAIME 〜上越版〜 · Powered by 
 <a href="https://axcelmode-nexit.jp/" target="_blank" rel="noopener">AXCEL MODE NEXIT</a> · Beta1.0
 <section class="operator-card" aria-label="運営会社">
   <div class="operator-card-inner">
@@ -3349,6 +3349,21 @@ async function evaluateDirectMode(ev,dest,mode,start,deadline,ctx){
   const fromPoint=PLACES[from];
   const destPoint=routePointForEvent(ev,dest);
   const backPoint=PLACES[backTo];
+
+  // In おまかせ, very short round trips should be walking plans.
+  // Do not promote taxi/car-share/rental-bike/rental-car merely because they fit.
+  if(transport==='auto' && backTo===from && fromPoint && destPoint &&
+     ['taxi','carshare','rentalcar','bike'].includes(mode)){
+    const directKm=haversine(fromPoint.lat,fromPoint.lon,destPoint.lat,destPoint.lon);
+    const walkMin=routeMinutesCoordsFast('walk',fromPoint,destPoint);
+
+    // Hard nearby rule:
+    // if the venue is within 0.8 km straight-line OR roughly 10 min walking,
+    // motorized/rental mobility must not be suggested in おまかせ.
+    if(directKm<=0.8 || (Number.isFinite(walkMin) && walkMin<=10)){
+      return null;
+    }
+  }
 
   const svc=await getModeService(mode);
   if(['carshare','rentalcar','taxi','bike'].includes(mode) && !svc)return null;
@@ -4917,7 +4932,7 @@ function autoModesForEvent(ev,dest,modes,ctx,start,deadline){
   const usable=Math.max(30,deadline-start);
 
   // Don't waste time evaluating obviously unsuitable modes for every candidate.
-  if(km<=1.2){
+  if(km<=0.8){
     return modes.filter(m=>['walk','bike','public','taxi'].includes(m));
   }
   if(km<=4){
@@ -4961,6 +4976,19 @@ async function scoreEventSet(events, modes, start, deadline, ctx){
       c.weatherReason=wa.reason;
       const timing=eventTimingMeta(ev,startDateForScoring(start));
       c.eventTiming=timing;
+
+      // Nearby venues should naturally favor walking in auto mode.
+      const originPoint=PLACES?.[ctx?.origin];
+      const venuePoint=routePointForEvent(ev,c.dest);
+      let proximityModeScore=0;
+      if(transport==='auto' && originPoint && venuePoint){
+        const km=haversine(originPoint.lat,originPoint.lon,venuePoint.lat,venuePoint.lon);
+        if(km<=0.8){
+          if(c.mode==='walk') proximityModeScore=35;
+          else if(['taxi','carshare','rentalcar','bike'].includes(c.mode)) proximityModeScore=-60;
+        }
+      }
+      c.proximityModeScore=proximityModeScore;
       const usableMinutes=Math.max(1,deadline-start);
       const planMinutes=Math.max(1,c.finish-start);
 
@@ -4994,7 +5022,8 @@ async function scoreEventSet(events, modes, start, deadline, ctx){
         + (budget==='any'?0:8)
         + hoursConfidenceScore
         + visitedScore
-        + dataFreshnessScore;
+        + dataFreshnessScore
+        + proximityModeScore;
 
       rows.push(c);
     }
@@ -5158,6 +5187,19 @@ function finalPlanGuard(plan,ctx,start,deadline){
       if(!['public','train','bus'].includes(actual)) reasons.push('指定移動手段と不一致');
     }else if(actual!==transport){
       reasons.push('指定移動手段と不一致');
+    }
+  }
+
+  if(transport==='auto' && plan?.returnTo===ctx?.origin &&
+     ['taxi','carshare','rentalcar','bike'].includes(plan?.mode)){
+    const fromPoint=PLACES?.[ctx?.origin];
+    const venuePoint=routePointForEvent(plan?.ev,plan?.dest);
+    if(fromPoint && venuePoint){
+      const directKm=haversine(fromPoint.lat,fromPoint.lon,venuePoint.lat,venuePoint.lon);
+      const walkMin=routeMinutesCoordsFast('walk',fromPoint,venuePoint);
+      if(directKm<=0.8 || (Number.isFinite(walkMin) && walkMin<=10)){
+        reasons.push('徒歩圏内なのに短距離の車両移動');
+      }
     }
   }
 
