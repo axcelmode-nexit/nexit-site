@@ -1210,13 +1210,30 @@ main{
 }
 .plan-adjust-head strong{display:block;font-size:13px;color:#173f66}
 .plan-adjust-head span{display:block;margin-top:2px;font-size:10px;color:#7b8d9d}
-.plan-adjust-chevron{
-  flex:0 0 auto;width:34px;height:34px;border-radius:999px;
-  display:grid;place-items:center;background:#fff;border:1px solid #d8e4ed;
-  color:#36546d;font-size:17px;font-weight:900;
+.plan-adjust-head .plan-adjust-chevron{
+  flex:0 0 36px;
+  width:36px;height:36px;
+  margin:0;
+  border-radius:999px;
+  display:grid;
+  place-items:center;
+  background:#fff;
+  border:1px solid #d8e4ed;
+  box-shadow:0 2px 8px rgba(20,50,80,.05);
+  font-size:0;
+  color:transparent;
+}
+.plan-adjust-head .plan-adjust-chevron::before{
+  content:"";
+  width:8px;height:8px;
+  border-right:2px solid #36546d;
+  border-bottom:2px solid #36546d;
+  transform:rotate(45deg) translate(-1px,-1px);
   transition:transform .2s ease;
 }
-.plan-adjust-panel.is-open .plan-adjust-chevron{transform:rotate(180deg)}
+.plan-adjust-panel.is-open .plan-adjust-chevron::before{
+  transform:rotate(225deg) translate(-1px,-1px);
+}
 .plan-adjust-body{display:none;padding-top:10px}
 .plan-adjust-panel.is-open .plan-adjust-body{display:block}
 .adjust-presets{display:flex;flex-wrap:wrap;gap:7px}
@@ -1534,7 +1551,7 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
       <strong>✨ プランを調整</strong>
       <span>条件を変えて、すぐに再提案します</span>
     </div>
-    <span class="plan-adjust-chevron" aria-hidden="true">⌄</span>
+    <span class="plan-adjust-chevron" aria-hidden="true"></span>
   </button>
   <div class="plan-adjust-body" id="planAdjustBody">
     <div class="adjust-presets">
