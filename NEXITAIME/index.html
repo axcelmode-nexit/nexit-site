@@ -1609,6 +1609,16 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
 }
 </style>
 
+
+<style id="route-map-accuracy-v24">
+.route-map-note{
+  margin:6px 2px 0;
+  font-size:9px;
+  line-height:1.45;
+  color:#8795a3;
+}
+</style>
+
 </head>
 <body>
 <div class="app">
@@ -3696,18 +3706,44 @@ function planStops(plan,ctx){
   return stops;
 }
 
-async function fetchRouteGeometry(stops){
+async function fetchRouteGeometry(stops,plan){
   if(!stops || stops.length<2)return null;
+
+  // The public OSRM demo endpoint used here is a driving router.
+  // Only use its road geometry for car-like modes. For walk/bike/public,
+  // drawing a driving route would be misleading, so use a simple point-to-point line.
+  const mode=plan?.multimodal ? (plan.lastMode||'public') : plan?.mode;
+  const carLike=['privatecar','carshare','rentalcar','taxi'].includes(mode);
+
+  if(!carLike){
+    return {
+      points:stops.map(s=>[s.lat,s.lon]),
+      approximate:true,
+      label:['public','train','bus','multimodal'].includes(plan?.mode)
+        ? '公共交通区間は概略表示'
+        : (mode==='walk'?'徒歩ルートは概略表示':mode==='bike'?'自転車ルートは概略表示':'概略表示')
+    };
+  }
+
   try{
     const coords=stops.map(s=>`${s.lon},${s.lat}`).join(';');
     const url=`https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson`;
     const r=await fetch(url);
     const j=await r.json();
     if(j.routes?.[0]?.geometry?.coordinates){
-      return j.routes[0].geometry.coordinates.map(([lon,lat])=>[lat,lon]);
+      return {
+        points:j.routes[0].geometry.coordinates.map(([lon,lat])=>[lat,lon]),
+        approximate:false,
+        label:'道路ルート'
+      };
     }
   }catch(e){}
-  return stops.map(s=>[s.lat,s.lon]);
+
+  return {
+    points:stops.map(s=>[s.lat,s.lon]),
+    approximate:true,
+    label:'道路ルートを取得できないため概略表示'
+  };
 }
 
 const renderedPlanMaps=new Set();
@@ -3716,6 +3752,7 @@ async function renderPlanRouteMap(mapId,plan,ctx){
   if(renderedPlanMaps.has(mapId))return;
   const el=document.getElementById(mapId);
   if(!el)return;
+  el.parentElement?.querySelectorAll('.route-map-note').forEach(n=>n.remove());
   if(!leafletReady()){
     const tries=Number(el.dataset.leafletRetries||0);
     if(tries<20){
@@ -3755,10 +3792,22 @@ async function renderPlanRouteMap(mapId,plan,ctx){
     L.marker([s.lat,s.lon],{icon}).addTo(map).bindPopup(`${prefix}${esc(s.name)}${detail}`);
   });
 
-  const geometry=await fetchRouteGeometry(stops);
-  if(geometry?.length){
-    const line=L.polyline(geometry,{weight:5,opacity:.75}).addTo(map);
+  const geometry=await fetchRouteGeometry(stops,plan);
+  if(geometry?.points?.length){
+    const line=L.polyline(
+      geometry.points,
+      geometry.approximate
+        ? {weight:4,opacity:.55,dashArray:'7 7'}
+        : {weight:5,opacity:.75}
+    ).addTo(map);
     map.fitBounds(line.getBounds(),{padding:[22,22]});
+
+    if(geometry.label){
+      const note=document.createElement('div');
+      note.className='route-map-note';
+      note.textContent=geometry.label;
+      el.parentElement?.appendChild(note);
+    }
   }else{
     map.fitBounds(L.latLngBounds(stops.map(s=>[s.lat,s.lon])),{padding:[22,22]});
   }
