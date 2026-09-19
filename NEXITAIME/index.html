@@ -1521,6 +1521,14 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
 }
 </style>
 
+
+<style id="hours-precision-v19">
+.hours-warning-note{
+  margin-top:4px;
+  color:#806b16;
+}
+</style>
+
 </head>
 <body>
 <div class="app">
@@ -2976,7 +2984,14 @@ function arrivalCutoffFor(ev,window){
   const values=[];
   if(window.lastEntry!=null)values.push(window.lastEntry);
   if(window.lastOrder!=null)values.push(window.lastOrder);
-  return values.length ? Math.min(...values) : null;
+
+  if(values.length) return Math.min(...values);
+
+  if(window.close!=null){
+    const pref=stayPreference(ev);
+    return window.close-pref.min;
+  }
+  return null;
 }
 
 function spotAvailability(ev, arrive, leave, baseDate){
@@ -3016,7 +3031,8 @@ function availabilityBadge(plan){
   const a=plan.availability;
   if(!a?.label) return '';
   const cls=a.verified?'hours-ok':'hours-check';
-  return `<div class="hours-badge ${cls}">🕒 ${esc(a.label)}</div>`;
+  const prefix=a.verified?'🟢':'🟡';
+  return `<div class="hours-badge ${cls}">${prefix} ${esc(a.label)}</div>`;
 }
 
 function timeInRanges(minute,ranges=[]){
@@ -3838,9 +3854,16 @@ function itineraryCandidateAvailable(ev, arrive, leave){
   try{
     if(!eventIsAvailableAt(ev,planningDate)) return false;
     const availability=spotAvailability(ev,arrive,leave,planningDate);
-    return availability?.ok!==false;
-  }catch(_){
+    if(availability?.ok===false) return false;
+
+    // For extra itinerary stops, don't build a confident plan around an indoor
+    // venue whose hours are unknown. The main recommendation may still be shown
+    // with an "営業時間要確認" warning, but add-on stops should be stricter.
+    if(ev?.indoor===true && availability?.verified===false) return false;
+
     return true;
+  }catch(_){
+    return false;
   }
 }
 
@@ -4283,12 +4306,16 @@ async function scoreEventSet(events, modes, start, deadline, ctx){
         c.timeFitScore=Math.round(timeFitScore);
         c.planMinutes=planMinutes;
         c.targetMinutes=Math.round(targetMinutes);
+        const hoursConfidenceScore=c.availability?.verified===false ? -22 : 0;
+        c.hoursConfidenceScore=hoursConfidenceScore;
+
         c.preferenceScore=
           timeFitScore
           + wa.score
           + (timing?.score||0)
           + (companion==='any'?0:12)
-          + (budget==='any'?0:8);
+          + (budget==='any'?0:8)
+          + hoursConfidenceScore;
 
         rows.push(c);
       }
@@ -5384,6 +5411,9 @@ async function buildPlans(){
      ? `<div class="cost-total">合計目安：約¥${Number(totalCost).toLocaleString()} <small>（施設・イベント＋交通）</small></div>`
      : '';
    const hoursHtml=availabilityBadge(p);
+   const hoursNoteHtml=p.availability?.verified===false
+     ? `<div class="note hours-warning-note">営業時間を確認できていないため、出発前に公式情報をご確認ください。</div>`
+     : '';
    const crowdingInfoHtml=crowdingHtml(p);
    const routeMapId=`plan-route-map-${Date.now()}-${idx}-${Math.random().toString(36).slice(2,7)}`;
    const stopsForPlan=planStops(p,searchCtx);
@@ -5406,6 +5436,7 @@ async function buildPlans(){
      <div class="note" style="margin-bottom:6px"><strong>この案の理由：</strong>${esc([p.reason,p.weatherReason,companionReason(p.ev)].filter(Boolean).join('・')||'時間内に収まるため')}</div>
      <div class="meta">🎫 ${esc(costLabel(p.ev))}${p.ev.indoor?' · 🏠 屋内':''}</div>
      ${hoursHtml}
+     ${hoursNoteHtml}
      ${crowdingInfoHtml}
      ${transportCostHtml}
      ${totalCostHtml}
