@@ -1778,6 +1778,20 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
   .plan-quick-fact:first-child{grid-column:1 / -1}
 }
 </style>
+
+<style id="ios-focus-zoom-fix-v66">
+/* iOS Safari auto-zooms focused form controls when their computed font size is below 16px. */
+@supports (-webkit-touch-callout: none) {
+  input, select, textarea {
+    font-size:16px !important;
+  }
+
+  /* Keep the free-form plan adjustment field compact without triggering Safari zoom. */
+  .adjust-freeform input {
+    font-size:16px !important;
+  }
+}
+</style>
 </head>
 <body>
 <div class="app">
@@ -2034,7 +2048,7 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
 </section>
 
 <div class="hotpepper-credit">Powered by <a href="https://webservice.recruit.co.jp/" target="_blank" rel="noopener">ホットペッパーグルメ Webサービス</a></div>
-<footer data-build="v65">NEXITAIME 〜上越版〜 · Powered by 
+<footer data-build="v66">NEXITAIME 〜上越版〜 · Powered by 
 <a href="https://axcelmode-nexit.jp/" target="_blank" rel="noopener">AXCEL MODE NEXIT</a> · Beta1.0
 <section class="operator-card" aria-label="運営会社">
   <div class="operator-card-inner">
