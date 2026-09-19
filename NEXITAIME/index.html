@@ -1512,6 +1512,15 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
 }
 </style>
 
+
+<style id="real-itinerary-v18">
+.itinerary-real-note{
+  margin:-2px 0 8px;
+  font-size:9px;
+  color:#8292a0;
+}
+</style>
+
 </head>
 <body>
 <div class="app">
@@ -3547,11 +3556,12 @@ function planStops(plan,ctx){
 
       // The first event row uses the event title, while its map point is the venue.
       if(s.kind==='event'){
-        const venue=plan.ev?.venue||plan.dest;
-        coord=routePointForEvent(plan.ev,plan.dest)||placeCoord(venue)||placeCoord(plan.dest);
-        markerName=plan.ev?.venue||s.name;
+        const source=s.sourceEv||plan.ev;
+        const venue=source?.venue||plan.ev?.venue||plan.dest;
+        coord=s.point||routePointForEvent(source,plan.dest)||placeCoord(venue)||placeCoord(plan.dest);
+        markerName=source?.venue||s.name;
       }else{
-        coord=placeCoord(s.name);
+        coord=s.point||(s.sourceEv?routePointForEvent(s.sourceEv,plan.dest):null)||placeCoord(s.name);
       }
 
       if(coord){
@@ -3851,6 +3861,32 @@ function mixedCandidatePool(plan, candidateEvents){
     });
 }
 
+
+function itineraryLocalMode(plan){
+  const mode=plan?.mode;
+  if(['public','train','bus'].includes(mode)) return 'walk';
+  if(mode==='multimodal') return plan?.lastMode || 'walk';
+  if(['walk','bike','taxi','carshare','rentalcar','privatecar'].includes(mode)) return mode;
+  return 'walk';
+}
+
+function itineraryPointForEvent(ev, dest){
+  return routePointForEvent(ev,dest)||null;
+}
+
+function itineraryMoveMinutes(plan, fromPoint, toPoint){
+  if(!fromPoint || !toPoint) return null;
+  const mode=itineraryLocalMode(plan);
+  const minutes=routeMinutesCoordsFast(mode,fromPoint,toPoint);
+  if(minutes==null) return null;
+
+  // Public-transport plans may walk locally, but don't invent a long walk
+  // between stops just because both belong to the same broad area.
+  if(mode==='walk' && minutes>20) return null;
+
+  return Math.max(1,minutes);
+}
+
 function buildSimpleItinerary(plan,candidateEvents=[],freeMinutes=120){
   const area=plan.ev?.area;
   const legacyPool=ITINERARY_SPOTS.filter(s=>s.area===area);
@@ -3877,7 +3913,9 @@ function buildSimpleItinerary(plan,candidateEvents=[],freeMinutes=120){
       move:0,
       kind:isTimedEvent?'event':'spot',
       category:primaryKind,
-      categoryLabel:itineraryCategoryLabel(primaryKind)
+      categoryLabel:itineraryCategoryLabel(primaryKind),
+      sourceEv:plan.ev,
+      point:itineraryPointForEvent(plan.ev,plan.dest)
     });
     t+=primaryStay;
     remain-=primaryStay;
@@ -3900,7 +3938,11 @@ function buildSimpleItinerary(plan,candidateEvents=[],freeMinutes=120){
         if(usedIds.has(id)) continue;
 
         const kind=itineraryCategory(ev);
-        const move=rows.length?10:0;
+        const prevPoint=rows[rows.length-1]?.point || itineraryPointForEvent(plan.ev,plan.dest);
+        const nextPoint=itineraryPointForEvent(ev,plan.dest);
+        const move=rows.length ? itineraryMoveMinutes(plan,prevPoint,nextPoint) : 0;
+        if(move==null) continue;
+
         let stay=itineraryStayFor(ev);
         stay=Math.min(stay,remain-move);
         if(stay<25) continue;
@@ -3919,7 +3961,7 @@ function buildSimpleItinerary(plan,candidateEvents=[],freeMinutes=120){
 
         if(score>bestScore){
           bestScore=score;
-          best={ev,kind,move,stay,arrive,leave};
+          best={ev,kind,move,stay,arrive,leave,point:itineraryPointForEvent(ev,plan.dest)};
         }
       }
 
@@ -3934,7 +3976,8 @@ function buildSimpleItinerary(plan,candidateEvents=[],freeMinutes=120){
         kind:best.kind==='event'?'event':'spot',
         category:best.kind,
         categoryLabel:itineraryCategoryLabel(best.kind),
-        sourceEv:best.ev
+        sourceEv:best.ev,
+        point:best.point
       });
       t=best.leave;
       remain-=best.move+best.stay;
@@ -3946,12 +3989,18 @@ function buildSimpleItinerary(plan,candidateEvents=[],freeMinutes=120){
     for(const s of legacyPool){
       if(rows.length>=targetStops || remain<30) break;
       if(rows.some(r=>r.name===s.name)) continue;
-      const move=10;
+
+      const nextPoint=placeCoord(s.name);
+      const prevPoint=rows[rows.length-1]?.point || itineraryPointForEvent(plan.ev,plan.dest);
+      const move=itineraryMoveMinutes(plan,prevPoint,nextPoint);
+      if(move==null) continue;
       if(remain<s.stay+move) continue;
+
       t+=move;
       rows.push({
         ...s,arrive:t,leave:t+s.stay,move,kind:'spot',
-        category:'sightseeing',categoryLabel:'🏯 観光'
+        category:'sightseeing',categoryLabel:'🏯 観光',
+        point:nextPoint
       });
       t+=s.stay;
       remain-=s.stay+move;
@@ -3974,17 +4023,22 @@ function buildSimpleItinerary(plan,candidateEvents=[],freeMinutes=120){
       move:0,
       kind:'event',
       category:'event',
-      categoryLabel:'🎪 イベント'
+      categoryLabel:'🎪 イベント',
+      sourceEv:plan.ev,
+      point:itineraryPointForEvent(plan.ev,plan.dest)
     });
     t+=eventStay;
     remain-=eventStay;
   }
 
   for(const s of legacyPool){
-    const move=rows.length?8:0;
+    const nextPoint=placeCoord(s.name);
+    const prevPoint=rows[rows.length-1]?.point || itineraryPointForEvent(plan.ev,plan.dest);
+    const move=rows.length ? itineraryMoveMinutes(plan,prevPoint,nextPoint) : 0;
+    if(move==null)continue;
     if(remain < s.stay+move)continue;
     t+=move;
-    rows.push({...s,arrive:t,leave:t+s.stay,move,kind:'spot',category:'sightseeing',categoryLabel:'🏯 観光'});
+    rows.push({...s,arrive:t,leave:t+s.stay,move,kind:'spot',category:'sightseeing',categoryLabel:'🏯 観光',point:nextPoint});
     t+=s.stay;
     remain-=s.stay+move;
     if(rows.length>=4)break;
@@ -3993,10 +4047,13 @@ function buildSimpleItinerary(plan,candidateEvents=[],freeMinutes=120){
   if(!rows.length && legacyPool.length){
     remain=plan.stay; t=plan.arrive;
     for(const s of legacyPool){
-      const move=rows.length?8:0;
+      const nextPoint=placeCoord(s.name);
+      const prevPoint=rows[rows.length-1]?.point || itineraryPointForEvent(plan.ev,plan.dest);
+      const move=rows.length ? itineraryMoveMinutes(plan,prevPoint,nextPoint) : 0;
+      if(move==null)continue;
       if(remain < s.stay+move)continue;
       t+=move;
-      rows.push({...s,arrive:t,leave:t+s.stay,move,kind:'spot',category:'sightseeing',categoryLabel:'🏯 観光'});
+      rows.push({...s,arrive:t,leave:t+s.stay,move,kind:'spot',category:'sightseeing',categoryLabel:'🏯 観光',point:nextPoint});
       t+=s.stay; remain-=s.stay+move;
       if(rows.length>=4)break;
     }
@@ -4009,10 +4066,10 @@ function renderSimpleItinerary(rows){
   const hasEvent=rows.some(s=>s.kind==='event');
   const mixed=kinds.size>=2;
   const title=mixed
-    ? '✨ 食・観光などを組み合わせたおすすめ周遊'
+    ? '✨ 移動時間込みのおすすめ周遊'
     : (hasEvent?'🎪 イベント＋周辺スポット':'🗺️ この時間で回れる周遊プラン');
 
-  return `<div class="itinerary"><div class="itinerary-title">${title}</div>`+
+  return `<div class="itinerary"><div class="itinerary-title">${title}</div><div class="itinerary-real-note">各立ち寄り間の移動時間も含めて組んでいます。</div>`+
     rows.map((s,i)=>`${i?`<div class="itinerary-travel">↳ 移動 約${s.move}分</div>`:''}<div class="itinerary-step"><div class="itinerary-num">${i+1}</div><div class="itinerary-main"><strong>${s.categoryLabel?`<span class="itinerary-category">${esc(s.categoryLabel)}</span> `:''}${esc(s.name)}</strong><span>${fmt(s.arrive)}〜${fmt(s.leave)} ・ 滞在 ${s.stay}分</span></div><div class="itinerary-time">${s.stay}分</div></div>`).join('')+
     `</div>`;
 }
