@@ -1473,8 +1473,7 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
 <div class="food-subfilters" id="foodSubfilters" hidden>
   <div class="group-subtitle" style="margin-top:12px">食べたいもの</div>
   <div class="chips wrap" id="foodKinds">
-    <button class="chip active" data-food-kind="any">✨ おまかせ</button>
-    <button class="chip" data-food-kind="ラーメン">🍜 ラーメン</button>
+    <button class="chip active" data-food-kind="ラーメン">🍜 ラーメン</button>
     <button class="chip" data-food-kind="定食">🍚 定食・食堂</button>
     <button class="chip" data-food-kind="海鮮">🐟 海鮮</button>
     <button class="chip" data-food-kind="寿司">🍣 寿司</button>
@@ -1664,7 +1663,7 @@ const GAS_PRICE_YEN_PER_L=180;      // conservative reference, not a live price
 const REAL_WORLD_KM_PER_L=9;         // short-trip / city-driving assumption
 const SHORT_TRIP_FUEL_ALLOWANCE_YEN=100; // warm-up / idling / detour allowance
 
-let EVENTS=[], RESTAURANTS=[], TRAIN={up:[],down:[]}, SHINANO={up:[],down:[]}, BUS={trips:[]}, BUS_MAIN={weekday:{},holiday:{}}, BUS_EXT={routes:[]}, PLACES={}, MOBILITY=[], origin='上越妙高', destinationArea='any', returnTarget='same', timingMode='now', planningDate=new Date(), mood='any', foodKind='any', transport='auto', budget='any', companion='any', currentPos=null, weather=null, mobilityMap=null, mobilityMarkers=[], currentPosMarker=null, nearestService=null;
+let EVENTS=[], RESTAURANTS=[], TRAIN={up:[],down:[]}, SHINANO={up:[],down:[]}, BUS={trips:[]}, BUS_MAIN={weekday:{},holiday:{}}, BUS_EXT={routes:[]}, PLACES={}, MOBILITY=[], origin='上越妙高', destinationArea='any', returnTarget='same', timingMode='now', planningDate=new Date(), mood='any', foodKind='ラーメン', transport='auto', budget='any', companion='any', currentPos=null, weather=null, mobilityMap=null, mobilityMarkers=[], currentPosMarker=null, nearestService=null;
 
 Promise.all([
  fetch('./events_auto.json',{cache:'no-store'}).then(r=>r.ok?r.json():Promise.reject()).catch(()=>fetch('./events.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>[])),
@@ -2058,41 +2057,63 @@ async function locateMe(){
 }
 
 
+const ROAD_METRICS_CACHE=new Map();
+
+function roadMetricsKey(pa,pb){
+  const f=n=>Number(n).toFixed(5);
+  return `${f(pa.lat)},${f(pa.lon)}>${f(pb.lat)},${f(pb.lon)}`;
+}
+
+async function roadMetrics(pa,pb){
+  if(!pa||!pb)return null;
+  const key=roadMetricsKey(pa,pb);
+  if(ROAD_METRICS_CACHE.has(key))return ROAD_METRICS_CACHE.get(key);
+
+  const promise=(async()=>{
+    const straightKm=haversine(pa.lat,pa.lon,pb.lat,pb.lon);
+    if(straightKm<0.05)return {km:0,driveMin:0};
+
+    const fallback={km:straightKm*1.2,driveMin:(straightKm*1.2)/35*60};
+    const controller=new AbortController();
+    const timer=setTimeout(()=>controller.abort(),1200);
+    try{
+      const url=`https://router.project-osrm.org/route/v1/driving/${pa.lon},${pa.lat};${pb.lon},${pb.lat}?overview=false`;
+      const r=await fetch(url,{signal:controller.signal});
+      if(!r.ok)return fallback;
+      const j=await r.json();
+      const route=j?.routes?.[0];
+      if(!route)return fallback;
+      return {
+        km:Number.isFinite(route.distance)?route.distance/1000:fallback.km,
+        driveMin:Number.isFinite(route.duration)?route.duration/60:fallback.driveMin
+      };
+    }catch(_){
+      return fallback;
+    }finally{
+      clearTimeout(timer);
+    }
+  })();
+
+  ROAD_METRICS_CACHE.set(key,promise);
+  return promise;
+}
+
 async function routeMinutesCoords(mode,pa,pb){
   if(!pa||!pb)return null;
-  const straightKm=haversine(pa.lat,pa.lon,pb.lat,pb.lon);
-  if(straightKm<0.05)return 0;
-
-  let routeKm=null;
-  let driveMin=null;
-  try{
-    const url=`https://router.project-osrm.org/route/v1/driving/${pa.lon},${pa.lat};${pb.lon},${pb.lat}?overview=false`;
-    const r=await fetch(url);
-    const j=await r.json();
-    if(j.routes&&j.routes[0]){
-      if(Number.isFinite(j.routes[0].distance)) routeKm=j.routes[0].distance/1000;
-      if(Number.isFinite(j.routes[0].duration)) driveMin=j.routes[0].duration/60;
-    }
-  }catch(e){}
-
-  const km=routeKm ?? (straightKm*1.2);
+  const metrics=await roadMetrics(pa,pb);
+  if(!metrics)return null;
+  const km=metrics.km;
+  if(km<0.05)return 0;
 
   if(mode==='walk') return Math.max(1,Math.ceil(km/4.8*60));
   if(mode==='bike') return Math.max(1,Math.ceil(km/15*60));
 
-  // Raw OSRM driving times are too optimistic for this app because they omit
-  // real-world departure/arrival friction and we often route to sightseeing facilities.
-  // Add a conservative local-road/parking margin and round UP to 5 minutes.
-  const base=driveMin ?? (km/35*60);
-  let min=base*1.25 + 5;
-
+  let min=metrics.driveMin*1.25 + 5;
   if(mode==='carshare') min += 8;
   if(mode==='rentalcar') min += 20;
   if(mode==='taxi') min += 5;
-
   return Math.max(5,Math.ceil(min/5)*5);
 }
-
 
 function routeMinutesCoordsFast(mode,pa,pb){
   if(!pa||!pb)return null;
@@ -2130,15 +2151,8 @@ async function routeDistanceKm(a,b){
   const pa=PLACES[a],pb=PLACES[b];
   if(!pa||!pb)return null;
   if(a===b)return 0;
-  try{
-    const url=`https://router.project-osrm.org/route/v1/driving/${pa.lon},${pa.lat};${pb.lon},${pb.lat}?overview=false`;
-    const r=await fetch(url);
-    const j=await r.json();
-    if(j.routes&&j.routes[0]&&Number.isFinite(j.routes[0].distance)){
-      return j.routes[0].distance/1000;
-    }
-  }catch(e){}
-  return haversine(pa.lat,pa.lon,pb.lat,pb.lon)*1.2;
+  const metrics=await roadMetrics(pa,pb);
+  return metrics?.km ?? (haversine(pa.lat,pa.lon,pb.lat,pb.lon)*1.2);
 }
 
 function parseRentalPrice(service){
@@ -4453,9 +4467,9 @@ async function buildPlans(){
  summary.innerHTML='<h2>候補を比較中…</h2><p>移動時間・時刻表・戻り余裕を確認しています。</p>';
  const searchWatchdog=setTimeout(()=>{
    if(summary.textContent.includes('候補を比較中')){
-     summary.innerHTML='<h2>検索に時間がかかっています</h2><p>外部サービスの応答が遅いため、もう一度お試しください。検索条件は変更していません。</p>';
+     summary.innerHTML='<h2>検索に時間がかかっています</h2><p>外部サービスの応答が遅いため、処理を継続しています。検索条件は変更していません。</p>';
    }
- },12000);
+ },10000);
  const adjustPanel=document.getElementById('planAdjustPanel');
  if(adjustPanel){
    adjustPanel.hidden=true;
@@ -4476,6 +4490,16 @@ async function buildPlans(){
  if(destinationArea!=='any')events=events.filter(destinationMatchesEvent);
  if(mood!=='any')events=events.filter(ev=>moodMatches(ev,mood));
  events=events.filter(foodKindMatches);
+
+ // Food/cafe can contain many API + static shops. Keep the transport comparison
+ // responsive by scoring the most relevant subset first.
+ if(['food','cafe'].includes(mood) && events.length>18){
+   events=events
+     .map((ev,i)=>({ev,i,providerBoost:ev?.provider==='hotpepper'?2:0}))
+     .sort((a,b)=>b.providerBoost-a.providerBoost || a.i-b.i)
+     .slice(0,18)
+     .map(x=>x.ev);
+ }
 
  let scored=[];
  let relaxationLevel=0;
