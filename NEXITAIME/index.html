@@ -7616,7 +7616,14 @@ function bindPlanPickButtons(plans,ctx){
   });
   box.querySelectorAll('[data-unpick-plan]').forEach(btn=>btn.addEventListener('click',()=>{
     box.classList.remove('focus-plan');
-    box.querySelectorAll('.plan[data-plan-card]').forEach(card=>card.classList.remove('is-selected-plan'));
+    box.querySelectorAll('.plan[data-plan-card]').forEach(card=>{
+      card.classList.remove('is-selected-plan');
+      card.querySelectorAll('[data-plan-panel]').forEach(panel=>panel.classList.remove('is-open'));
+      const journeyBtn=card.querySelector('[data-plan-disclosure="journey"]');
+      const detailBtn=card.querySelector('[data-plan-disclosure="detail"]');
+      if(journeyBtn){journeyBtn.setAttribute('aria-expanded','false');journeyBtn.textContent='行程を見る ▼';}
+      if(detailBtn){detailBtn.setAttribute('aria-expanded','false');detailBtn.textContent='詳細を見る ▼';}
+    });
   }));
 }
 
@@ -7628,6 +7635,11 @@ async function buildPlans(){
  const now=new Date();
  const selected=selectedPlanDate();
  const summary=document.getElementById('summary'),box=document.getElementById('plans');
+ // A fresh search always returns to the normal multi-plan result view.
+ // `innerHTML` replacement does not remove classes on #plans, so a previous
+ // "この案にする" selection could otherwise leave focus-plan active and
+ // make the next search appear to return only one plan.
+ box?.classList.remove('focus-plan');
  if(!selected || Number.isNaN(selected.getTime())){
    summary.innerHTML='<h2>出発日時を確認してください</h2><p>「いつ行く？」で有効な日時を選んでください。</p>';
    box.innerHTML=''; return;
