@@ -1299,7 +1299,7 @@ window.NEXITAIME_GOURMET_ENDPOINT =
 // ▼ NEXITAIMEからひとこと：ここを true / false に変えるだけで即ON/OFFできます
 window.NEXITAIME_AI_SUGGESTION_ENABLED = true;
 </script>
-<script>window.NEXITAIME_BUILD="v109";</script>
+<script>window.NEXITAIME_BUILD="v110";</script>
 
 
 <style id="nexitaime-existing-ai-style">
@@ -5999,6 +5999,64 @@ function perceivedTravelBurden(plan,start){
   return {minutes:Math.round(burden),outWait,backWait,transfers,lastMile};
 }
 
+
+function directionalProgressAdjustment(plan,ctx){
+  const fromName=ctx?.origin;
+  const goalName=plan?.returnTo||ctx?.returnTo;
+  if(!fromName || !goalName || fromName===goalName) return {score:0,reasons:[]};
+  const fromPoint=PLACES?.[fromName];
+  const goalPoint=PLACES?.[goalName];
+  const stopPoint=routePointForEvent(plan?.ev,plan?.dest);
+  if(!fromPoint || !goalPoint || !stopPoint) return {score:0,reasons:[]};
+
+  const directKm=haversine(fromPoint.lat,fromPoint.lon,goalPoint.lat,goalPoint.lon);
+  if(directKm<3) return {score:0,reasons:[]};
+
+  const fromStop=haversine(fromPoint.lat,fromPoint.lon,stopPoint.lat,stopPoint.lon);
+  const stopGoal=haversine(stopPoint.lat,stopPoint.lon,goalPoint.lat,goalPoint.lon);
+  const progress=Math.max(-1,Math.min(1,1-(stopGoal/directKm)));
+  const detour=Math.max(0,fromStop+stopGoal-directKm);
+  let score=0;
+  const reasons=[];
+
+  // When the return point differs from the start, prefer stops that actually move
+  // the outing toward the goal instead of spending the window beside the start.
+  if(progress>=0.55){ score+=26; reasons.push('帰着先へ向かう流れ'); }
+  else if(progress>=0.30){ score+=16; reasons.push('帰着先方向の立ち寄り'); }
+  else if(progress>=0.15){ score+=8; }
+  else if(fromStop<=1.2){ score-=42; reasons.push('出発地付近に留まりすぎ'); }
+  else if(progress<0){ score-=18; reasons.push('帰着先と逆方向'); }
+
+  if(detour>3){
+    score-=Math.min(28,Math.round((detour-3)*5));
+    reasons.push('遠回りが大きい');
+  }
+
+  plan.directionalProgress={directKm,fromStop,stopGoal,progress,detour};
+  return {score,reasons};
+}
+
+function originOnlyStopBeforeDifferentGoal(plan,ctx){
+  const fromName=ctx?.origin;
+  const goalName=plan?.returnTo||ctx?.returnTo;
+  if(!fromName || !goalName || fromName===goalName) return false;
+  const fromPoint=PLACES?.[fromName];
+  const goalPoint=PLACES?.[goalName];
+  const stopPoint=routePointForEvent(plan?.ev,plan?.dest);
+  if(!fromPoint || !goalPoint || !stopPoint) return false;
+
+  const directKm=haversine(fromPoint.lat,fromPoint.lon,goalPoint.lat,goalPoint.lon);
+  if(directKm<3) return false;
+
+  // A real multi-stop itinerary can legitimately begin near the start.
+  // The bad pattern is: start-near cafe/meal/spot -> then simply travel to a distant goal.
+  if(Array.isArray(plan?.itinerary) && plan.itinerary.length>=2) return false;
+
+  const fromStop=haversine(fromPoint.lat,fromPoint.lon,stopPoint.lat,stopPoint.lon);
+  const stopGoal=haversine(stopPoint.lat,stopPoint.lon,goalPoint.lat,goalPoint.lon);
+  return fromStop<=1.2 && stopGoal>=directKm*0.70;
+}
+
 function routeCommonSenseAdjustment(plan,start,deadline,ctx){
   let score=0;
   const reasons=[];
@@ -6138,6 +6196,9 @@ async function scoreEventSet(events, modes, start, deadline, ctx){
       const routeSense=routeCommonSenseAdjustment(c,start,deadline,ctx);
       c.routeSenseScore=routeSense.score;
       c.routeSenseReasons=routeSense.reasons;
+      const directionSense=directionalProgressAdjustment(c,ctx);
+      c.directionalProgressScore=directionSense.score;
+      c.directionalProgressReasons=directionSense.reasons;
       const reservationScore=Number(c.reservation?.penalty||0);
       const returnSafetyScore=Number(c.returnSafety?.penalty||0);
       c.reservationScore=reservationScore;
@@ -6156,7 +6217,8 @@ async function scoreEventSet(events, modes, start, deadline, ctx){
         + autoModePenalty
         + reservationScore
         + returnSafetyScore
-        + routeSense.score;
+        + routeSense.score
+        + directionSense.score;
 
       rows.push(c);
     }
@@ -8081,6 +8143,13 @@ async function buildPlans(){
      row.itinerary=null;
    }
    row.multiStopPreferenceBonus=multiStopPreferenceBonus(row,free);
+   // Different start/goal: do not recommend a single stop right beside the start
+   // followed by nothing but the trip to the goal. Prefer an en-route/goal-side stop,
+   // or a genuine multi-stop outing.
+   if(originOnlyStopBeforeDifferentGoal(row,searchCtx)){
+     recordExclusion(row.ev,'start_near_only_stop','出発地付近だけ立ち寄って帰着先へ向かう単独案を除外');
+     continue;
+   }
    const checked=filterFinalPlans([row],searchCtx,start,deadline);
    if(checked.length) guardedPlans.push(row);
    // Keep a wider valid pool so the top 3 can be diversified intelligently.
