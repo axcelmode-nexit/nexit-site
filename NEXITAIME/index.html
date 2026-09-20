@@ -1295,13 +1295,26 @@ window.NEXITAIME_AI_ENDPOINT =
   "https://axcelmode-nexit-ai.pages.dev/api/nexitaime-adjust";
 window.NEXITAIME_GOURMET_ENDPOINT =
   "https://axcelmode-nexit-ai.pages.dev/api/nexitaime-gourmet";
+
+// ▼ NEXITAIMEからひとこと：ここを true / false に変えるだけで即ON/OFFできます
+window.NEXITAIME_AI_SUGGESTION_ENABLED = true;
 </script>
-<script>window.NEXITAIME_BUILD="v67";</script>
+<script>window.NEXITAIME_BUILD="v109";</script>
 
 
 <style id="nexitaime-existing-ai-style">
 .adjust-ai-note{margin-top:5px;font-size:9px;color:#93a0ad}
 #adjustRun:disabled{opacity:.65;cursor:wait}
+</style>
+<style id="nexitaime-ai-suggestion-style">
+.ai-suggestion-card{
+  margin:10px 0 14px;padding:13px 14px;border:1px solid #dcecff;border-radius:16px;
+  background:linear-gradient(135deg,#f7fbff 0%,#fff 65%,#f8f5ff 100%);box-shadow:0 7px 22px rgba(37,90,140,.07);
+}
+.ai-suggestion-head{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:12px;font-weight:900;color:#173f66}
+.ai-suggestion-badge{font-size:9px;font-weight:900;padding:3px 7px;border-radius:999px;background:#e8f3ff;color:#28628f}
+.ai-suggestion-text{font-size:12px;line-height:1.65;color:#334b60}
+.ai-suggestion-text.loading{color:#7a8b9a}
 </style>
 
 
@@ -7492,6 +7505,82 @@ function bindPlanAdjustPanel(){
 }
 
 
+
+let nexitaimeSuggestionSeq=0;
+
+function localPlanSuggestion(plans, free, buffer){
+  const top=Array.isArray(plans)?plans[0]:null;
+  if(!top) return '';
+  const stops=Array.isArray(top.itinerary)&&top.itinerary.length>1 ? top.itinerary.length : 1;
+  const mode=top.modeLabel||MODE_LABELS[top.mode]||'';
+  const used=(Number.isFinite(top.finish)&&Number.isFinite(planningDate?.getHours?.()))
+    ? Math.max(0,Math.round(top.finish-(planningDate.getHours()*60+planningDate.getMinutes()))) : null;
+  const spare=Math.max(0,Number(top.spare||0)+Number(buffer||0));
+  const bits=[];
+  if(stops>=2) bits.push(`${free}分あるので、移動が無理のない範囲で${stops}か所回れる案を優先しました。`);
+  else if(free>=120) bits.push(`${free}分の中で、移動と滞在のバランスが良い案を優先しました。`);
+  else bits.push(`短い時間でも戻りに無理が出にくい案を優先しました。`);
+  if(mode) bits.push(`${mode}で動きやすい候補です。`);
+  if(spare>=25) bits.push(`まだ約${spare}分余るため、近場をもう1か所追加できる可能性があります。`);
+  else if(used!=null && free-used<=15) bits.push(`空き時間をかなり有効に使える組み方です。`);
+  return bits.join(' ');
+}
+
+async function fetchAiPlanSuggestion(plans, free, buffer, searchCtx){
+  const endpoint=String(window.NEXITAIME_AI_ENDPOINT||'').trim();
+  if(!endpoint || !Array.isArray(plans) || !plans.length) throw new Error('AI suggestion unavailable');
+  const compact=plans.slice(0,3).map((p,i)=>({
+    rank:i+1,
+    title:planDisplayTitle(p),
+    mode:p.modeLabel||MODE_LABELS[p.mode]||p.mode,
+    stayMinutes:Number(p.stay)||0,
+    spareMinutes:Math.max(0,Number(p.spare||0)+Number(buffer||0)),
+    stops:Array.isArray(p.itinerary)&&p.itinerary.length>1?p.itinerary.length:1,
+    reason:recommendationReasonParts(p).join('・')
+  }));
+  const message=[
+    '検索結果を見て、ユーザーに役立つ「NEXITAIMEからひとこと」を日本語で1〜2文、70文字程度で作ってください。',
+    '候補にない場所や未確認情報は足さず、なぜこの提案が良いか、または条件を少し変えると広がる場合だけ具体的に提案してください。',
+    '条件変更そのものは実行しないでください。noteだけ返してください。',
+    `空き時間:${free}分`,
+    `出発:${searchCtx.origin} / 行き先:${destinationGroupLabel(searchCtx.destination)} / 帰着:${searchCtx.returnTo}`,
+    `候補:${JSON.stringify(compact)}`
+  ].join('\n');
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),8000);
+  try{
+    const r=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message,current:{freeMinutes:free,mood,transport,destination:destinationArea,origin,returnTo:searchCtx.returnTo},purpose:'suggestion',results:compact}),signal:controller.signal});
+    if(!r.ok) throw new Error(`AI API ${r.status}`);
+    const data=await r.json();
+    const note=String(data?.adjustment?.note||data?.note||'').trim();
+    if(!note) throw new Error('AI note missing');
+    return note.replace(/^NEXITAIMEからひとこと[:：]?\s*/,'').slice(0,160);
+  }finally{clearTimeout(timer);}
+}
+
+async function renderAiPlanSuggestion(plans, free, buffer, searchCtx){
+  const el=document.getElementById('aiPlanSuggestion');
+  if(!el) return;
+  // AI提案を止めたい時は、上の NEXITAIME_AI_SUGGESTION_ENABLED を false にするだけ
+  if(window.NEXITAIME_AI_SUGGESTION_ENABLED === false){
+    el.hidden=true;
+    el.innerHTML='';
+    return;
+  }
+  el.hidden=false;
+  const seq=++nexitaimeSuggestionSeq;
+  const fallback=localPlanSuggestion(plans,free,buffer);
+  el.innerHTML=`<div class="ai-suggestion-head">✨ NEXITAIMEからひとこと <span class="ai-suggestion-badge">提案</span></div><div class="ai-suggestion-text loading">提案を考えています…</div>`;
+  try{
+    const note=await fetchAiPlanSuggestion(plans,free,buffer,searchCtx);
+    if(seq!==nexitaimeSuggestionSeq || !document.getElementById('aiPlanSuggestion')) return;
+    el.innerHTML=`<div class="ai-suggestion-head">✨ NEXITAIMEからひとこと <span class="ai-suggestion-badge">AI提案</span></div><div class="ai-suggestion-text">${esc(note)}</div>`;
+  }catch(_){
+    if(seq!==nexitaimeSuggestionSeq || !document.getElementById('aiPlanSuggestion')) return;
+    el.innerHTML=`<div class="ai-suggestion-head">✨ NEXITAIMEからひとこと <span class="ai-suggestion-badge">提案</span></div><div class="ai-suggestion-text">${esc(fallback||'今の条件で無理なく動ける候補を優先しています。')}</div>`;
+  }
+}
+
 function normalizeShopName(value){
   return String(value||'')
     .toLowerCase()
@@ -8090,7 +8179,7 @@ async function buildPlans(){
  try{ trackNexitaime('search_result',{resultCount:top.length}); }catch(_){}
 
  disposePlanRouteMaps();
- box.innerHTML=renderResultQuickAdjust()+planComparisonHtml(top,start,buffer)+`<div class="plan-picked-banner">選んだプランを詳しく見ています <button type="button" data-unpick-plan>ほかの案を見る</button></div>`+top.map((p,idx)=>{
+ box.innerHTML=renderResultQuickAdjust()+planComparisonHtml(top,start,buffer)+`<div id="aiPlanSuggestion" class="ai-suggestion-card"></div><div class="plan-picked-banner">選んだプランを詳しく見ています <button type="button" data-unpick-plan>ほかの案を見る</button></div>`+top.map((p,idx)=>{
    const rankLabel=idx===0?'おすすめ':idx===1?'別の候補':'もう一案';
    const rank=`<span class="status">${rankLabel}</span>`;
    const recommendationHtml=renderRecommendationBadges(p,idx);
@@ -8222,6 +8311,7 @@ async function buildPlans(){
  bindPlanDisclosures(top,searchCtx);
  window.NEXITAIME_QUICK_PREFERENCE='';
  renderFavoriteTray();
+ renderAiPlanSuggestion(top,free,buffer,searchCtx);
 
 
  // Route maps are initialized lazily when the user opens 「詳細を見る」.
