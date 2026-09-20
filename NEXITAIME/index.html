@@ -1946,14 +1946,9 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
 <option value="330">330分</option>
 <option value="360">360分</option>
 </select></div>
-<div class="field"><label>戻りの余裕</label><select id="buffer">
-<option selected="" value="15">15分</option>
-<option value="30">30分</option>
-<option value="45">45分</option>
-<option value="60">60分</option>
-</select></div>
 </div>
-<div class="note" style="margin-top:10px">帰着後に残しておきたい余裕時間です。初期値は15分です。</div>
+<input id="buffer" type="hidden" value="15">
+<div class="note" style="margin-top:10px">戻りの余裕時間は、移動手段・天気・乗換などを見て自動で確保します。</div>
 </div></section><section class="card input-group-card"><div class="group-title">3. どう過ごす？</div><div class="group-part">
 <div class="group-subtitle">気分</div>
 <div class="chips" id="moods">
@@ -3282,7 +3277,7 @@ const MODE_LABELS={
 const MODE_ICONS={privatecar:'🚗',mobilitycar:'🚙',carshare:'🚙',rentalcar:'🚘',train:'🚃',bus:'🚌',public:'🚉',taxi:'🚕',walk:'🚶',bike:'🚲',multimodal:'🔀'};
 const AUTO_MODES=['carshare','rentalcar','public','multimodal','taxi','walk','bike'];
 
-// v95: taxi availability is not the same at every station.
+// v96: taxi availability is not the same at every station.
 // A = taxi rank / waiting cars can reasonably be expected.
 // B = taxi use point, but reservation/dispatch should be assumed.
 // C = no verified waiting pool; never assume an immediate taxi.
@@ -6887,7 +6882,7 @@ function favoritePayload(plan,ctx){
       budget,
       companion,
       freeMinutes:Number(document.getElementById('free')?.value)||120,
-      buffer:Number(document.getElementById('buffer')?.value)||15
+      autoReturnBuffer:Number(document.getElementById('buffer')?.value)||15
     }
   };
 }
@@ -6980,7 +6975,6 @@ async function restoreFavoriteSearch(row,{keepCurrentOrigin=false}={}){
   setSelectChoice('budget',s.budget||'any');
   setSelectChoice('companion',s.companion||'any');
   setFreeMinutes(s.freeMinutes||120);
-  setBufferChoice(s.buffer||15);
   setTimingChoice('now');
 
   const p=PLACES[origin];
@@ -7604,7 +7598,6 @@ function renderResultQuickAdjust(){
     <button type="button" data-result-adjust="cheaper">💴 もっと安く</button>
     <button type="button" data-result-adjust="indoor">🏠 屋内だけ</button>
     <button type="button" data-result-adjust="food">🍴 食事あり</button>
-    <button type="button" data-result-adjust="buffer">🕒 帰り余裕多め</button>
   </div>`;
 }
 
@@ -7651,13 +7644,7 @@ function bindResultQuickAdjust(){
         await buildPlans();
         return;
       }
-      if(kind==='buffer'){
-        const changed=raiseReturnBufferOneStep();
-        if(changed){
-          try{ trackNexitaime('quick_adjust',{kind:'buffer'}); }catch(_){}
-          await buildPlans();
-        }
-      }
+
     });
   });
 }
@@ -7722,6 +7709,23 @@ function bindPlanPickButtons(plans,ctx){
   }));
 }
 
+function automaticReturnBufferMinutes(){
+  let minutes=10;
+  if(['train','bus','public'].includes(transport)) minutes=15;
+  else if(transport==='taxi') minutes=20;
+  else if(transport==='auto') minutes=15;
+
+  const w=weatherAtDate(planningDate||new Date());
+  const precipitation=Number(w?.precipitation||0)+Number(w?.rain||0)+Number(w?.snowfall||0);
+  const gust=Number(w?.wind_gusts_10m||0);
+  if(precipitation>0) minutes+=5;
+  if(gust>=40) minutes+=5;
+
+  // 山側・妙高方面は道路や徒歩条件の変動を考えて少し多めに確保。
+  if(['mountain','myoko'].includes(destinationArea)) minutes+=5;
+  return Math.max(10,Math.min(30,minutes));
+}
+
 async function buildPlans(){
  syncSearchStateFromControls();
  try{ trackNexitaime('search_start',{freeMinutes:Number(document.getElementById('free')?.value)||120,buffer:Number(document.getElementById('buffer')?.value)||15}); }catch(_){}
@@ -7755,7 +7759,7 @@ async function buildPlans(){
  };
 
  const start=planningDate.getHours()*60+planningDate.getMinutes(), hardEnd=start+free, deadline=hardEnd-buffer;
- summary.innerHTML='<h2>現在の条件で検索中…</h2><p>近い候補から順に、移動時間・時刻表・戻り余裕を判定しています。</p>';
+ summary.innerHTML='<h2>現在の条件で検索中…</h2><p>近い候補から順に、移動時間・時刻表・必要な戻り余裕を判定しています。</p>';
  const searchWatchdog=setTimeout(()=>{
    if(summary.textContent.includes('再検索中')){
      summary.innerHTML='<h2>検索に時間がかかっています</h2><p>外部サービスの応答が遅いため、処理を継続しています。検索条件は変更していません。</p>';
@@ -7937,7 +7941,7 @@ async function buildPlans(){
      else if(freeChanged && changedStays) changeNote='候補は近いままですが、空き時間に合わせて滞在時間を組み直しました。';
      else if(freeChanged) changeNote='空き時間を再判定しました。この条件では同じ候補が最適でした。';
 
-     summary.innerHTML=`<h2>今の条件で${top.length}案あります</h2><p><strong>${routeSummary}</strong><br>${planStartLabel()}出発・空き時間${free}分・帰着後の余裕${buffer}分を確保します。<br><small>${changeNote}</small></p>`;
+     summary.innerHTML=`<h2>今の条件で${top.length}案あります</h2><p><strong>${routeSummary}</strong><br>${planStartLabel()}出発・空き時間${free}分・戻りの余裕は条件に合わせて自動調整します。<br><small>${changeNote}</small></p>`;
    }
    }else{
      summary.innerHTML=`<h2>${MODE_LABELS[transport]||transport}で${top.length}案あります</h2><p><strong>${routeSummary}</strong><br>指定した出発地・行き先・帰着先を固定して判定しました。</p>`;
