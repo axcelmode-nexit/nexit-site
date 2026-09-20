@@ -2199,7 +2199,7 @@ function officialCatalogStats(){
 function nonfoodHoursAuditStats(){const all=EXTRA_NONFOOD_SPOTS||[];const counts={total:all.length,officialHours:0,alwaysOpen:0,daylight:0,appointment:0,schedule:0,seasonalCheck:0,other:0};for(const x of all){if(x.hours_audit_status==='official_hours_registered')counts.officialHours++;else if(x.hours_audit_status==='always_open_model')counts.alwaysOpen++;else if(x.hours_audit_status==='daylight_model')counts.daylight++;else if(x.hours_audit_status==='appointment_required')counts.appointment++;else if(x.hours_audit_status==='schedule_required')counts.schedule++;else if(x.hours_audit_status==='seasonal_confirmation_required')counts.seasonalCheck++;else counts.other++;}return counts;}
 
 
-// v100: current Times CAR stations in Joetsu (verified 2026-09-20).
+// v103: current Times CAR stations in Joetsu (verified 2026-09-20).
 // Vehicle availability is dynamic; always confirm in the official Times CAR app/site.
 const CURRENT_TIMES_CAR_STATIONS=[
   {id:'times_furusatto_p1',name:'フルサット第１駐車場',category:'carshare',provider:'Times CAR',area:'上越妙高',address:'新潟県上越市大和5-1',hours:'空車は公式で確認',url:'https://share.timescar.jp/',verified_at:'2026-09-20',source_status:'current_station_verified'},
@@ -3083,6 +3083,10 @@ async function walkingMinutesToService(s){
 
 async function getNearestService(rows){
   if(!rows.length)return null;
+  // Real nearest/walking calculations must use actual coordinates. Directory-only
+  // same-area fallbacks are intentionally excluded here.
+  rows=rows.filter(s=>Number.isFinite(Number(s?.lat)) && Number.isFinite(Number(s?.lon)));
+  if(!rows.length)return null;
   let ranked=rows.map(s=>{
     let d;
     if(currentPos)d=haversine(currentPos.lat,currentPos.lon,s.lat,s.lon);
@@ -3202,8 +3206,17 @@ function mobilityBasePoint(){
 function mobilityDistanceKm(service){
   const p=mobilityBasePoint();
   const lat=Number(service?.lat), lon=Number(service?.lon);
-  if(!p || !Number.isFinite(lat) || !Number.isFinite(lon)) return Infinity;
-  return haversine(p.lat,p.lon,lat,lon);
+  if(p && Number.isFinite(lat) && Number.isFinite(lon)) return haversine(p.lat,p.lon,lat,lon);
+
+  // v103: Mobility-directory fallback. Some official Times CAR station pages expose a
+  // verified address but their coordinates can fail to geocode in the browser. Do not
+  // hide those services just because the coordinate lookup failed. If the service is in
+  // the same selected station area, keep it in the nearby directory with an approximate
+  // directory-only distance. Route calculations still require real coordinates.
+  const area=String(service?.area||'').replace(/駅$/,'');
+  const base=String(origin||'').replace(/駅$/,'');
+  if(area && base && (area===base || area.includes(base) || base.includes(area))) return 0.5;
+  return Infinity;
 }
 function mobilityRowsForMode(mode,{includeExtended=false}={}){
   if(!['carshare','rentalcar','taxi','bike'].includes(mode)) return [];
@@ -3271,7 +3284,7 @@ async function renderMobility(){
       <div class="picktop"><strong>${s.name}</strong><span class="service-badges">${badges}</span></div>
       <div class="meta">${s.area} · ${s.hours||''}</div>
       <div class="meta">${s.address||''}</div>
-      <div class="service-distance">基準地点から約 ${s.distanceKm.toFixed(1)}km · ${mobilityDistanceLabel(s.distanceKm)}</div>
+      <div class="service-distance">${Number.isFinite(Number(s.lat))&&Number.isFinite(Number(s.lon)) ? `基準地点から約 ${s.distanceKm.toFixed(1)}km · ${mobilityDistanceLabel(s.distanceKm)}` : `${s.area}エリア · 公式住所確認済み`}</div>
       ${s.stock?`<div class="meta">${s.stock}</div>`:''}
       ${s.price?`<div class="meta">${s.price}</div>`:''}
       ${s.closed_note?`<div class="note">${s.closed_note}</div>`:''}
