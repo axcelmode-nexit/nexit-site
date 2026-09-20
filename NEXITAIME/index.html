@@ -1039,6 +1039,14 @@ main{
 #mobilityMap .leaflet-control{
   z-index:auto;
 }
+/* v115: keep Leaflet popup/tooltip above map tiles and service markers. */
+#mobilityMap .leaflet-tile-pane{z-index:200 !important;}
+#mobilityMap .leaflet-overlay-pane{z-index:400 !important;}
+#mobilityMap .leaflet-shadow-pane{z-index:500 !important;}
+#mobilityMap .leaflet-marker-pane{z-index:600 !important;}
+#mobilityMap .leaflet-tooltip-pane{z-index:650 !important;}
+#mobilityMap .leaflet-popup-pane{z-index:700 !important;}
+#mobilityMap .leaflet-popup{pointer-events:auto;}
 </style>
 
 
@@ -3183,9 +3191,10 @@ function renderMapRows(rows,{preserveViewport=false}={}){
       iconAnchor:[14,14]
     });
     const m=L.marker([s.lat,s.lon],{icon,interactive:true,riseOnHover:true,bubblingMouseEvents:false}).addTo(mobilityMap)
-      .bindPopup(`<strong style="font-size:15px">${s.name}</strong>`,{closeButton:true,autoPan:true});
-    // v114: iPhone/Safariでも移動サービスのアイコンをタップしたら名称が確実に見えるようにする。
-    m.on('click',()=>m.openPopup());
+      .bindPopup(`<strong style="font-size:15px">${s.name}</strong>`,{closeButton:true,autoPan:true})
+      .bindTooltip(s.name,{direction:'top',offset:[0,-14],opacity:1});
+    // v115: tap/click explicitly opens the name popup; tooltip is a second visual fallback.
+    m.on('click',()=>{ m.openPopup(); m.openTooltip(); });
     mobilityMarkers.push(m);
     bounds.push([s.lat,s.lon]);
   });
