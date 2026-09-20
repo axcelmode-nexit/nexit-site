@@ -3269,7 +3269,7 @@ async function renderMobility(){
     if(s.category==='bike') return 'レンタル自転車';
     return '';
   };
-  const categoryIcon=cat=>({carshare:'🚙',rentalcar:'🚘',taxi:'🚕',bike:'🚲'}[cat]||'🚗');
+  const categoryIcon=cat=>({carshare:'🚙',rentalcar:'🚗',taxi:'🚕',bike:'🚲'}[cat]||'🚗');
 
   const renderCard=(s,{isNearest=false}={})=>{
     const open=isLikelyOpen(s);
@@ -3331,7 +3331,7 @@ const MODE_LABELS={
   train:'電車',bus:'バス',public:'公共交通',taxi:'タクシー',
   walk:'徒歩',bike:'レンタル自転車',multimodal:'複合移動'
 };
-const MODE_ICONS={privatecar:'🚗',mobilitycar:'🚙',carshare:'🚙',rentalcar:'🚘',train:'🚃',bus:'🚌',public:'🚉',taxi:'🚕',walk:'🚶',bike:'🚲',multimodal:'🔀'};
+const MODE_ICONS={privatecar:'🏎️',mobilitycar:'🚙',carshare:'🚙',rentalcar:'🚗',train:'🚃',bus:'🚌',public:'🚉',taxi:'🚕',walk:'🚶',bike:'🚲',multimodal:'🔀'};
 const AUTO_MODES=['carshare','rentalcar','public','multimodal','taxi','walk','bike'];
 
 // v96: taxi availability is not the same at every station.
