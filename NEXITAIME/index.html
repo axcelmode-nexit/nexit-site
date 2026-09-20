@@ -3282,6 +3282,30 @@ const MODE_LABELS={
 const MODE_ICONS={privatecar:'🚗',mobilitycar:'🚙',carshare:'🚙',rentalcar:'🚘',train:'🚃',bus:'🚌',public:'🚉',taxi:'🚕',walk:'🚶',bike:'🚲',multimodal:'🔀'};
 const AUTO_MODES=['carshare','rentalcar','public','multimodal','taxi','walk','bike'];
 
+// v95: taxi availability is not the same at every station.
+// A = taxi rank / waiting cars can reasonably be expected.
+// B = taxi use point, but reservation/dispatch should be assumed.
+// C = no verified waiting pool; never assume an immediate taxi.
+const TAXI_HUBS={
+  '上越妙高':{level:'A',outboundWait:3,label:'タクシー乗り場・待機期待'},
+  '高田':{level:'A',outboundWait:3,label:'タクシー乗り場・待機期待'},
+  '直江津':{level:'A',outboundWait:3,label:'タクシー乗り場・待機期待'},
+  '柿崎':{level:'A',outboundWait:4,label:'タクシー乗り場・待機期待'},
+  '直江津港':{level:'B',outboundWait:10,label:'配車・予約前提'},
+  '春日山':{level:'C',outboundWait:15,label:'待機未確認・配車前提'},
+  '黒井':{level:'C',outboundWait:15,label:'待機未確認・配車前提'},
+  '犀潟':{level:'C',outboundWait:15,label:'待機未確認・配車前提'},
+  '土底浜':{level:'C',outboundWait:15,label:'待機未確認・配車前提'},
+  '潟町':{level:'C',outboundWait:15,label:'待機未確認・配車前提'}
+};
+function taxiHubMeta(name){
+  return TAXI_HUBS[name]||{level:'C',outboundWait:12,label:'配車待ちを想定'};
+}
+function taxiReturnWaitMinutes(){
+  // Leaving a venue usually requires calling a taxi even if the station side has a rank.
+  return 8;
+}
+
 async function getModeService(mode){
   if(!['carshare','rentalcar','taxi','bike'].includes(mode))return {service:null,access:0};
 
@@ -3898,8 +3922,10 @@ async function evaluateDirectMode(ev,dest,mode,start,deadline,ctx){
   const pickupSetup=mode==='bike' ? 5 : 0;
   const returnSetup=mode==='bike' ? 3 : 0;
   const returnAccess=(mode==='carshare'||mode==='rentalcar'||mode==='bike')?access:0;
+  const taxiOutWait=mode==='taxi' ? taxiHubMeta(from).outboundWait : 0;
+  const taxiBackWait=mode==='taxi' ? taxiReturnWaitMinutes() : 0;
 
-  const rawArrive=start+access+pickupSetup+oneWay;
+  const rawArrive=start+access+pickupSetup+taxiOutWait+oneWay;
   const eventStart=ev.start_time?mins(ev.start_time):null;
   const eventEnd=ev.end_time?mins(ev.end_time):null;
 
@@ -3915,7 +3941,7 @@ async function evaluateDirectMode(ev,dest,mode,start,deadline,ctx){
   const cutoffMeta=arrivalCutoffForEvent(ev,window);
   if(cutoffMeta && arrive>=cutoffMeta.minute)return null;
 
-  let latestLeave=deadline-backWay-returnSetup-returnAccess;
+  let latestLeave=deadline-backWay-returnSetup-returnAccess-taxiBackWait;
   if(eventEnd!=null)latestLeave=Math.min(latestLeave,eventEnd);
   if(window.close!=null)latestLeave=Math.min(latestLeave,window.close);
 
@@ -3925,12 +3951,16 @@ async function evaluateDirectMode(ev,dest,mode,start,deadline,ctx){
 
   const backDep=arrive+stay;
   if(afterDarkOutdoorRisk(ev,backDep,mode,0))return null;
-  const finish=backDep+backWay+returnSetup+returnAccess;
+  const finish=backDep+taxiBackWait+backWay+returnSetup+returnAccess;
 
   const availability=spotAvailability(ev,arrive,backDep,planningDate);
   if(!availability.ok)return null;
 
   let modeReason=reasonForMode(mode,service);
+  if(mode==='taxi'){
+    const hub=taxiHubMeta(from);
+    modeReason += `（${hub.label}・往路待ち約${taxiOutWait}分、復路配車待ち約${taxiBackWait}分を見込み）`;
+  }
   if(mode==='bike') modeReason += '（貸出・返却の準備時間込み）';
   if(backTo!==from && mode==='rentalcar') modeReason += '（乗り捨て可否・料金は要確認）';
 
@@ -3938,17 +3968,20 @@ async function evaluateDirectMode(ev,dest,mode,start,deadline,ctx){
 
   const accessText=access?`・拠点まで徒歩${access}分`:'';
   const setupText=pickupSetup?`・貸出準備${pickupSetup}分`:'';
+  const taxiWaitText=mode==='taxi' ? `・配車待ち約${taxiOutWait}分` : '';
 
   return {
     ev,dest,destLabel:(ev?.venue||dest),returnTo:backTo,mode,modeLabel:MODE_LABELS[mode],modeIcon:MODE_ICONS[mode],
     out:{
-      n:MODE_LABELS[mode]+(accessText||setupText?`（${[accessText.replace(/^・/,''),setupText.replace(/^・/,'')].filter(Boolean).join('・')}）`:''),
+      n:MODE_LABELS[mode]+(accessText||setupText||taxiWaitText?`（${[accessText.replace(/^・/,''),setupText.replace(/^・/,''),taxiWaitText.replace(/^・/,'')].filter(Boolean).join('・')}）`:''),
       kind:mode,dep:start,arr:rawArrive,[from]:fmt(start),[dest]:fmt(rawArrive)
     },
     back:{n:MODE_LABELS[mode],kind:mode,dep:backDep,arr:finish,[dest]:fmt(backDep),[backTo]:fmt(finish)},
     arrive,finish,spare:deadline-finish,stay,feasible:true,accessMinutes:access,service,
     directOneWayMinutes:oneWay,directBackMinutes:backWay,
     pickupSetupMinutes:pickupSetup,returnSetupMinutes:returnSetup,
+    taxiOutWaitMinutes:taxiOutWait,taxiBackWaitMinutes:taxiBackWait,
+    taxiHub:mode==='taxi'?taxiHubMeta(from):null,
     transportCost,availability,reservation,
     returnSafety:{level:'ok',penalty:0,label:''},
     reason:modeReason
@@ -4314,7 +4347,9 @@ async function evaluateAutoMultimodal(ev,dest,start,deadline,ctx){
       const svc = lastMode==='taxi' ? null : getModeService(lastMode,hub);
       if(lastMode!=='taxi' && !svc?.service) continue;
 
-      const transferBuffer = lastMode==='taxi' ? 8 : (lastMode==='carshare' ? 12 : 18);
+      // Taxi waiting itself is accounted for inside evaluateDirectMode.
+      // Here we only add a short station-to-rank transfer buffer.
+      const transferBuffer = lastMode==='taxi' ? 3 : (lastMode==='carshare' ? 12 : 18);
       const localStart = first.arr + transferBuffer;
 
       // Last-mile to destination.
@@ -4360,17 +4395,23 @@ async function evaluateAutoMultimodal(ev,dest,start,deadline,ctx){
         },
         hubVenueKm:hubKm,
         localTravelMinutes:(localOut.directOneWayMinutes||0)+(localOut.directBackMinutes||0),
-        reason:`${from}から${hub}まで公共交通、${hub}から${dest}は${MODE_LABELS[lastMode]}を使う複合移動案`
+        reason:`${from}から${hub}まで公共交通、${hub}から${dest}は${MODE_LABELS[lastMode]}を使う複合移動案${lastMode==='taxi'?`（${taxiHubMeta(hub).label}）`:''}`
       });
     }
   }
 
   rows.sort((a,b)=>{
-    // Prefer the station nearest the venue, then the shorter actual last-mile travel.
-    // Only after that compare return time and fare.
+    // Prefer a verified taxi rank when the last mile is taxi, but never at the cost
+    // of choosing a clearly farther station. Distance still remains the primary guard.
     const ak=a.hubVenueKm??999;
     const bk=b.hubVenueKm??999;
     if(Math.abs(ak-bk)>0.15)return ak-bk;
+    if(a.lastMode==='taxi' && b.lastMode==='taxi'){
+      const rank={A:0,B:1,C:2};
+      const ah=rank[taxiHubMeta(a.transferHub).level]??2;
+      const bh=rank[taxiHubMeta(b.transferHub).level]??2;
+      if(ah!==bh)return ah-bh;
+    }
     const at=a.localTravelMinutes??999;
     const bt=b.localTravelMinutes??999;
     if(at!==bt)return at-bt;
