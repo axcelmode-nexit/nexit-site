@@ -2255,7 +2255,20 @@ Promise.all([
   await enrichOfficialAddressCoordinates(EVENTS);
   TRAIN=t;SHINANO=shinanoData||{up:[],down:[]};BUS=b;BUS_MAIN=bm;BUS_EXT=bx;PLACES=p;
   // Replace stale Joetsu car-share rows with the currently verified five Times CAR stations.
-  const baseMobility=(Array.isArray(m)?m:[]).filter(x=>x?.category!=='carshare');
+  // v107: normalize verified official contact for IM Taxi.
+  const baseMobility=(Array.isArray(m)?m:[])
+    .filter(x=>x?.category!=='carshare')
+    .map(x=>{
+      const row={...x};
+      const taxiKey=`${row.name||''} ${row.provider||''}`;
+      if(/(?:アイエム|IM\s*TAXI|IM\s*タクシー)/i.test(taxiKey)){
+        row.url='https://www.imtaxi.com/';
+        row.phone='025-523-3188';
+        row.verified_at='2026-09-20';
+        row.source_status='official_contact_verified';
+      }
+      return row;
+    });
   const currentCarshare=await enrichCurrentMobilityCoordinates(CURRENT_TIMES_CAR_STATIONS.map(x=>({...x})));
   MOBILITY=[...baseMobility,...currentCarshare];
   renderMobility(); setTimeout(()=>{initMobilityMap();renderMobility();},250);
