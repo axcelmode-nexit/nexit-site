@@ -1039,7 +1039,7 @@ main{
 #mobilityMap .leaflet-control{
   z-index:auto;
 }
-/* v115: keep Leaflet popup/tooltip above map tiles and service markers. */
+/* v117: representative-landmark priority; keep Leaflet popup/tooltip above map tiles and service markers. */
 #mobilityMap .leaflet-tile-pane{z-index:200 !important;}
 #mobilityMap .leaflet-overlay-pane{z-index:400 !important;}
 #mobilityMap .leaflet-shadow-pane{z-index:500 !important;}
@@ -3193,7 +3193,7 @@ function renderMapRows(rows,{preserveViewport=false}={}){
     const m=L.marker([s.lat,s.lon],{icon,interactive:true,riseOnHover:true,bubblingMouseEvents:false}).addTo(mobilityMap)
       .bindPopup(`<strong style="font-size:15px">${s.name}</strong>`,{closeButton:true,autoPan:true})
       .bindTooltip(s.name,{direction:'top',offset:[0,-14],opacity:1});
-    // v115: tap/click explicitly opens the name popup; tooltip is a second visual fallback.
+    // v116: tap/click explicitly opens the name popup; tooltip is a second visual fallback.
     m.on('click',()=>{ m.openPopup(); m.openTooltip(); });
     mobilityMarkers.push(m);
     bounds.push([s.lat,s.lon]);
@@ -5587,6 +5587,61 @@ function itineraryMoveMinutes(plan, fromPoint, toPoint){
   return Math.max(1,minutes);
 }
 
+function isHighIntentEvent(ev){
+  const cats=(ev?.categories||[]).map(String);
+  return !!(ev?.start_time && ev?.end_time) ||
+    cats.some(c=>/体験|ワークショップ|収穫|講演|上映|ライブ|公演|温泉|絶景|期間限定/.test(c));
+}
+
+function itineraryDirectionScore(prevPoint,nextPoint,goalPoint,ev){
+  if(!prevPoint || !nextPoint || !goalPoint) return 0;
+  if(isHighIntentEvent(ev)) return 0; // strong-purpose destinations may justify a detour
+
+  const before=haversine(prevPoint.lat,prevPoint.lon,goalPoint.lat,goalPoint.lon);
+  const after=haversine(nextPoint.lat,nextPoint.lon,goalPoint.lat,goalPoint.lon);
+  if(before<1) return 0;
+  const progress=(before-after)/before;
+  const leg=haversine(prevPoint.lat,prevPoint.lon,nextPoint.lat,nextPoint.lon);
+  let score=0;
+  if(progress>=0.30) score+=55;
+  else if(progress>=0.15) score+=35;
+  else if(progress>=0.05) score+=18;
+  else if(progress<0) score-=45;
+
+  // Avoid large sideways detours when there is a different final destination.
+  if(after>before+2) score-=25;
+  if(leg>before*0.85 && progress<0.10) score-=20;
+  return score;
+}
+
+function itineraryProgressFlowBonus(plan,ctx){
+  const fromName=ctx?.origin;
+  const goalName=plan?.returnTo||ctx?.returnTo;
+  if(!fromName || !goalName || fromName===goalName) return 0;
+  const startPoint=PLACES?.[fromName];
+  const goalPoint=PLACES?.[goalName];
+  if(!startPoint || !goalPoint) return 0;
+  const rows=Array.isArray(plan?.itinerary)?plan.itinerary:[];
+  if(!rows.length) return 0;
+
+  let prev=startPoint, bonus=0, movingForward=0, movingBack=0;
+  for(const row of rows){
+    const pt=row?.point || exactPointForEvent(row?.sourceEv);
+    if(!pt) continue;
+    const before=haversine(prev.lat,prev.lon,goalPoint.lat,goalPoint.lon);
+    const after=haversine(pt.lat,pt.lon,goalPoint.lat,goalPoint.lon);
+    if(before>0.5){
+      const delta=before-after;
+      if(delta>0.4){ movingForward++; bonus+=10; }
+      else if(delta<-0.4){ movingBack++; bonus-=14; }
+    }
+    prev=pt;
+  }
+  if(rows.length>=2 && movingForward>=rows.length-1) bonus+=16;
+  if(movingBack>=2) bonus-=18;
+  return Math.max(-45,Math.min(45,bonus));
+}
+
 function buildSimpleItinerary(plan,candidateEvents=[],freeMinutes=120){
   const area=plan.ev?.area;
   const legacyPool=ITINERARY_SPOTS.filter(s=>s.area===area);
@@ -5671,6 +5726,15 @@ function buildSimpleItinerary(plan,candidateEvents=[],freeMinutes=120){
         if(['sightseeing','nature'].includes(kind) && ![...usedKinds].some(k=>['sightseeing','nature'].includes(k))) score+=30;
         if(kind===primaryKind) score-=35;
         score+=Math.min(20,stay/3);
+        // When several nearby stops are equally realistic, favor places that feel distinctly Joetsu.
+        score+=joetsuLandmarkBonus(ev);
+
+        // When start and goal differ, prefer each added stop to keep moving toward the goal.
+        const goalName=plan?.returnTo || (returnTarget==='same' ? origin : returnTarget);
+        const goalPoint=PLACES?.[goalName];
+        if(goalName && goalName!==origin && goalPoint){
+          score+=itineraryDirectionScore(prevPoint,nextPoint,goalPoint,ev);
+        }
 
         if(score>bestScore){
           bestScore=score;
@@ -5925,6 +5989,45 @@ const FLEX_ACTIVITIES=[
   }
 ];
 
+
+// v117: representative Joetsu landmark priority.
+// This is deliberately a modest boost: route feasibility, opening hours, weather,
+// return timing and the user's explicit mood/transport choices still win first.
+const JOETSU_LANDMARK_PRIORITY={
+  '高田城址公園':3,
+  '高田城三重櫓':3,
+  '春日山城跡':3,
+  '上越市立水族博物館 うみがたり':3,
+  '林泉寺':2,
+  '春日山神社':2,
+  '上越市立歴史博物館':2,
+  '釜蓋遺跡公園・釜蓋遺跡ガイダンス':2,
+  '五智国分寺':2,
+  '謙信公戦国絵巻館':1,
+  '春日山城史跡広場・春日山城跡ものがたり館':1,
+  '直江津D51レールパーク':1,
+  '居多ヶ浜（親鸞聖人上陸の地）':1
+};
+function joetsuLandmarkTier(ev){
+  const names=[ev?.title,ev?.venue].filter(Boolean).map(String);
+  let tier=0;
+  for(const name of names){
+    if(JOETSU_LANDMARK_PRIORITY[name]) tier=Math.max(tier,JOETSU_LANDMARK_PRIORITY[name]);
+  }
+  return tier;
+}
+function joetsuLandmarkBonus(ev){
+  const tier=joetsuLandmarkTier(ev);
+  if(!tier) return 0;
+  // Already-visited places should not keep winning simply because they are famous.
+  if(typeof isVisitedEvent==='function' && isVisitedEvent(ev)) return 0;
+  if(mood==='sightseeing') return tier===3?38:tier===2?27:16;
+  if(mood==='any') return tier===3?30:tier===2?21:12;
+  // Explicit non-sightseeing intent should dominate. Keep only a tiny tie-breaker.
+  if(mood==='rain' && ev?.indoor) return tier===3?8:tier===2?5:2;
+  return 0;
+}
+
 function startDateForScoring(start){
   const d=new Date(planningDate||new Date());
   if(Number.isFinite(start)){
@@ -5959,6 +6062,7 @@ function stagedAutoCandidates(events, ctx){
     if(preferredKinds.has(kind)) score+=20;
     if(ev?.provider==='hotpepper') score+=8;
     if(ev?.always_open) score+=4;
+    score+=joetsuLandmarkBonus(ev);
     return {ev,i,score};
   }).sort((a,b)=>b.score-a.score || a.i-b.i);
 
@@ -6680,8 +6784,8 @@ function returnSpareFitBonus(plan){
 
 function sortCandidates(rows){
   return rows.sort((a,b)=>{
-    const bp=(b.preferenceScore||0)+(b.multiStopPreferenceBonus||0)+returnSpareFitBonus(b);
-    const ap=(a.preferenceScore||0)+(a.multiStopPreferenceBonus||0)+returnSpareFitBonus(a);
+    const bp=(b.preferenceScore||0)+(b.multiStopPreferenceBonus||0)+Number(b.routeProgressFlowBonus||0)+returnSpareFitBonus(b)+joetsuLandmarkBonus(b.ev);
+    const ap=(a.preferenceScore||0)+(a.multiStopPreferenceBonus||0)+Number(a.routeProgressFlowBonus||0)+returnSpareFitBonus(a)+joetsuLandmarkBonus(a.ev);
     if(bp!==ap)return bp-ap;
     if((b.timeFitScore||0)!==(a.timeFitScore||0))return (b.timeFitScore||0)-(a.timeFitScore||0);
     if((b.planMinutes||0)!==(a.planMinutes||0))return (b.planMinutes||0)-(a.planMinutes||0);
@@ -6781,7 +6885,9 @@ function selectDiverseTopPlans(rows,freeMinutes,count=3){
       const baseScore=
         Number(row.preferenceScore||0)
         + Number(row.multiStopPreferenceBonus||0)
-        + Number(row.timeFitScore||0)*0.2;
+        + Number(row.routeProgressFlowBonus||0)
+        + Number(row.timeFitScore||0)*0.2
+        + joetsuLandmarkBonus(row.ev);
       const value=baseScore-diversityPenalty(row,selected,freeMinutes);
 
       if(value>bestValue){
@@ -8196,6 +8302,7 @@ async function buildPlans(){
      row.itinerary=null;
    }
    row.multiStopPreferenceBonus=multiStopPreferenceBonus(row,free);
+   row.routeProgressFlowBonus=itineraryProgressFlowBonus(row,searchCtx);
    // Different start/goal: do not recommend a single stop right beside the start
    // followed by nothing but the trip to the goal. Prefer an en-route/goal-side stop,
    // or a genuine multi-stop outing.
