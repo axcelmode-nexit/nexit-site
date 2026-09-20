@@ -2285,6 +2285,7 @@ Promise.all([
     });
   const currentCarshare=await enrichCurrentMobilityCoordinates(CURRENT_TIMES_CAR_STATIONS.map(x=>({...x})));
   MOBILITY=[...baseMobility,...currentCarshare];
+  await enrichMobilityServiceCoordinates(MOBILITY);
   renderMobility(); setTimeout(()=>{initMobilityMap();renderMobility();},250);
   try{const audit=coordinateAuditReport(); if(audit.duplicateUrls.length||audit.exactDuplicates.length) console.warn('[NEXITAIME coordinate audit]',audit);}catch(_){}});
 
@@ -2909,6 +2910,24 @@ async function enrichOfficialAddressCoordinates(rows=[]){
   }
 }
 
+// v112: Mobility directory markers also need coordinates.  Many entries in
+// mobility_services.json only have a verified street address, so resolve that address once
+// and cache it.  This lets map-panning discover and draw services in the browsed area
+// instead of updating only the text list.
+async function enrichMobilityServiceCoordinates(rows=[]){
+  for(const svc of rows){
+    const lat=Number(svc?.lat),lon=Number(svc?.lon ?? svc?.lng);
+    if(Number.isFinite(lat)&&Number.isFinite(lon))continue;
+    const address=String(svc?.address||'').trim();
+    if(!address)continue;
+    const point=await geocodeOfficialAddress(address);
+    if(!point)continue;
+    svc.lat=point.lat;
+    svc.lon=point.lon;
+    svc.map_point_type='address_geocoded';
+  }
+}
+
 function pointInfoForEvent(ev){
   if(!ev)return {point:null,type:'unknown',note:'位置情報未確認'};
 
@@ -3163,8 +3182,10 @@ function renderMapRows(rows,{preserveViewport=false}={}){
       iconSize:[28,28],
       iconAnchor:[14,14]
     });
-    const m=L.marker([s.lat,s.lon],{icon}).addTo(mobilityMap)
-      .bindPopup(`<strong>${s.name}</strong><br>${s.area}<br>${s.hours||''}`);
+    const m=L.marker([s.lat,s.lon],{icon,interactive:true,riseOnHover:true,bubblingMouseEvents:false}).addTo(mobilityMap)
+      .bindPopup(`<strong style="font-size:15px">${s.name}</strong>`,{closeButton:true,autoPan:true});
+    // v114: iPhone/Safariでも移動サービスのアイコンをタップしたら名称が確実に見えるようにする。
+    m.on('click',()=>m.openPopup());
     mobilityMarkers.push(m);
     bounds.push([s.lat,s.lon]);
   });
@@ -5250,7 +5271,7 @@ async function renderPlanRouteMap(mapId,plan,ctx){
     const popup=group.items.map(({s})=>{
       const prefix=s.itineraryNo?`${s.itineraryNo}. `:(s.kind==='start'?'出発：':s.kind==='return'?'帰着：':s.kind==='transfer'?'乗換：':'');
       const detail=s.stay?`<br>滞在 約${s.stay}分`:'';
-      const pointNote=s.pointType==='representative'?`<br><small>※ 代表地点</small>`:(s.pointType==='address_geocoded'?`<br><small>※ 公式住所から位置取得</small>`:'');
+      const pointNote=s.pointType==='representative'?`<br><small>※ 代表地点</small>`:'';
       return `${prefix}${esc(s.name)}${detail}${pointNote}`;
     }).join('<hr style="margin:6px 0;border:0;border-top:1px solid #dde5ec">');
     const zIndexOffset=Math.max(...group.items.map(({s,i})=>s.kind==='start'?400:s.kind==='return'?350:s.kind==='transfer'?300:250-i));
