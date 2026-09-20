@@ -7148,6 +7148,12 @@ function markVisitedEvent(ev,plan=null){
   saveVisited(rows);
 }
 
+function unmarkVisitedEvent(ev){
+  const id=visitedIdForEvent(ev);
+  if(!id)return;
+  saveVisited(loadVisited().filter(x=>x.id!==id));
+}
+
 
 function favoriteKey(plan,ctx){
   return [
@@ -7424,10 +7430,18 @@ function bindVisitedButtons(plans){
     const plan=plans[idx];
     if(!plan)return;
     btn.addEventListener('click',()=>{
-      markVisitedEvent(plan.ev,plan);
-      btn.classList.add('visited');
-      btn.textContent='✓ 行った';
-      try{ trackNexitaime('visited_mark'); }catch(_){}
+      const wasVisited=isVisitedEvent(plan.ev);
+      if(wasVisited){
+        unmarkVisitedEvent(plan.ev);
+        btn.classList.remove('visited');
+        btn.textContent='○ 行った';
+        try{ trackNexitaime('visited_unmark'); }catch(_){}
+      }else{
+        markVisitedEvent(plan.ev,plan);
+        btn.classList.add('visited');
+        btn.textContent='✓ 行った';
+        try{ trackNexitaime('visited_mark'); }catch(_){}
+      }
       renderFavoriteTray();
     });
   });
