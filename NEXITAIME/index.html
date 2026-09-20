@@ -5415,10 +5415,13 @@ function buildSimpleItinerary(plan,candidateEvents=[],freeMinutes=120){
     t+=primaryStay;
     remain-=primaryStay;
 
-    // Number of stops grows with the user's available time.
-    let targetStops=2;
-    if(freeMinutes>=180) targetStops=3;
-    if(freeMinutes>=300) targetStops=4;
+    // Prefer a compact multi-stop outing when there is enough time, without cramming.
+    // <90 min: one place is usually more realistic.
+    // 90-149 min: aim for 2 stops.
+    // 150+ min: aim for up to 3 stops, but only when travel/hours still work.
+    let targetStops=1;
+    if(freeMinutes>=90) targetStops=2;
+    if(freeMinutes>=150) targetStops=3;
 
     const candidates=mixedCandidatePool(plan,candidateEvents);
     const usedKinds=new Set([primaryKind]);
@@ -6376,9 +6379,32 @@ function recommendationReasonParts(plan){
   return parts.slice(0,5);
 }
 
+function multiStopPreferenceBonus(plan,freeMinutes){
+  const free=Math.max(0,Number(freeMinutes)||0);
+  const stops=Array.isArray(plan?.itinerary)?plan.itinerary.length:1;
+  const cats=(plan?.ev?.categories||[]).map(String);
+  const focusedExperience=cats.some(c=>/体験|ワークショップ|収穫|講演|上映|ライブ|公演/.test(c)) ||
+    !!(plan?.ev?.start_time && plan?.ev?.end_time);
+
+  // Fixed/participatory programs should not be penalized for being a single main activity.
+  if(focusedExperience) return stops>=2 ? 6 : 0;
+  if(free<90) return stops<=1 ? 6 : 0;
+  if(free<150) return stops>=2 ? 24 : -10;
+  if(free<240){
+    if(stops>=3) return 30;
+    if(stops===2) return 18;
+    return -14;
+  }
+  if(stops>=3) return 36;
+  if(stops===2) return 16;
+  return -18;
+}
+
 function sortCandidates(rows){
   return rows.sort((a,b)=>{
-    if((b.preferenceScore||0)!==(a.preferenceScore||0))return (b.preferenceScore||0)-(a.preferenceScore||0);
+    const bp=(b.preferenceScore||0)+(b.multiStopPreferenceBonus||0);
+    const ap=(a.preferenceScore||0)+(a.multiStopPreferenceBonus||0);
+    if(bp!==ap)return bp-ap;
     if((b.timeFitScore||0)!==(a.timeFitScore||0))return (b.timeFitScore||0)-(a.timeFitScore||0);
     if((b.planMinutes||0)!==(a.planMinutes||0))return (b.planMinutes||0)-(a.planMinutes||0);
     if(b.stay!==a.stay)return b.stay-a.stay;
@@ -6476,6 +6502,7 @@ function selectDiverseTopPlans(rows,freeMinutes,count=3){
 
       const baseScore=
         Number(row.preferenceScore||0)
+        + Number(row.multiStopPreferenceBonus||0)
         + Number(row.timeFitScore||0)*0.2;
       const value=baseScore-diversityPenalty(row,selected,freeMinutes);
 
@@ -7777,12 +7804,16 @@ async function buildPlans(){
    if(Array.isArray(row.itinerary) && row.itinerary.length<2){
      row.itinerary=null;
    }
+   row.multiStopPreferenceBonus=multiStopPreferenceBonus(row,free);
    const checked=filterFinalPlans([row],searchCtx,start,deadline);
    if(checked.length) guardedPlans.push(row);
    // Keep a wider valid pool so the top 3 can be diversified intelligently.
    if(guardedPlans.length>=12) break;
  }
 
+ // Re-rank after itinerary construction so, when time allows, realistic multi-stop plans
+ // are preferred over spending the whole window at a single place.
+ sortCandidates(guardedPlans);
  let topPool=guardedPlans;
  if(transport==='auto'){
    const nonTaxi=guardedPlans.filter(p=>p.mode!=='taxi');
