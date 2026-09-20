@@ -1850,11 +1850,11 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
 .stay-breakdown{display:block;margin-top:3px;font-size:8.5px;line-height:1.35;color:#7b8993;font-weight:750}
 .plan-pick-row{display:flex;gap:8px;margin:12px 0 2px}
 .plan-pick-btn{flex:1;min-height:46px;border:0;border-radius:14px;background:#183f35;color:#fff;font-size:13px;font-weight:950;box-shadow:0 6px 16px rgba(24,63,53,.14)}
-.plan-picked-banner{display:none;margin:0 0 12px;padding:12px 14px;border-radius:14px;background:#eaf7ef;border:1px solid #c9e7d4;color:#275b3a;font-size:12px;font-weight:900}
-.plan-picked-banner button{float:right;border:0;background:transparent;color:#275b3a;font-weight:900;text-decoration:underline}
+.plan-picked-banner{display:none;align-items:center;justify-content:space-between;gap:12px;margin:0 0 12px;padding:12px 14px;border-radius:16px;background:linear-gradient(135deg,#effaf3,#f4f8ff);border:1px solid #cfe6d8;color:#275b3a;font-size:12px;font-weight:900}
+.plan-picked-banner button{border:1px solid #bcd8c6;background:#fff;color:#275b3a;font-weight:900;border-radius:999px;padding:8px 12px;white-space:nowrap;box-shadow:0 2px 8px rgba(39,91,58,.06)}
 #plans.focus-plan .plan{display:none}
 #plans.focus-plan .plan.is-selected-plan{display:block;border:2px solid #7fc79b;box-shadow:0 10px 28px rgba(35,92,57,.13)}
-#plans.focus-plan .plan-picked-banner{display:block}
+#plans.focus-plan .plan-picked-banner{display:flex}
 @media(max-width:620px){.plan-compare{padding:12px}.plan-compare-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.plan-compare-total strong{font-size:17px}}
 </style>
 </head>
@@ -7528,7 +7528,7 @@ function planComparisonHtml(plans,start,buffer){
     const total=totalPlanCost(p);
     const spare=Math.max(0,Number(p.spare||0)+Number(buffer||0));
     html+=`<div class="plan-compare-card">
-      <div class="plan-compare-rank">${i===0?'おすすめ':`候補${i+1}`}</div>
+      <div class="plan-compare-rank">${i===0?'おすすめ':(i===1?'別の候補':'もう一案')}</div>
       <div class="plan-compare-name">${esc(planDisplayTitle(p))}</div>
       <div class="plan-compare-mode">${esc(p.modeLabel||'')}</div>
       <div class="plan-compare-total"><span>⏱ 合計所要</span><strong>${elapsed!=null?`約${Math.round(elapsed)}分`:'要確認'}</strong></div>
@@ -7857,7 +7857,7 @@ async function buildPlans(){
  try{ trackNexitaime('search_result',{resultCount:top.length}); }catch(_){}
 
  disposePlanRouteMaps();
- box.innerHTML=renderResultQuickAdjust()+planComparisonHtml(top,start,buffer)+`<div class="plan-picked-banner">この案に絞って表示中 <button type="button" data-unpick-plan>3案に戻す</button></div>`+top.map((p,idx)=>{
+ box.innerHTML=renderResultQuickAdjust()+planComparisonHtml(top,start,buffer)+`<div class="plan-picked-banner">選んだプランを詳しく見ています <button type="button" data-unpick-plan>ほかの案を見る</button></div>`+top.map((p,idx)=>{
    const rank=idx===0&&transport==='auto'?'<span class="status">おすすめ</span>':'<span class="status">間に合う</span>';
    const recommendationHtml=renderRecommendationBadges(p,idx);
    const eventInfo=eventInfoHtml(p.ev);
