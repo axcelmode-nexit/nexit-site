@@ -1299,7 +1299,7 @@ window.NEXITAIME_GOURMET_ENDPOINT =
 // ▼ NEXITAIMEからひとこと：ここを true / false に変えるだけで即ON/OFFできます
 window.NEXITAIME_AI_SUGGESTION_ENABLED = true;
 </script>
-<script>window.NEXITAIME_BUILD="v110";</script>
+<script>window.NEXITAIME_BUILD="v111";</script>
 
 
 <style id="nexitaime-existing-ai-style">
@@ -2067,6 +2067,7 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
 <div class="title">近くで使える移動サービス</div>
 <div class="list" id="mobilityList"></div>
 <div id="mobilityMap"></div>
+<div class="note" style="margin-top:8px">地図を動かすと、その場所周辺の移動サービスを自動表示します。<button type="button" id="mobilityMapReset" style="border:0;background:none;color:#2f6f95;font-weight:800;padding:0 0 0 6px;text-decoration:underline">基準地点に戻す</button></div>
 <div class="map-note">地図：OpenStreetMap。GPSを許可すると現在地と、選択した移動手段の利用拠点を表示します。</div>
 <div class="note" style="margin-top:10px">
 空車・配車・貸出台数はリアルタイム連携していません。最終確認は各公式サイト・電話で行ってください。
@@ -2288,6 +2289,11 @@ Promise.all([
   try{const audit=coordinateAuditReport(); if(audit.duplicateUrls.length||audit.exactDuplicates.length) console.warn('[NEXITAIME coordinate audit]',audit);}catch(_){}});
 
 
+document.getElementById('mobilityMapReset')?.addEventListener('click',()=>{
+  mobilityMapBrowsePoint=null;
+  renderMobility();
+});
+
 window.addEventListener('pageshow',()=>{
   setTimeout(()=>{
     try{ initMobilityMap(); if(mobilityMap) mobilityMap.invalidateSize({pan:false}); renderMobility(); }catch(e){}
@@ -2298,6 +2304,7 @@ document.querySelectorAll('#origins .chip').forEach(b=>b.onclick=async ()=>{
  document.querySelectorAll('#origins .chip').forEach(x=>x.classList.remove('active'));
  b.classList.add('active');
  origin=b.dataset.station;
+ mobilityMapBrowsePoint=null;
  document.getElementById('locationText').textContent=`${origin}付近`;
  const p=PLACES[origin];
  if(p) await updateWeatherFor(p.lat,p.lon,origin);
@@ -2743,6 +2750,7 @@ async function locateMe(){
   wbox.textContent='現在地を確認しています…';
   navigator.geolocation.getCurrentPosition(async pos=>{
     currentPos={lat:pos.coords.latitude,lon:pos.coords.longitude};
+    mobilityMapBrowsePoint=null;
     const near=nearestStation(currentPos.lat,currentPos.lon);
     if(near){
       txt.textContent=`${near.name}付近（約${near.d.toFixed(1)}km）`;
@@ -3052,14 +3060,16 @@ function mapIconForCategory(cat){
 
 let leafletRetryCount=0;
 let pendingMobilityRows=null;
+let mobilityMapBrowsePoint=null;
+let mobilityMapRefreshTimer=null;
 function leafletReady(){ return typeof window.L!=='undefined'; }
 function retryMobilityMap(){
   if(leafletReady()){
     initMobilityMap();
     if(pendingMobilityRows){
-      const rows=pendingMobilityRows;
+      const pending=pendingMobilityRows;
       pendingMobilityRows=null;
-      renderMapRows(rows);
+      renderMapRows(pending.rows||pending,{preserveViewport:!!pending.preserveViewport});
     }
     return;
   }
@@ -3083,6 +3093,15 @@ function initMobilityMap(){
     maxZoom:19,
     attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'
   }).addTo(mobilityMap);
+  // v111: Pan the mobility map to browse transport services around any area.
+  // A user drag changes the directory's reference point to the map center and refreshes
+  // the nearby services without snapping the map back to the original station.
+  mobilityMap.on('dragend',()=>{
+    const c=mobilityMap.getCenter();
+    mobilityMapBrowsePoint={lat:c.lat,lon:c.lng};
+    clearTimeout(mobilityMapRefreshTimer);
+    mobilityMapRefreshTimer=setTimeout(()=>renderMobility({preserveMapViewport:true,fromMap:true}),120);
+  });
   requestAnimationFrame(()=>mobilityMap.invalidateSize({pan:false}));
   setTimeout(()=>mobilityMap && mobilityMap.invalidateSize({pan:false}),250);
   if('ResizeObserver' in window){
@@ -3128,8 +3147,8 @@ async function getNearestService(rows){
   return {...best.s,distanceKm:best.d,walkMinutes:walk};
 }
 
-function renderMapRows(rows){
-  pendingMobilityRows=rows;
+function renderMapRows(rows,{preserveViewport=false}={}){
+  pendingMobilityRows={rows,preserveViewport};
   initMobilityMap();
   if(!mobilityMap)return;
   pendingMobilityRows=null;
@@ -3158,8 +3177,10 @@ function renderMapRows(rows){
     bounds.push([currentPos.lat,currentPos.lon]);
   }
 
-  if(bounds.length>1) mobilityMap.fitBounds(bounds,{padding:[30,30],maxZoom:15});
-  else if(bounds.length===1) mobilityMap.setView(bounds[0],14);
+  if(!preserveViewport){
+    if(bounds.length>1) mobilityMap.fitBounds(bounds,{padding:[30,30],maxZoom:15});
+    else if(bounds.length===1) mobilityMap.setView(bounds[0],14);
+  }
 
   requestAnimationFrame(()=>mobilityMap.invalidateSize({pan:false}));
   setTimeout(()=>mobilityMap && mobilityMap.invalidateSize({pan:false}),200);
@@ -3228,6 +3249,7 @@ function mobilityBucket(km){
   return 'far';
 }
 function mobilityBasePoint(){
+  if(mobilityMapBrowsePoint && Number.isFinite(mobilityMapBrowsePoint.lat) && Number.isFinite(mobilityMapBrowsePoint.lon)) return mobilityMapBrowsePoint;
   if(currentPos && Number.isFinite(currentPos.lat) && Number.isFinite(currentPos.lon)) return currentPos;
   return PLACES?.[origin] || null;
 }
@@ -3257,7 +3279,7 @@ function mobilityRowsForMode(mode,{includeExtended=false}={}){
     .sort((a,b)=>a.distanceKm-b.distanceKm);
 }
 
-async function renderMobility(){
+async function renderMobility({preserveMapViewport=false,fromMap=false}={}){
   const box=document.getElementById('mobilityList');
   if(!box) return;
   const cats=serviceCategoryForMode(transport);
@@ -3265,7 +3287,7 @@ async function renderMobility(){
   if(!cats.length){
     nearestService=null;
     box.innerHTML='<div class="note">この移動手段では拠点選択は不要です。</div>';
-    renderMapRows([]);
+    renderMapRows([],{preserveViewport:preserveMapViewport});
     return;
   }
 
@@ -3278,7 +3300,7 @@ async function renderMobility(){
   if(!rows.length){
     nearestService=null;
     box.innerHTML='<div class="note">現在地・基準地点から2km以内に該当する移動サービスは見つかりませんでした。</div>';
-    renderMapRows([]);
+    renderMapRows([],{preserveViewport:preserveMapViewport});
     return;
   }
 
@@ -3286,7 +3308,7 @@ async function renderMobility(){
   const extendedRows=rows.filter(s=>s.distanceKm>MOBILITY_NEAR_KM && s.distanceKm<=MOBILITY_EXTENDED_KM);
 
   nearestService=nearRows.length ? await getNearestService(nearRows) : null;
-  renderMapRows(rows);
+  renderMapRows(rows,{preserveViewport:preserveMapViewport});
 
   const categoryLabel=s=>{
     if(s.category==='carshare') return 'カーシェア';
@@ -3312,7 +3334,7 @@ async function renderMobility(){
       <div class="picktop"><strong>${s.name}</strong><span class="service-badges">${badges}</span></div>
       <div class="meta">${s.area} · ${s.hours||''}</div>
       <div class="meta">${s.address||''}</div>
-      <div class="service-distance">${Number.isFinite(Number(s.lat))&&Number.isFinite(Number(s.lon)) ? `基準地点から約 ${s.distanceKm.toFixed(1)}km · ${mobilityDistanceLabel(s.distanceKm)}` : `${s.area}エリア · 公式住所確認済み`}</div>
+      <div class="service-distance">${Number.isFinite(Number(s.lat))&&Number.isFinite(Number(s.lon)) ? `${mobilityMapBrowsePoint?'地図中心':'基準地点'}から約 ${s.distanceKm.toFixed(1)}km · ${mobilityDistanceLabel(s.distanceKm)}` : `${s.area}エリア · 公式住所確認済み`}</div>
       ${s.stock?`<div class="meta">${s.stock}</div>`:''}
       ${s.price?`<div class="meta">${s.price}</div>`:''}
       ${s.closed_note?`<div class="note">${s.closed_note}</div>`:''}
@@ -3329,7 +3351,7 @@ async function renderMobility(){
     const order=['carshare','rentalcar','taxi','bike'];
     const counts=order.map(cat=>({cat,n:rows.filter(s=>s.category===cat).length})).filter(x=>x.n>0);
     if(counts.length){
-      out+=`<div class="note" style="margin-bottom:10px">近くで使える移動サービスをまとめて表示しています。空車・配車・貸出台数は各公式情報で最終確認してください。</div>`;
+      out+=`<div class="note" style="margin-bottom:10px">${fromMap?'🗺 地図中心':'📍 現在地・基準地点'}の近くで使える移動サービスをまとめて表示しています。地図を動かすと、その場所周辺に自動更新します。空車・配車・貸出台数は各公式情報で最終確認してください。</div>`;
       out+=`<div class="service-badges" style="margin-bottom:12px">${counts.map(x=>`<span class="badge">${categoryIcon(x.cat)} ${categoryLabel({category:x.cat})} ${x.n}件</span>`).join('')}</div>`;
     }
     for(const cat of order){
@@ -7075,6 +7097,7 @@ function toggleFavorite(plan,ctx,btn){
 function setOriginChoice(value){
   if(!value)return;
   origin=value;
+  mobilityMapBrowsePoint=null;
   document.querySelectorAll('#origins .chip').forEach(btn=>{
     btn.classList.toggle('active', btn.dataset.station===value);
   });
