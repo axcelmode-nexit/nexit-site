@@ -2198,6 +2198,27 @@ function officialCatalogStats(){
 }
 function nonfoodHoursAuditStats(){const all=EXTRA_NONFOOD_SPOTS||[];const counts={total:all.length,officialHours:0,alwaysOpen:0,daylight:0,appointment:0,schedule:0,seasonalCheck:0,other:0};for(const x of all){if(x.hours_audit_status==='official_hours_registered')counts.officialHours++;else if(x.hours_audit_status==='always_open_model')counts.alwaysOpen++;else if(x.hours_audit_status==='daylight_model')counts.daylight++;else if(x.hours_audit_status==='appointment_required')counts.appointment++;else if(x.hours_audit_status==='schedule_required')counts.schedule++;else if(x.hours_audit_status==='seasonal_confirmation_required')counts.seasonalCheck++;else counts.other++;}return counts;}
 
+
+// v100: current Times CAR stations in Joetsu (verified 2026-09-20).
+// Vehicle availability is dynamic; always confirm in the official Times CAR app/site.
+const CURRENT_TIMES_CAR_STATIONS=[
+  {id:'times_furusatto_p1',name:'フルサット第１駐車場',category:'carshare',provider:'Times CAR',area:'上越妙高',address:'新潟県上越市大和5-1',hours:'空車は公式で確認',url:'https://share.timescar.jp/',verified_at:'2026-09-20',source_status:'current_station_verified'},
+  {id:'times_toyoko_joetsumyoko',name:'東横イン上越妙高駅西口',category:'carshare',provider:'Times CAR',area:'上越妙高',address:'新潟県上越市大和5-2',hours:'空車は公式で確認',url:'https://share.timescar.jp/',verified_at:'2026-09-20',source_status:'current_station_verified'},
+  {id:'times_joetsumyoko_east',name:'上越妙高駅前',category:'carshare',provider:'Times CAR',area:'上越妙高',address:'新潟県上越市大和2-1',hours:'空車は公式で確認',url:'https://share.timescar.jp/view/sp/station/detail.jsp?scd=HF03',verified_at:'2026-09-20',source_status:'official_station_verified'},
+  {id:'times_leparc_naoetsu_1',name:'ル・パルク直江津第１駐車場',category:'carshare',provider:'Times CAR',area:'直江津',address:'新潟県上越市西本町4-3',hours:'空車は公式で確認',url:'https://share.timescar.jp/',verified_at:'2026-09-20',source_status:'current_station_verified'},
+  {id:'times_naoetsu_1',name:'直江津駅第１',category:'carshare',provider:'Times CAR',area:'直江津',address:'新潟県上越市東町3',hours:'空車は公式で確認',url:'https://share.timescar.jp/',verified_at:'2026-09-20',source_status:'current_station_verified'}
+];
+async function enrichCurrentMobilityCoordinates(rows=[]){
+  for(const s of rows){
+    const lat=Number(s?.lat),lon=Number(s?.lon);
+    if(Number.isFinite(lat)&&Number.isFinite(lon)) continue;
+    const point=await geocodeOfficialAddress(s.address);
+    if(!point) continue;
+    s.lat=point.lat; s.lon=point.lon; s.location_source='address_geocoded';
+  }
+  return rows;
+}
+
 let EVENTS=[], RESTAURANTS=[], TRAIN={up:[],down:[]}, SHINANO={up:[],down:[]}, BUS={trips:[]}, BUS_MAIN={weekday:{},holiday:{}}, BUS_EXT={routes:[]}, PLACES={}, MOBILITY=[], origin='上越妙高', destinationArea='any', returnTarget='same', timingMode='now', planningDate=new Date(), mood='any', foodKind='ラーメン', onsenKind='温泉', sightseeingKind='歴史・文化', activeKind='散歩・ウォーキング', transport='auto', budget='any', companion='any', currentPos=null, weather=null, weatherForecast=null, mobilityMap=null, mobilityMarkers=[], currentPosMarker=null, nearestService=null;
 
 Promise.all([
@@ -2230,7 +2251,12 @@ Promise.all([
   EVENTS=[...(Array.isArray(e)?e:[]),...RESTAURANTS,...SPOTS,...EXTRA_SPOTS];
   applyOfficialAddressOverrides(EVENTS);
   await enrichOfficialAddressCoordinates(EVENTS);
-  TRAIN=t;SHINANO=shinanoData||{up:[],down:[]};BUS=b;BUS_MAIN=bm;BUS_EXT=bx;PLACES=p;MOBILITY=m;renderMobility(); setTimeout(()=>{initMobilityMap();renderMobility();},250);
+  TRAIN=t;SHINANO=shinanoData||{up:[],down:[]};BUS=b;BUS_MAIN=bm;BUS_EXT=bx;PLACES=p;
+  // Replace stale Joetsu car-share rows with the currently verified five Times CAR stations.
+  const baseMobility=(Array.isArray(m)?m:[]).filter(x=>x?.category!=='carshare');
+  const currentCarshare=await enrichCurrentMobilityCoordinates(CURRENT_TIMES_CAR_STATIONS.map(x=>({...x})));
+  MOBILITY=[...baseMobility,...currentCarshare];
+  renderMobility(); setTimeout(()=>{initMobilityMap();renderMobility();},250);
   try{const audit=coordinateAuditReport(); if(audit.duplicateUrls.length||audit.exactDuplicates.length) console.warn('[NEXITAIME coordinate audit]',audit);}catch(_){}});
 
 
