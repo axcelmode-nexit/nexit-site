@@ -8121,22 +8121,28 @@ function bindPlanPickButtons(plans,ctx){
   }));
 }
 
-function automaticReturnBufferMinutes(){
-  // Keep a practical safety margin, but do not waste a large part of a short outing.
-  let minutes=7;
-  if(['train','bus','public'].includes(transport)) minutes=12;
-  else if(transport==='taxi') minutes=15;
-  else if(transport==='auto') minutes=10;
+function automaticReturnBufferMinutes(freeMinutes=120){
+  // Short outings should spend most of the available time on the plan itself.
+  // The margin grows gradually as the available time grows.
+  const free=Math.max(1,Number(freeMinutes)||120);
+  let minutes=free<=60?5:free<=90?8:free<=150?10:12;
+
+  // Add only the uncertainty that materially affects the return trip.
+  if(['train','bus','public'].includes(transport)) minutes+=3;
+  else if(transport==='taxi') minutes+=5;
 
   const w=weatherAtDate(planningDate||new Date());
   const precipitation=Number(w?.precipitation||0)+Number(w?.rain||0)+Number(w?.snowfall||0);
   const gust=Number(w?.wind_gusts_10m||0);
-  if(precipitation>0) minutes+=5;
-  if(gust>=40) minutes+=5;
+  if(precipitation>0) minutes+=3;
+  if(gust>=40) minutes+=3;
 
-  // Mountain/Myoko plans still get a little extra margin.
-  if(['mountain','myoko'].includes(destinationArea)) minutes+=5;
-  return Math.max(5,Math.min(25,minutes));
+  // Mountain/Myoko plans still get a little extra margin, but never consume
+  // a disproportionate share of a short outing.
+  if(['mountain','myoko'].includes(destinationArea)) minutes+=3;
+
+  const maxByFree=free<=60?10:free<=90?15:free<=150?20:25;
+  return Math.max(5,Math.min(maxByFree,minutes));
 }
 
 async function buildPlans(){
@@ -8163,7 +8169,7 @@ async function buildPlans(){
  planningDate=selected;
  renderWeatherForDate(planningDate);
  // Return margin is calculated by NEXITAIME from transport/weather/area.
- buffer=automaticReturnBufferMinutes();
+ buffer=automaticReturnBufferMinutes(free);
  const bufferEl=document.getElementById('buffer');
  if(bufferEl) bufferEl.value=String(buffer);
 
