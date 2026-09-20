@@ -3254,6 +3254,7 @@ async function renderMobility(){
     if(s.category==='bike') return 'レンタル自転車';
     return '';
   };
+  const categoryIcon=cat=>({carshare:'🚙',rentalcar:'🚘',taxi:'🚕',bike:'🚲'}[cat]||'🚗');
 
   const renderCard=(s,{isNearest=false}={})=>{
     const open=isLikelyOpen(s);
@@ -3280,16 +3281,31 @@ async function renderMobility(){
 
   let out='';
 
-  // The list is already distance-sorted, so do not repeat the first item in a separate
-  // "nearest candidate" card. Instead, mark the first near service inline.
-  if(nearRows.length){
-    out+=nearRows.slice(0,6).map((s,i)=>renderCard(s,{isNearest:i===0})).join('');
-  }
-
-  if(extendedRows.length){
-    out+=`<div class="mobility-section-title" style="margin-top:12px">少し離れた移動サービス</div>
-      <div class="note" style="margin-bottom:8px">基準地点から1.5〜2km。近場とは分けて表示しています。</div>
-      ${extendedRows.slice(0,4).map(s=>renderCard(s)).join('')}`;
+  // v102: When transport is "おまかせ", this panel is a mobility directory rather than
+  // a single-mode helper. Show every nearby usable service category so the panel itself
+  // is useful even before choosing a plan.
+  if(transport==='auto'){
+    const order=['carshare','rentalcar','taxi','bike'];
+    const counts=order.map(cat=>({cat,n:rows.filter(s=>s.category===cat).length})).filter(x=>x.n>0);
+    if(counts.length){
+      out+=`<div class="note" style="margin-bottom:10px">近くで使える移動サービスをまとめて表示しています。空車・配車・貸出台数は各公式情報で最終確認してください。</div>`;
+      out+=`<div class="service-badges" style="margin-bottom:12px">${counts.map(x=>`<span class="badge">${categoryIcon(x.cat)} ${categoryLabel({category:x.cat})} ${x.n}件</span>`).join('')}</div>`;
+    }
+    for(const cat of order){
+      const catRows=rows.filter(s=>s.category===cat);
+      if(!catRows.length) continue;
+      out+=`<div class="mobility-section-title" style="margin-top:14px;margin-bottom:8px">${categoryIcon(cat)} ${categoryLabel({category:cat})}</div>`;
+      out+=catRows.map((s,i)=>renderCard(s,{isNearest:nearestService?.id===s.id})).join('');
+    }
+  }else{
+    if(nearRows.length){
+      out+=nearRows.slice(0,6).map((s,i)=>renderCard(s,{isNearest:i===0})).join('');
+    }
+    if(extendedRows.length){
+      out+=`<div class="mobility-section-title" style="margin-top:12px">少し離れた移動サービス</div>
+        <div class="note" style="margin-bottom:8px">基準地点から1.5〜2km。近場とは分けて表示しています。</div>
+        ${extendedRows.slice(0,4).map(s=>renderCard(s)).join('')}`;
+    }
   }
 
   box.innerHTML=out;
@@ -7855,6 +7871,7 @@ async function buildPlans(){
 
  let scored=[];
  let relaxationLevel=0;
+ let expandedForMultiple=false;
  const requestedModes=transport==='auto'
    ? (['food','cafe'].includes(mood)
        ? ['carshare','public','taxi','walk','bike']
@@ -7877,7 +7894,28 @@ async function buildPlans(){
 
  // 2) Explicitly selected transport is strict.
  // Never silently switch to private car / taxi / another mode.
- // Only 'auto' compares all modes.
+ // When fewer than 3 exact matches exist, keep the selected transport fixed and
+ // widen only the activity pool so the UI can still compare multiple realistic plans.
+ if(transport!=='auto' && scored.length<3){
+   let wider=candidateEvents.filter(ev=>eventIsAvailableAt(ev,planningDate)).filter(budgetAllows).filter(companionAllows);
+   if(destinationArea!=='any') wider=wider.filter(destinationMatchesEvent);
+   wider=wider.filter(foodKindMatches).filter(secondaryMoodMatches);
+   const extra=await scoreEventSet(wider,requestedModes,start,deadline,searchCtx);
+   const before=scored.length;
+   scored=dedupeCandidates([...scored,...extra]);
+   if(scored.length>before) expandedForMultiple=true;
+
+   // If the catalog still cannot provide three named spots, add flexible activities
+   // under the same destination and the same explicitly selected transport.
+   if(scored.length<3){
+     let flexFill=FLEX_ACTIVITIES.filter(budgetAllows).filter(companionAllows);
+     if(searchCtx.destination!=='any') flexFill=flexFill.filter(destinationMatchesEvent);
+     const flexExtra=await scoreEventSet(flexFill,requestedModes,start,deadline,searchCtx);
+     const beforeFlex=scored.length;
+     scored=dedupeCandidates([...scored,...flexExtra]);
+     if(scored.length>beforeFlex) expandedForMultiple=true;
+   }
+ }
 
  // 3) If still none, relax mood while keeping destination/budget/companion AND transport.
  if(!scored.length && mood!=='any'){
@@ -7993,7 +8031,10 @@ async function buildPlans(){
      summary.innerHTML=`<h2>今の条件で${top.length}案あります</h2><p><strong>${routeSummary}</strong><br>${planStartLabel()}出発・空き時間${free}分・戻りの余裕は条件に合わせて自動調整します。<br><small>${changeNote}</small></p>`;
    }
    }else{
-     summary.innerHTML=`<h2>${MODE_LABELS[transport]||transport}で${top.length}案あります</h2><p><strong>${routeSummary}</strong><br>指定した出発地・行き先・帰着先を固定して判定しました。</p>`;
+     const multipleNote=expandedForMultiple
+       ? '移動手段は固定したまま、比較できるよう候補を少し広げて表示しています。'
+       : '指定した出発地・行き先・帰着先・移動手段を固定して判定しました。';
+     summary.innerHTML=`<h2>${MODE_LABELS[transport]||transport}で${top.length}案あります</h2><p><strong>${routeSummary}</strong><br>${multipleNote}</p>`;
    }
  }else if(relaxationLevel===2){
    summary.innerHTML=`<h2>気分条件を広げると${top.length}案あります</h2><p><strong>${routeSummary}</strong><br>出発地・行き先・帰着先はそのままです。</p>`;
@@ -8022,7 +8063,8 @@ async function buildPlans(){
 
  disposePlanRouteMaps();
  box.innerHTML=renderResultQuickAdjust()+planComparisonHtml(top,start,buffer)+`<div class="plan-picked-banner">選んだプランを詳しく見ています <button type="button" data-unpick-plan>ほかの案を見る</button></div>`+top.map((p,idx)=>{
-   const rank=idx===0&&transport==='auto'?'<span class="status">おすすめ</span>':'<span class="status">間に合う</span>';
+   const rankLabel=idx===0?'おすすめ':idx===1?'別の候補':'もう一案';
+   const rank=`<span class="status">${rankLabel}</span>`;
    const recommendationHtml=renderRecommendationBadges(p,idx);
    const eventInfo=eventInfoHtml(p.ev);
    const providerInfo=providerInfoHtml(p.ev);
