@@ -1052,6 +1052,13 @@ main{
 .recommend-badge.fit{background:#fff7e7;border-color:#f4d9a0;color:#7e5b17}
 .recommend-badge.time{background:#f3f1ff;border-color:#d4ccff;color:#5a4d9a}
 
+.info-confidence{margin-top:8px;padding:10px 12px;border-radius:12px;background:#f8fbfd;border:1px solid #e3edf4;font-size:12px;line-height:1.55;color:#466075}
+.info-confidence strong{color:#294a67}
+.info-confidence .confidence-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.info-confidence .confidence-chip{display:inline-flex;align-items:center;padding:3px 8px;border-radius:999px;background:#fff;border:1px solid #dce8ef;font-weight:800}
+.exclusion-summary{margin-top:12px;padding:12px;border-radius:14px;background:#fffaf2;border:1px solid #f0dfb8;color:#6b5832;font-size:12px;line-height:1.55}
+.exclusion-summary strong{color:#55421f}
+
 .event-info{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:5px 0 8px;padding:8px 10px;border-radius:12px;background:#fff8fb;border:1px solid #ffe1ec;font-size:11px;color:#6f5260}
 .event-info strong{color:#a03964}
 .event-info span{font-weight:800}
@@ -1819,6 +1826,26 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
 }
 </style>
 <!-- NEXITAIME build v75: reject direct plans without audited destination coordinates -->
+
+<style id="result-action-upgrade-v82">
+.result-quick-adjust{display:flex;gap:8px;overflow-x:auto;padding:4px 0 12px;margin:0 0 10px;scrollbar-width:none}
+.result-quick-adjust::-webkit-scrollbar{display:none}
+.result-quick-adjust button{flex:0 0 auto;border:1px solid #dce6ec;background:#fff;border-radius:999px;padding:9px 12px;font-size:11px;font-weight:900;color:#425563}
+.plan-compare{margin:0 0 14px;padding:12px;border:1px solid #e2e9ee;border-radius:16px;background:#f8fbfc}
+.plan-compare-title{font-size:12px;font-weight:950;margin:0 0 9px;color:#243743}
+.plan-compare-grid{display:grid;grid-template-columns:minmax(0,1.8fr) repeat(4,minmax(62px,1fr));gap:6px;align-items:stretch}
+.plan-compare-cell{background:#fff;border:1px solid #e5ebef;border-radius:10px;padding:8px;font-size:10px;line-height:1.35}
+.plan-compare-cell.head{background:transparent;border:0;color:#758591;font-weight:900;padding:2px 6px}
+.plan-compare-cell strong{display:block;font-size:11px;color:#263945}
+.plan-pick-row{display:flex;gap:8px;margin:12px 0 2px}
+.plan-pick-btn{flex:1;min-height:46px;border:0;border-radius:14px;background:#183f35;color:#fff;font-size:13px;font-weight:950;box-shadow:0 6px 16px rgba(24,63,53,.14)}
+.plan-picked-banner{display:none;margin:0 0 12px;padding:12px 14px;border-radius:14px;background:#eaf7ef;border:1px solid #c9e7d4;color:#275b3a;font-size:12px;font-weight:900}
+.plan-picked-banner button{float:right;border:0;background:transparent;color:#275b3a;font-weight:900;text-decoration:underline}
+#plans.focus-plan .plan{display:none}
+#plans.focus-plan .plan.is-selected-plan{display:block;border:2px solid #7fc79b;box-shadow:0 10px 28px rgba(35,92,57,.13)}
+#plans.focus-plan .plan-picked-banner{display:block}
+@media(max-width:620px){.plan-compare-grid{grid-template-columns:minmax(0,1.7fr) repeat(2,minmax(72px,1fr))}.plan-compare-cell:nth-child(4),.plan-compare-cell:nth-child(5),.plan-compare-cell:nth-child(9),.plan-compare-cell:nth-child(10),.plan-compare-cell:nth-child(14),.plan-compare-cell:nth-child(15),.plan-compare-cell:nth-child(19),.plan-compare-cell:nth-child(20){display:none}}
+</style>
 </head>
 <body>
 <div class="app">
@@ -2071,11 +2098,11 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
 <a href="https://www.joetsubusloca.jp/" rel="noopener" target="_blank">🚌 上越バスロケ</a>
 <a href="https://www.city.joetsu.niigata.jp/soshiki/kotsu/bus-jikoku.html" rel="noopener" target="_blank">🗓 上越市 総合時刻表</a>
 </div>
-<div class="note">鉄道は妙高はねうまライン公開時刻表を利用。バスは上越大通り線・佐渡汽船連絡バス・教育大学線・春日山／佐内線・山麓線の主要区間をアプリ内判定します。運休・遅延・臨時変更は上の公式運行情報を優先してください。イベントは events_auto.json があれば自動更新データを優先します。</div>
+<div class="note">鉄道は妙高はねうまライン公開時刻表を利用。バスは上越大通り線・佐渡汽船連絡バス・教育大学線・春日山／佐内線・山麓線の主要区間をアプリ内判定します。運休・遅延・臨時変更は上の公式運行情報を優先してください。イベントは events_auto.json があれば自動更新データを優先します。受付締切・予約条件・帰路成立性も候補判定に反映します。</div>
 </section>
 
 <div class="hotpepper-credit">Powered by <a href="https://webservice.recruit.co.jp/" target="_blank" rel="noopener">ホットペッパーグルメ Webサービス</a></div>
-<footer data-build="v76">NEXITAIME 〜上越版〜 · Powered by 
+<footer data-build="v82">NEXITAIME 〜上越版〜 · Powered by 
 <a href="https://axcelmode-nexit.jp/" target="_blank" rel="noopener">AXCEL MODE NEXIT</a> · Beta1.0
 <section class="operator-card" aria-label="運営会社">
   <div class="operator-card-inner">
@@ -2597,6 +2624,8 @@ function weatherAtDate(target){
     rain:hourly.rain?.[best],
     snowfall:hourly.snowfall?.[best],
     weather_code:hourly.weather_code?.[best],
+    wind_speed_10m:hourly.wind_speed_10m?.[best],
+    wind_gusts_10m:hourly.wind_gusts_10m?.[best],
     time:hourly.time?.[best],
     forecast:true
   };
@@ -2624,7 +2653,7 @@ async function updateWeatherFor(lat,lon,label=''){
   const wbox=document.getElementById('weatherBox');
   try{
     wbox.textContent='天気を取得中…';
-    const url=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,precipitation,rain,snowfall,weather_code&hourly=temperature_2m,precipitation,rain,snowfall,weather_code&forecast_days=3&timezone=Asia%2FTokyo`;
+    const url=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,precipitation,rain,snowfall,weather_code&hourly=temperature_2m,precipitation,rain,snowfall,weather_code,wind_speed_10m,wind_gusts_10m&forecast_days=3&timezone=Asia%2FTokyo`;
     const r=await fetch(url);
     const j=await r.json();
 
@@ -3435,6 +3464,83 @@ function specialOpenRuleAllows(ev,d){
   return {ok:false,label:'開催日ではありません'};
 }
 
+function eventParticipationPolicy(ev){
+  const text=[ev?.title,ev?.venue,ev?.summary,...(ev?.categories||[])].filter(Boolean).join(' ');
+  const candidates=[];
+  const add=(value,label)=>{
+    if(!value)return;
+    const m=mins(value);
+    if(m!=null)candidates.push({minute:m,label});
+  };
+
+  add(ev?.registration_deadline,'受付締切');
+  add(ev?.reception_end,'受付終了');
+  add(ev?.last_reception,'最終受付');
+  add(ev?.last_admission,'最終入場');
+  add(ev?.check_in_deadline,'集合締切');
+  add(ev?.meeting_deadline,'集合締切');
+
+  const fixedByType=/講演|講座|セミナー|トーク|説明会|上映|映画|演奏|コンサート|ライブ|ステージ|公演|ショー|式典/.test(text);
+  const fixedStart=(ev?.fixed_start===true || fixedByType) && ev?.late_entry_allowed!==true;
+  if(fixedStart && ev?.start_time)add(ev.start_time,'開始時刻');
+
+  candidates.sort((a,b)=>a.minute-b.minute);
+  const cutoff=candidates[0]||null;
+  return {
+    cutoff:cutoff?.minute??null,
+    cutoffLabel:cutoff?.label||'',
+    fixedStart,
+    receptionStart:ev?.reception_start?mins(ev.reception_start):null,
+    meetingTime:ev?.meeting_time?mins(ev.meeting_time):null,
+    checkInTime:ev?.check_in_time?mins(ev.check_in_time):null
+  };
+}
+
+function reservationFeasibility(ev){
+  if(ev?.appointment_required===true){
+    return {ok:false,penalty:-100,label:'事前予約が必要'};
+  }
+  if(ev?.reservation_required===true){
+    const sameDayAllowed = ev?.walk_in_allowed===true ||
+      ev?.same_day_reservation_available===true ||
+      ev?.same_day_booking_allowed===true ||
+      ev?.same_day_booking===true;
+    if(!sameDayAllowed){
+      return {ok:false,penalty:-100,label:'予約必須・当日参加可否未確認'};
+    }
+    return {ok:true,penalty:-10,label:'予約必須・当日予約可'};
+  }
+  if(ev?.reservation_recommended===true){
+    return {ok:true,penalty:-6,label:'予約推奨'};
+  }
+  return {ok:true,penalty:0,label:''};
+}
+
+function arrivalCutoffForEvent(ev,window){
+  const base=arrivalCutoffFor(ev,window);
+  const participation=eventParticipationPolicy(ev);
+  const values=[];
+  if(base!=null)values.push({minute:base,label:(window.lastEntry!=null&&base===window.lastEntry)?'最終入館':(window.lastOrder!=null&&base===window.lastOrder)?'ラストオーダー':'受付可能時刻'});
+  if(participation.cutoff!=null)values.push({minute:participation.cutoff,label:participation.cutoffLabel||'受付締切'});
+  values.sort((a,b)=>a.minute-b.minute);
+  return values[0]||null;
+}
+
+function isMountainOutdoorEvent(ev){
+  if(ev?.indoor===true)return false;
+  const text=[ev?.title,ev?.venue,ev?.summary,...(ev?.categories||[])].filter(Boolean).join(' ');
+  return ['yasuzuka','oshima','itakura','kiyosato','maki','myoko_kogen','myoko_akakura','myoko_lotte'].includes(ev?.area) ||
+    /山|高原|渓谷|滝|登山|トレッキング|散策|自然|展望|スキー/.test(text);
+}
+
+function afterDarkOutdoorRisk(ev,venueLeave,mode,lastMileMinutes=0){
+  if(!isMountainOutdoorEvent(ev) || !Number.isFinite(venueLeave))return false;
+  const daylight=seasonalDaylightEndMinutes(planningDate||new Date());
+  if(['walk','bike'].includes(mode))return venueLeave>daylight-15;
+  if(['public','train','bus'].includes(mode) && Number(lastMileMinutes||0)>5)return venueLeave>daylight-15;
+  return false;
+}
+
 function availabilityWindow(ev,baseDate){
   const wd=weekdayKey(baseDate);
   const dk=dateKey(baseDate);
@@ -3583,12 +3689,11 @@ function spotAvailability(ev, arrive, leave, baseDate){
     };
   }
 
-  const cutoff=arrivalCutoffFor(ev,w);
-  if(cutoff!=null && arrive>=cutoff){
-    const name=(w.lastEntry!=null && cutoff===w.lastEntry) ? '最終入館' : 'ラストオーダー';
+  const cutoffMeta=arrivalCutoffForEvent(ev,w);
+  if(cutoffMeta && arrive>=cutoffMeta.minute){
     return {
       ok:false,verified:w.verified,label:w.label,
-      reason:`${name}（${fmt(cutoff)}）に間に合わないため除外`,window:w
+      reason:`${cutoffMeta.label}（${fmt(cutoffMeta.minute)}）に間に合わないため除外`,window:w
     };
   }
 
@@ -3633,9 +3738,13 @@ function crowdingMeta(plan, when=planningDate||new Date()){
 
   // Explicit venue/event metadata takes priority.
   if(ev.reservation_required===true){
-    items.push({label:'🎟️ 予約必要',kind:'reservation',level:'high'});
+    const sameDay=ev.walk_in_allowed===true || ev.same_day_reservation_available===true || ev.same_day_booking_allowed===true || ev.same_day_booking===true;
+    items.push({label:sameDay?'🎟️ 当日予約可・予約必要':'🎟️ 予約必要',kind:'reservation',level:'high'});
   }else if(ev.reservation_recommended===true){
     items.push({label:'📅 予約推奨',kind:'reservation',level:'medium'});
+  }
+  if(plan?.returnSafety?.label){
+    items.push({label:`🚉 ${plan.returnSafety.label}`,kind:'crowd',level:plan.returnSafety.level==='high'?'high':'medium'});
   }
 
   if(Array.isArray(ev.busy_hours) && timeInRanges(arrival,ev.busy_hours)){
@@ -3785,13 +3894,15 @@ async function evaluateDirectMode(ev,dest,mode,start,deadline,ctx){
 
   const window=availabilityWindow(ev,planningDate);
   if(window.closed)return null;
+  const reservation=reservationFeasibility(ev);
+  if(!reservation.ok)return null;
 
   let arrive=rawArrive;
   if(eventStart!=null && arrive<eventStart)arrive=eventStart;
   if(window.open!=null && arrive<window.open)arrive=window.open;
 
-  const cutoff=arrivalCutoffFor(ev,window);
-  if(cutoff!=null && arrive>=cutoff)return null;
+  const cutoffMeta=arrivalCutoffForEvent(ev,window);
+  if(cutoffMeta && arrive>=cutoffMeta.minute)return null;
 
   let latestLeave=deadline-backWay-returnSetup-returnAccess;
   if(eventEnd!=null)latestLeave=Math.min(latestLeave,eventEnd);
@@ -3802,6 +3913,7 @@ async function evaluateDirectMode(ev,dest,mode,start,deadline,ctx){
   if(stay==null)return null;
 
   const backDep=arrive+stay;
+  if(afterDarkOutdoorRisk(ev,backDep,mode,0))return null;
   const finish=backDep+backWay+returnSetup+returnAccess;
 
   const availability=spotAvailability(ev,arrive,backDep,planningDate);
@@ -3825,17 +3937,69 @@ async function evaluateDirectMode(ev,dest,mode,start,deadline,ctx){
     back:{n:MODE_LABELS[mode],kind:mode,dep:backDep,arr:finish,[dest]:fmt(backDep),[backTo]:fmt(finish)},
     arrive,finish,spare:deadline-finish,stay,feasible:true,accessMinutes:access,service,
     pickupSetupMinutes:pickupSetup,returnSetupMinutes:returnSetup,
-    transportCost,availability,
+    transportCost,availability,reservation,
+    returnSafety:{level:'ok',penalty:0,label:''},
     reason:modeReason
   };
 }
 
+function eventStayProfile(ev){
+  const kind=canonicalCategory(ev);
+  if(kind!=='event')return null;
+
+  const text=[ev?.title,ev?.venue,ev?.summary,...(ev?.categories||[])]
+    .filter(Boolean).join(' ');
+  const start=ev?.start_time?mins(ev.start_time):null;
+  const end=ev?.end_time?mins(ev.end_time):null;
+  const duration=(start!=null && end!=null && end>start && end-start<=8*60) ? end-start : null;
+
+  // Fixed-program events: use the published running time when available.
+  if(/講演|講座|セミナー|トーク|説明会|上映|映画|演奏|コンサート|ライブ|ステージ|公演|ショー|式典/.test(text)){
+    if(duration!=null){
+      return {min:Math.max(30,Math.round(duration*0.8)),recommended:duration,max:duration,source:'published_duration'};
+    }
+    return {min:45,recommended:75,max:120,source:'fixed_program_estimate'};
+  }
+
+  // Booked/participatory programs normally need more time than a casual stop.
+  if(/体験|ワークショップ|教室|ツアー|見学会|収穫|観察会|ガイド|散策会/.test(text)){
+    if(duration!=null && duration<=240){
+      return {min:Math.max(45,Math.round(duration*0.75)),recommended:duration,max:duration,source:'published_duration'};
+    }
+    return {min:120,recommended:150,max:180,source:'experience_estimate'};
+  }
+
+  // Drop-in events: opening hours are not the expected stay time.
+  if(/マルシェ|朝市|市場|物産|販売会|フリーマーケット|蚤の市/.test(text)){
+    return {min:30,recommended:45,max:75,source:'market_estimate'};
+  }
+  if(/企画展|特別展|展示会|展覧会|作品展|写真展/.test(text)){
+    return {min:30,recommended:60,max:90,source:'exhibition_estimate'};
+  }
+  if(/祭り|まつり|フェス|フェスタ|イベント|催し|花火/.test(text)){
+    return {min:45,recommended:90,max:150,source:'festival_estimate'};
+  }
+
+  if(duration!=null && duration<=180){
+    return {min:Math.max(30,Math.round(duration*0.6)),recommended:Math.max(45,duration),max:duration,source:'published_window'};
+  }
+  return {min:45,recommended:75,max:120,source:'generic_event_estimate'};
+}
+
 function stayPreference(ev){
   const raw=ev?.stay_minutes||{};
-  const min=Math.max(15,Number(raw.min)||30);
-  const recommended=Math.max(min,Number(raw.recommended)||60);
-  const max=Math.max(recommended,Number(raw.max)||recommended);
-  return {min,recommended,max};
+  const hasExplicit=raw && (raw.min!=null || raw.recommended!=null || raw.max!=null);
+  if(hasExplicit){
+    const min=Math.max(15,Number(raw.min)||30);
+    const recommended=Math.max(min,Number(raw.recommended)||60);
+    const max=Math.max(recommended,Number(raw.max)||recommended);
+    return {min,recommended,max,source:'explicit'};
+  }
+
+  const eventProfile=eventStayProfile(ev);
+  if(eventProfile)return eventProfile;
+
+  return {min:30,recommended:60,max:60,source:'default'};
 }
 
 function choosePlannedStay(ev,availableMinutes){
@@ -3984,6 +4148,8 @@ async function evaluateTransitAtStation(ev,dest,mode,start,deadline,ctx){
   const eventEnd=ev.end_time?mins(ev.end_time):null;
   const window=availabilityWindow(ev,planningDate);
   if(window.closed)return null;
+  const reservation=reservationFeasibility(ev);
+  if(!reservation.ok)return null;
 
   const stationArrive=out.arr;
   let arrive=stationArrive+lastMile.minutes;
@@ -3991,8 +4157,8 @@ async function evaluateTransitAtStation(ev,dest,mode,start,deadline,ctx){
   if(eventStart!=null && arrive<eventStart)arrive=eventStart;
   if(window.open!=null && arrive<window.open)arrive=window.open;
 
-  const cutoff=arrivalCutoffFor(ev,window);
-  if(cutoff!=null && arrive>=cutoff)return null;
+  const cutoffMeta=arrivalCutoffForEvent(ev,window);
+  if(cutoffMeta && arrive>=cutoffMeta.minute)return null;
 
   const pref=stayPreference(ev);
   const earliestVenueLeave=arrive+pref.min;
@@ -4021,6 +4187,7 @@ async function evaluateTransitAtStation(ev,dest,mode,start,deadline,ctx){
 
   const venueLeave=back.dep-lastMile.minutes;
   if(effectiveEnd!=null && venueLeave>effectiveEnd)return null;
+  if(afterDarkOutdoorRisk(ev,venueLeave,mode,lastMile.minutes))return null;
 
   const stay=Math.floor(venueLeave-arrive);
   if(stay<pref.min)return null;
@@ -4037,6 +4204,16 @@ async function evaluateTransitAtStation(ev,dest,mode,start,deadline,ctx){
 
   const transportCost=await estimateTransportCost(mode,from,dest,backTo,null,out.kind,back.kind);
 
+  let returnSafety={level:'ok',penalty:0,label:''};
+  if(backIsRealTransit){
+    const later=chooseTransportMode(dest,backTo,back.dep+1,mode);
+    if(!later){
+      returnSafety={level:'high',penalty:-28,label:'帰りは最終便の可能性'};
+    }else if(later.arr>deadline){
+      returnSafety={level:'medium',penalty:-14,label:'次便では希望時刻に戻れません'};
+    }
+  }
+
   return {
     ev,dest,returnTo:backTo,mode,
     modeLabel:MODE_LABELS[mode],modeIcon:MODE_ICONS[mode],
@@ -4049,7 +4226,7 @@ async function evaluateTransitAtStation(ev,dest,mode,start,deadline,ctx){
     stay,
     feasible:true,
     transportCost,
-    availability,
+    availability,reservation,returnSafety,
     lastMile,
     accessStation:dest,
     reason:transitReason
@@ -4147,6 +4324,8 @@ async function evaluateAutoMultimodal(ev,dest,start,deadline,ctx){
         spare:deadline-second.arr,
         feasible:true,
         availability:localOut.availability,
+        reservation:localOut.reservation,
+        returnSafety:localOut.returnSafety||{level:'ok',penalty:0,label:''},
         transportCost:{
           amount:totalTransportCost,
           label:`交通費 約¥${Number(totalTransportCost).toLocaleString()}`,
@@ -4259,11 +4438,78 @@ function freshnessBadge(ev){
     <div class="freshness-note">${esc(f.detail)}</div>`;
 }
 
+function ageDaysFrom(raw, referenceDate=planningDate||new Date()){
+  if(!raw)return null;
+  const d=new Date(raw);
+  if(Number.isNaN(d.getTime()))return null;
+  return Math.max(0,Math.floor((referenceDate.getTime()-d.getTime())/86400000));
+}
+
 function freshnessScore(ev){
-  const f=freshnessMeta(ev);
-  if(f.level==='fresh')return 8;
-  if(f.level==='stale')return -18;
-  return -8;
+  const age=ageDaysFrom(ev?.verified_at ?? ev?.last_verified ?? ev?.data_verified_at ?? ev?.updated_at ?? ev?.fetched_at ?? ev?._freshnessFetchedAt);
+  if(ev?.provider==='hotpepper' && ev?._freshnessFetchedAt)return 10;
+  if(age==null)return -10;
+  if(age<=30)return 12;
+  if(age<=60)return 9;
+  if(age<=90)return 4;
+  if(age<=180)return -12;
+  return -24;
+}
+
+function informationConfidenceMeta(ev){
+  const rows=[];
+  const dataAge=ageDaysFrom(ev?.verified_at ?? ev?.last_verified ?? ev?.data_verified_at ?? ev?.updated_at ?? ev?.fetched_at ?? ev?._freshnessFetchedAt);
+  const hoursAge=ageDaysFrom(ev?.hours_verified_at);
+  const official=ev?.source==='official_catalog' || /^https?:\/\/(www\.)?(city\.|joetsu|myoko|.*\.go\.jp)/i.test(String(ev?.url||''));
+
+  let score=freshnessScore(ev);
+  if(official)score+=5;
+  if(hoursAge==null && !ev?.always_open)score-=6;
+  else if(hoursAge!=null){
+    if(hoursAge<=60)score+=5;
+    else if(hoursAge<=90)score+=2;
+    else if(hoursAge>180)score-=12;
+    else score-=6;
+  }
+  if(ev?.availability?.verified===false)score-=8;
+  if(ev?.routing_point_type==='area_representative')score-=5;
+
+  if(official)rows.push('公式情報');
+  if(dataAge!=null)rows.push(`情報確認 ${dataAge}日前`); else rows.push('確認日不明');
+  if(ev?.always_open)rows.push('営業時間制約なし');
+  else if(hoursAge!=null)rows.push(`営業時間確認 ${hoursAge}日前`);
+  else rows.push('営業時間確認日不明');
+
+  let level='medium',label='情報確認あり';
+  if(score>=18){level='high';label='情報の確度 高め';}
+  else if(score<0){level='low';label='最新情報の確認推奨';}
+  return {score:Math.round(score),level,label,rows};
+}
+
+function informationConfidenceHtml(ev){
+  const m=informationConfidenceMeta(ev);
+  const icon=m.level==='high'?'🟢':m.level==='low'?'🟠':'🟡';
+  const chips=m.rows.map(x=>`<span class="confidence-chip">${esc(x)}</span>`).join('');
+  return `<div class="info-confidence"><strong>${icon} ${esc(m.label)}</strong><div class="confidence-row">${chips}</div></div>`;
+}
+
+let LAST_EXCLUSION_AUDIT=[];
+function resetExclusionAudit(){ LAST_EXCLUSION_AUDIT=[]; }
+function recordExclusion(ev,code,reason){
+  const title=ev?.title||ev?.venue||'候補';
+  const key=`${title}|${code}|${reason}`;
+  if(LAST_EXCLUSION_AUDIT.some(x=>x.key===key))return;
+  LAST_EXCLUSION_AUDIT.push({key,title,code,reason});
+}
+function exclusionSummaryHtml(limit=4){
+  if(!LAST_EXCLUSION_AUDIT.length)return '';
+  const counts=new Map();
+  for(const x of LAST_EXCLUSION_AUDIT){
+    const k=x.reason||x.code;
+    counts.set(k,(counts.get(k)||0)+1);
+  }
+  const rows=[...counts.entries()].sort((a,b)=>b[1]-a[1]).slice(0,limit);
+  return `<div class="exclusion-summary"><strong>今回、候補から外れた主な理由</strong><br>${rows.map(([r,n])=>`${esc(r)}${n>1?`（${n}件）`:''}`).join('<br>')}</div>`;
 }
 
 function eventRangeStatus(ev, when=new Date()){
@@ -4471,20 +4717,52 @@ function weatherAdjustment(ev){
   const w=weatherAtDate(planningDate);
   if(!w) return {score:0,reason:''};
 
-  const rainy=(Number(w.rain)||0)>0 || (Number(w.precipitation)||0)>0;
-  const snowy=(Number(w.snowfall)||0)>0;
-  const indoor=ev.indoor===true || (ev.categories||[]).includes('屋内') || (ev.categories||[]).includes('雨OK');
+  const precip=Number(w.precipitation||0);
+  const rain=Number(w.rain||0);
+  const snow=Number(w.snowfall||0);
+  const temp=Number(w.temperature_2m);
+  const wind=Number(w.wind_speed_10m||0);
+  const gust=Number(w.wind_gusts_10m||0);
+  const cats=ev.categories||[];
+  const indoor=ev.indoor===true || cats.includes('屋内') || cats.includes('雨OK');
+  const exposed=!indoor && (cats.some(c=>['海','景色','絶景','展望','散歩','公園','自然','街歩き','トレッキング','登山'].includes(c)) || ev.daylight_only===true);
+  let score=0;
+  const reasons=[];
 
-  if((rainy||snowy) && indoor){
-    return {score:25,reason:snowy?'指定時刻は雪予報なので屋内候補を優先':'指定時刻は雨予報なので屋内候補を優先'};
+  // Precipitation severity: drizzle is tolerable, steady rain/snow should materially change ranking.
+  if(snow>0){
+    if(indoor){ score+=30; reasons.push('雪予報なので屋内候補を優先'); }
+    else { score-=snow>=1?70:45; reasons.push('雪予報のため屋外は優先度低め'); }
+  }else if(precip>0 || rain>0){
+    const mm=Math.max(precip,rain);
+    if(indoor){
+      score += mm>=3 ? 30 : mm>=1 ? 22 : 10;
+      reasons.push(mm>=1?'雨でも過ごしやすい屋内候補':'小雨でも利用しやすい');
+    }else{
+      score -= mm>=5 ? 65 : mm>=2 ? 45 : mm>=1 ? 28 : 10;
+      reasons.push(mm>=2?'本降り予報のため屋外は優先度低め':'小雨予報のため屋外は少し優先度低め');
+    }
+  }else if(!indoor){
+    score+=8;
+    reasons.push('天気が落ち着いているため屋外も候補');
   }
-  if((rainy||snowy) && !indoor){
-    return {score:-30,reason:snowy?'指定時刻は雪予報のため屋外候補は優先度低め':'指定時刻は雨予報のため屋外候補は優先度低め'};
+
+  // Wind especially affects exposed/coastal/viewpoint activities.
+  if(exposed && (wind>=10 || gust>=15)){
+    score -= gust>=20 || wind>=14 ? 35 : 18;
+    reasons.push('風が強めなので屋外・展望系は優先度低め');
   }
-  if(!rainy && !snowy && !indoor){
-    return {score:8,reason:'指定時刻の天気が落ち着いているため屋外も候補'};
+
+  // Temperature affects long outdoor stays, but do not completely suppress them.
+  const stay=Number(ev?.stay_minutes?.recommended||ev?.stay_minutes||0);
+  if(exposed && Number.isFinite(temp) && (stay>=60 || !stay)){
+    if(temp>=33){ score-=28; reasons.push('暑さが強いため長時間の屋外は控えめ'); }
+    else if(temp>=30){ score-=14; reasons.push('暑さを考慮して屋外は少し控えめ'); }
+    else if(temp<=0){ score-=25; reasons.push('低温のため長時間の屋外は控えめ'); }
+    else if(temp<=5){ score-=12; reasons.push('寒さを考慮して屋外は少し控えめ'); }
   }
-  return {score:0,reason:''};
+
+  return {score:Math.round(score),reason:reasons.slice(0,2).join('・')};
 }
 
 
@@ -4865,6 +5143,10 @@ function eventInfoHtml(ev){
   if(ev.start_time || ev.end_time){
     dates.push(`${ev.start_time||''}${ev.end_time?`〜${ev.end_time}`:''}`);
   }
+  const participation=eventParticipationPolicy(ev);
+  if(participation.cutoff!=null){
+    dates.push(`${participation.cutoffLabel||'受付締切'} ${fmt(participation.cutoff)}`);
+  }
   if(!timing && !dates.length) return '';
   return `<div class="event-info">${timing?`<strong>🎪 ${timing.label}</strong>`:''}${dates.length?`<span>${dates.join(' ・ ')}</span>`:''}</div>`;
 }
@@ -4949,7 +5231,7 @@ function itineraryStayFor(ev){
   if(kind==='nature') return Math.min(50,Math.max(25,pref.recommended));
   if(kind==='onsen') return Math.min(90,Math.max(60,pref.recommended));
   if(kind==='active') return Math.min(75,Math.max(35,pref.recommended));
-  if(kind==='event') return Math.min(75,Math.max(30,Number(ev?.recommended_stay_min)||pref.recommended));
+  if(kind==='event') return Math.min(pref.max,Math.max(pref.min,Number(ev?.recommended_stay_min)||pref.recommended));
   return Math.min(45,Math.max(25,pref.recommended));
 }
 
@@ -5462,6 +5744,31 @@ function transitConnectionGaps(leg){
   return gaps;
 }
 
+function perceivedTravelBurden(plan,start){
+  const mode=plan?.mode||'';
+  const out=plan?.out||{};
+  const back=plan?.back||{};
+  const outWait=Number.isFinite(out.dep)?Math.max(0,out.dep-start):0;
+  const readyBack=Number.isFinite(plan?.venueLeave)
+    ? plan.venueLeave + Number(plan?.lastMile?.minutes||0)
+    : null;
+  const backWait=(readyBack!=null && Number.isFinite(back.dep))?Math.max(0,back.dep-readyBack):0;
+  const transfers=transitTransferCount(out)+transitTransferCount(back);
+  const lastMile=Number(plan?.lastMile?.minutes||0);
+  const rideMinutes=Math.max(0,Number(plan?.travelMinutes||0));
+
+  // Weighted minutes model: waiting/transfers feel more burdensome than in-vehicle time.
+  let burden=rideMinutes;
+  if(['public','train','bus'].includes(mode)){
+    burden += outWait*1.35 + backWait*1.35 + transfers*12 + lastMile*0.55;
+  }else if(mode==='walk'){
+    burden += rideMinutes*0.18;
+  }else if(mode==='bike'){
+    burden += rideMinutes*0.08;
+  }
+  return {minutes:Math.round(burden),outWait,backWait,transfers,lastMile};
+}
+
 function routeCommonSenseAdjustment(plan,start,deadline,ctx){
   let score=0;
   const reasons=[];
@@ -5506,6 +5813,15 @@ function routeCommonSenseAdjustment(plan,start,deadline,ctx){
     }
   }
 
+  const burden=perceivedTravelBurden(plan,start);
+  plan.perceivedTravelMinutes=burden.minutes;
+  // Penalize plans whose perceived effort is disproportionate to the available time.
+  const available=Math.max(30,deadline-start);
+  const burdenRatio=burden.minutes/available;
+  if(burdenRatio>0.55){ score-=38; reasons.push('移動負担が大きい'); }
+  else if(burdenRatio>0.40){ score-=22; reasons.push('待ち時間・移動負担がやや大きい'); }
+  else if(burdenRatio<0.22){ score+=10; reasons.push('移動負担が小さい'); }
+
   // Rain/snow should affect mobility choice in auto mode.
   const w=weatherAtDate(planningDate||new Date());
   const rain=Number(w?.rain||w?.precipitation||0);
@@ -5529,13 +5845,14 @@ async function scoreEventSet(events, modes, start, deadline, ctx){
 
   for(const ev of events){
     const dest=areaStation[ev.area];
-    if(!dest)continue;
+    if(!dest){ recordExclusion(ev,'area_unmapped','行き先エリアのルート地点が未登録'); continue; }
 
-    // Official catalog records are allowed into recommendations only when an exact point is known.
-    // This prevents a broad area/station fallback from pretending to be the venue location.
-    if(ev?.source==='official_catalog' && !exactPointForEvent(ev)) continue;
+    if(ev?.routing_ready===false){ recordExclusion(ev,'routing_not_ready','目的地の位置情報が未確認'); continue; }
+    // Official catalog records are allowed into recommendations only when a usable point is known.
+    if(ev?.source==='official_catalog' && !exactPointForEvent(ev)){ recordExclusion(ev,'coordinate_missing','目的地の位置情報が未確認'); continue; }
 
     const evaluated=await evaluateEventModes(ev,dest,modes,start,deadline,ctx);
+    if(!evaluated.length) recordExclusion(ev,'route_not_feasible','指定時間・移動手段では往復が成立しない');
 
     for(const c of evaluated){
       if(!c?.feasible)continue;
@@ -5580,8 +5897,10 @@ async function scoreEventSet(events, modes, start, deadline, ctx){
       const visitedScore=(mood==='any' && isVisitedEvent(ev)) ? -45 : 0;
       c.visitedScore=visitedScore;
 
-      const dataFreshnessScore=freshnessScore(ev);
+      const confidence=informationConfidenceMeta(ev);
+      const dataFreshnessScore=confidence.score;
       c.dataFreshnessScore=dataFreshnessScore;
+      c.informationConfidence=confidence;
 
       const autoModePenalty=(transport==='auto' && c.mode==='taxi') ? -28 : 0;
       c.autoModePenalty=autoModePenalty;
@@ -5589,6 +5908,10 @@ async function scoreEventSet(events, modes, start, deadline, ctx){
       const routeSense=routeCommonSenseAdjustment(c,start,deadline,ctx);
       c.routeSenseScore=routeSense.score;
       c.routeSenseReasons=routeSense.reasons;
+      const reservationScore=Number(c.reservation?.penalty||0);
+      const returnSafetyScore=Number(c.returnSafety?.penalty||0);
+      c.reservationScore=reservationScore;
+      c.returnSafetyScore=returnSafetyScore;
 
       c.preferenceScore=
         timeFitScore
@@ -5601,6 +5924,8 @@ async function scoreEventSet(events, modes, start, deadline, ctx){
         + dataFreshnessScore
         + proximityModeScore
         + autoModePenalty
+        + reservationScore
+        + returnSafetyScore
         + routeSense.score;
 
       rows.push(c);
@@ -5945,7 +6270,10 @@ function filterFinalPlans(rows,ctx,start,deadline){
   for(const plan of rows||[]){
     const check=finalPlanGuard(plan,ctx,start,deadline);
     if(check.ok) accepted.push(plan);
-    else rejected.push({plan,reasons:check.reasons});
+    else{
+      rejected.push({plan,reasons:check.reasons});
+      for(const r of check.reasons||[]) recordExclusion(plan?.ev,'final_guard',r);
+    }
   }
   try{
     if(rejected.length){
@@ -5956,6 +6284,22 @@ function filterFinalPlans(rows,ctx,start,deadline){
     }
   }catch(_){}
   return accepted;
+}
+
+function recommendationReasonParts(plan){
+  const parts=[];
+  const ev=plan?.ev||{};
+  const outMin=Number.isFinite(plan?.arrive) && Number.isFinite(plan?.out?.dep) ? Math.max(0,plan.arrive-plan.out.dep) : null;
+  if(outMin!=null) parts.push(`${plan.modeLabel||'移動'}で片道約${outMin}分`);
+  if(plan?.availability?.verified!==false && plan?.availability?.label) parts.push(plan.availability.label);
+  if(Number.isFinite(plan?.stay)) parts.push(`滞在約${plan.stay}分`);
+  if(Number.isFinite(plan?.spare)) parts.push(`帰着に約${Math.max(0,plan.spare)}分余裕`);
+  if(plan?.weatherReason) parts.push(plan.weatherReason);
+  if(plan?.reservation?.label) parts.push(plan.reservation.label);
+  const conf=plan?.informationConfidence||informationConfidenceMeta(ev);
+  if(conf?.level==='high') parts.push('情報確認が新しい');
+  else if(conf?.level==='low') parts.push('最新情報は要確認');
+  return parts.slice(0,5);
 }
 
 function sortCandidates(rows){
@@ -6006,9 +6350,9 @@ function diversityPenalty(candidate,selected,freeMinutes){
 
     // Category diversity matters most when the user chose "おまかせ".
     if(cat===pCat){
-      penalty += mood==='any' ? 34 : 8;
+      penalty += mood==='any' ? 48 : 10;
     }
-    if(area && area===pArea) penalty += 15;
+    if(area && area===pArea) penalty += 18;
     if(station && station===pStation) penalty += 8;
     if(timeStyle===pTime) penalty += 6;
 
@@ -6022,6 +6366,14 @@ function diversityPenalty(candidate,selected,freeMinutes){
   const freshness=freshnessMeta(candidate?.ev);
   if(freshness.level==='fresh') penalty -= 5;
   if(candidate?.availability?.verified===true) penalty -= 4;
+
+  // Reward a genuinely different second/third idea when on おまかせ.
+  if(mood==='any'){
+    const selectedCats=new Set(selected.map(planDiversityCategory));
+    const selectedAreas=new Set(selected.map(planDiversityArea));
+    if(!selectedCats.has(cat)) penalty -= 14;
+    if(area && !selectedAreas.has(area)) penalty -= 6;
+  }
 
   return penalty;
 }
@@ -7064,6 +7416,97 @@ function bindPlanDisclosures(plans,ctx){
   });
 }
 
+
+function raiseReturnBufferOneStep(){
+  const el=document.getElementById('buffer');
+  if(!el)return false;
+  const values=[...el.options].map(o=>Number(o.value)).filter(Number.isFinite).sort((a,b)=>a-b);
+  const cur=Number(el.value)||15;
+  const next=values.find(v=>v>cur);
+  if(next==null)return false;
+  el.value=String(next);
+  return true;
+}
+
+function renderResultQuickAdjust(){
+  return `<div class="result-quick-adjust" aria-label="おすすめを調整">
+    <button type="button" data-result-adjust="near">📍 もっと近く</button>
+    <button type="button" data-result-adjust="cheaper">💴 もっと安く</button>
+    <button type="button" data-result-adjust="indoor">🏠 屋内だけ</button>
+    <button type="button" data-result-adjust="food">🍴 食事あり</button>
+    <button type="button" data-result-adjust="buffer">🕒 帰り余裕多め</button>
+  </div>`;
+}
+
+function planComparisonHtml(plans,start,buffer){
+  if(!Array.isArray(plans)||plans.length<2)return '';
+  const headers=['候補','移動負担','滞在','帰着余裕','料金'];
+  let html=`<div class="plan-compare"><div class="plan-compare-title">3案をざっくり比較</div><div class="plan-compare-grid">`;
+  html+=headers.map(h=>`<div class="plan-compare-cell head">${h}</div>`).join('');
+  for(const p of plans){
+    const elapsed=(Number.isFinite(p.finish)&&Number.isFinite(start))?Math.max(0,p.finish-start):null;
+    const travel=elapsed!=null?Math.max(0,elapsed-Number(p.stay||0)):null;
+    const total=totalPlanCost(p);
+    html+=`<div class="plan-compare-cell"><strong>${esc(p.ev?.title||p.ev?.venue||'候補')}</strong>${esc(p.modeLabel||'')}</div>`;
+    html+=`<div class="plan-compare-cell"><strong>${travel!=null?`約${Math.round(travel)}分`:'要確認'}</strong>往復＋待ち</div>`;
+    html+=`<div class="plan-compare-cell"><strong>約${Number(p.stay||0)}分</strong></div>`;
+    html+=`<div class="plan-compare-cell"><strong>約${Math.max(0,Number(p.spare||0)+Number(buffer||0))}分</strong></div>`;
+    html+=`<div class="plan-compare-cell"><strong>${total!=null?`約¥${Number(total).toLocaleString()}`:'要確認'}</strong></div>`;
+  }
+  return html+'</div></div>';
+}
+
+function bindResultQuickAdjust(){
+  document.querySelectorAll('[data-result-adjust]').forEach(btn=>{
+    btn.addEventListener('click',async()=>{
+      const kind=btn.dataset.resultAdjust;
+      if(kind==='near'){ await applyPlanAdjustment('near'); return; }
+      if(kind==='cheaper'){ await applyPlanAdjustment('cheaper'); return; }
+      if(kind==='food'){ await applyPlanAdjustment('food'); return; }
+      if(kind==='indoor'){
+        setMoodChoice('rain');
+        try{ trackNexitaime('quick_adjust',{kind:'indoor'}); }catch(_){}
+        await buildPlans();
+        return;
+      }
+      if(kind==='buffer'){
+        const changed=raiseReturnBufferOneStep();
+        if(changed){
+          try{ trackNexitaime('quick_adjust',{kind:'buffer'}); }catch(_){}
+          await buildPlans();
+        }
+      }
+    });
+  });
+}
+
+function bindPlanPickButtons(plans,ctx){
+  const box=document.getElementById('plans');
+  if(!box)return;
+  box.querySelectorAll('[data-pick-plan]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const idx=Number(btn.dataset.pickPlan);
+      box.classList.add('focus-plan');
+      box.querySelectorAll('.plan[data-plan-card]').forEach(card=>card.classList.toggle('is-selected-plan',Number(card.dataset.planCard)===idx));
+      const card=box.querySelector(`.plan[data-plan-card="${idx}"]`);
+      const journey=card?.querySelector('[data-plan-panel="journey"]');
+      const detail=card?.querySelector('[data-plan-panel="detail"]');
+      const journeyBtn=card?.querySelector('[data-plan-disclosure="journey"]');
+      if(journey){journey.classList.add('is-open');}
+      if(journeyBtn){journeyBtn.setAttribute('aria-expanded','true');journeyBtn.textContent='行程を閉じる ▲';}
+      if(detail){detail.classList.add('is-open');}
+      const detailBtn=card?.querySelector('[data-plan-disclosure="detail"]');
+      if(detailBtn){detailBtn.setAttribute('aria-expanded','true');detailBtn.textContent='詳細を閉じる ▲';}
+      try{ trackNexitaime('plan_pick',{rank:idx+1}); }catch(_){}
+      card?.scrollIntoView({behavior:'smooth',block:'start'});
+    });
+  });
+  box.querySelectorAll('[data-unpick-plan]').forEach(btn=>btn.addEventListener('click',()=>{
+    box.classList.remove('focus-plan');
+    box.querySelectorAll('.plan[data-plan-card]').forEach(card=>card.classList.remove('is-selected-plan'));
+  }));
+}
+
 async function buildPlans(){
  syncSearchStateFromControls();
  try{ trackNexitaime('search_start',{freeMinutes:Number(document.getElementById('free')?.value)||120,buffer:Number(document.getElementById('buffer')?.value)||15}); }catch(_){}
@@ -7112,6 +7555,7 @@ async function buildPlans(){
    summary.scrollIntoView({behavior:'smooth', block:'start'});
  });
 
+ resetExclusionAudit();
  const hotpepperEvents=await fetchHotPepperRestaurants();
  const candidateEvents=hotpepperEvents.length
    ? mergeCandidateEvents(EVENTS,hotpepperEvents)
@@ -7253,6 +7697,7 @@ async function buildPlans(){
        ${searchCtx.destination!=='any'?'<button type="button" class="retry-action" data-retry-action="autoDestination">📍 行き先をおまかせ</button>':''}
      </div>
      <div class="retry-note">※ 押すと条件を変更して、そのまま再検索します。</div>
+     ${exclusionSummaryHtml()}
    </div>`;
    bindNoResultActions();
    return;
@@ -7297,7 +7742,7 @@ async function buildPlans(){
 
  try{ trackNexitaime('search_result',{resultCount:top.length}); }catch(_){}
 
- box.innerHTML=top.map((p,idx)=>{
+ box.innerHTML=renderResultQuickAdjust()+planComparisonHtml(top,start,buffer)+`<div class="plan-picked-banner">この案に絞って表示中 <button type="button" data-unpick-plan>3案に戻す</button></div>`+top.map((p,idx)=>{
    const rank=idx===0&&transport==='auto'?'<span class="status">おすすめ</span>':'<span class="status">間に合う</span>';
    const recommendationHtml=renderRecommendationBadges(p,idx);
    const eventInfo=eventInfoHtml(p.ev);
@@ -7336,9 +7781,10 @@ async function buildPlans(){
    const outTime=p.out?.[searchCtx.origin] || (Number.isFinite(p.out?.dep)?fmt(p.out.dep):'');
    const backKey=p.returnTo||searchCtx.returnTo;
    const backTime=p.back?.[backKey] || (Number.isFinite(p.finish)?fmt(p.finish):'');
-   const reasonText=esc([p.reason,p.weatherReason,companionReason(p.ev)].filter(Boolean).join('・')||'時間内に収まるため');
+   const reasonText=esc(recommendationReasonParts(p).join('・')||[p.reason,p.weatherReason,companionReason(p.ev)].filter(Boolean).join('・')||'時間内に収まるため');
+   const confidenceHtml=informationConfidenceHtml(p.ev);
 
-   return `<div class="plan">${p.multimodal?`<div class="multimodal-badge">🔀 おまかせ複合移動：公共交通＋${esc(MODE_LABELS[p.lastMode]||p.lastMode)}</div>`:''}
+   return `<div class="plan" data-plan-card="${idx}">${p.multimodal?`<div class="multimodal-badge">🔀 おまかせ複合移動：公共交通＋${esc(MODE_LABELS[p.lastMode]||p.lastMode)}</div>`:''}
      ${rank}
      ${recommendationHtml}
      <div class="meta" style="font-weight:900;margin-bottom:6px">${p.modeIcon||''} ${esc(p.modeLabel||'')}</div>
@@ -7355,6 +7801,7 @@ async function buildPlans(){
      <div class="plan-reason-compact"><strong>この案の理由：</strong>${reasonText}</div>
      <div class="meta">🎫 ${esc(costLabel(p.ev))}${p.ev.indoor?' · 🏠 屋内':''}</div>
      ${hoursHtml}
+     <div class="plan-pick-row"><button type="button" class="plan-pick-btn" data-pick-plan="${idx}">この案にする</button></div>
 
      <div class="plan-disclosure-actions">
        <button type="button" class="plan-disclosure-btn" data-plan-disclosure="journey" data-plan-idx="${idx}" aria-expanded="false">行程を見る ▼</button>
@@ -7373,6 +7820,7 @@ async function buildPlans(){
          ${providerInfo}
          <p>${esc(p.ev.summary||'')}</p>
          ${freshnessHtml}
+         ${confidenceHtml}
          ${hoursNoteHtml}
          ${crowdingInfoHtml}
        </div>
@@ -7416,6 +7864,8 @@ async function buildPlans(){
      </div>
    </div>`;
  }).join('');
+ bindResultQuickAdjust();
+ bindPlanPickButtons(top,searchCtx);
  bindPlanShareButtons(top,searchCtx);
  bindFavoriteButtons(top,searchCtx);
  bindVisitedButtons(top);
