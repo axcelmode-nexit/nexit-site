@@ -1818,6 +1818,7 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
   }
 }
 </style>
+<!-- NEXITAIME build v75: reject direct plans without audited destination coordinates -->
 </head>
 <body>
 <div class="app">
@@ -2074,7 +2075,7 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
 </section>
 
 <div class="hotpepper-credit">Powered by <a href="https://webservice.recruit.co.jp/" target="_blank" rel="noopener">ホットペッパーグルメ Webサービス</a></div>
-<footer data-build="v73">NEXITAIME 〜上越版〜 · Powered by 
+<footer data-build="v76">NEXITAIME 〜上越版〜 · Powered by 
 <a href="https://axcelmode-nexit.jp/" target="_blank" rel="noopener">AXCEL MODE NEXIT</a> · Beta1.0
 <section class="operator-card" aria-label="運営会社">
   <div class="operator-card-inner">
@@ -2177,7 +2178,7 @@ Promise.all([
  fetch('./bus_extended.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>({routes:[]})),
  fetch('./places.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>({})),
  fetch('./mobility_services.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>[])
- ]).then(([e,r,s,t,shinanoData,b,bm,bx,p,m])=>{
+ ]).then(async ([e,r,s,t,shinanoData,b,bm,bx,p,m])=>{
   RESTAURANTS=Array.isArray(r)?r:[];
   const SPOTS=Array.isArray(s)?s:[];
   const seenSpotNames=new Set(SPOTS.map(x=>String(x?.title||x?.venue||'').trim()).filter(Boolean));
@@ -2194,6 +2195,8 @@ Promise.all([
     return true;
   });
   EVENTS=[...(Array.isArray(e)?e:[]),...RESTAURANTS,...SPOTS,...EXTRA_SPOTS];
+  applyOfficialAddressOverrides(EVENTS);
+  await enrichOfficialAddressCoordinates(EVENTS);
   TRAIN=t;SHINANO=shinanoData||{up:[],down:[]};BUS=b;BUS_MAIN=bm;BUS_EXT=bx;PLACES=p;MOBILITY=m;renderMobility(); setTimeout(()=>{initMobilityMap();renderMobility();},250);
   try{const audit=coordinateAuditReport(); if(audit.duplicateUrls.length||audit.exactDuplicates.length) console.warn('[NEXITAIME coordinate audit]',audit);}catch(_){}});
 
@@ -2766,21 +2769,61 @@ const SPOT_COORD_META={
   '赤倉温泉街':{type:'representative',note:'赤倉温泉街の代表地点'}
 };
 
+const OFFICIAL_ADDRESS_OVERRIDES=[
+  {match:/龍池園/,address:'新潟県上越市三和区払沢原山230',source_name:'上越市',source_url:'https://www.city.joetsu.niigata.jp/uploaded/attachment/267907.pdf'}
+];
+
+function applyOfficialAddressOverrides(rows=[]){
+  for(const ev of rows){
+    const hay=[ev?.title,ev?.venue,ev?.summary].filter(Boolean).join(' ');
+    for(const rule of OFFICIAL_ADDRESS_OVERRIDES){
+      if(!rule.match.test(hay))continue;
+      ev.official_address=ev.official_address||rule.address;
+      ev.official_address_source=ev.official_address_source||rule.source_name;
+      ev.official_address_url=ev.official_address_url||rule.source_url;
+      ev.routing_point_type=ev.routing_point_type||'address_geocoded';
+      ev.routing_point_note=ev.routing_point_note||'上越市公式住所から地図位置を取得';
+      break;
+    }
+  }
+}
+
+function addressGeocodeCacheKey(address){return 'nexitaime-geocode-v1:'+String(address||'').trim();}
+function readAddressGeocodeCache(address){try{const raw=localStorage.getItem(addressGeocodeCacheKey(address));if(!raw)return null;const v=JSON.parse(raw);const lat=Number(v?.lat),lon=Number(v?.lon);return Number.isFinite(lat)&&Number.isFinite(lon)?{lat,lon}:null;}catch(_){return null;}}
+function writeAddressGeocodeCache(address,point){try{localStorage.setItem(addressGeocodeCacheKey(address),JSON.stringify(point));}catch(_){}}
+async function geocodeOfficialAddress(address){
+  const cached=readAddressGeocodeCache(address); if(cached)return cached;
+  const query=String(address||'').trim(); if(!query)return null;
+  try{
+    const url='https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=jp&q='+encodeURIComponent(query);
+    const r=await fetch(url,{headers:{'Accept':'application/json','Accept-Language':'ja'}});
+    if(!r.ok)return null; const rows=await r.json(); const hit=Array.isArray(rows)?rows[0]:null;
+    const lat=Number(hit?.lat),lon=Number(hit?.lon); if(!Number.isFinite(lat)||!Number.isFinite(lon))return null;
+    const point={lat,lon}; writeAddressGeocodeCache(address,point); return point;
+  }catch(_){return null;}
+}
+async function enrichOfficialAddressCoordinates(rows=[]){
+  for(const ev of rows){
+    if(!ev?.official_address)continue;
+    const lat=Number(ev?.lat),lon=Number(ev?.lng??ev?.lon); if(Number.isFinite(lat)&&Number.isFinite(lon))continue;
+    const point=await geocodeOfficialAddress(ev.official_address); if(!point)continue;
+    ev._address_geocoded_point=point; ev.routing_point_type='address_geocoded'; ev.routing_ready=true;
+    ev.routing_point_note=ev.routing_point_note||'公式住所から地図位置を取得';
+  }
+}
+
 function pointInfoForEvent(ev){
   if(!ev)return {point:null,type:'unknown',note:'位置情報未確認'};
 
   const lat=Number(ev?.lat), lon=Number(ev?.lng ?? ev?.lon);
   if(Number.isFinite(lat) && Number.isFinite(lon)){
     const rawType=String(ev?.routing_point_type||'').toLowerCase();
-    const type=rawType==='area_representative' || rawType==='representative' ? 'representative' : 'exact';
-    return {
-      point:{lat,lon},
-      type,
-      note:type==='representative'
-        ? (ev?.routing_point_note||'エリアの代表地点。個別施設の正確な入口位置ではありません。')
-        : (ev?.routing_point_note||'')
-    };
+    const type=rawType==='area_representative' || rawType==='representative' ? 'representative' : (rawType==='address_geocoded'?'address_geocoded':'exact');
+    return {point:{lat,lon},type,note:type==='representative'?(ev?.routing_point_note||'エリアの代表地点。個別施設の正確な入口位置ではありません。'):type==='address_geocoded'?(ev?.routing_point_note||'公式住所から地図位置を取得'):(ev?.routing_point_note||'')};
   }
+  const gp=ev?._address_geocoded_point;
+  const glat=Number(gp?.lat),glon=Number(gp?.lon);
+  if(Number.isFinite(glat)&&Number.isFinite(glon))return {point:{lat:glat,lon:glon},type:'address_geocoded',note:ev?.routing_point_note||'公式住所から地図位置を取得'};
 
   const names=[ev?.venue,ev?.title].filter(Boolean);
   for(const name of names){
@@ -2797,12 +2840,12 @@ function pointInfoForEvent(ev){
 
 function exactPointForEvent(ev){
   const info=pointInfoForEvent(ev);
-  return info.type==='exact' ? info.point : null;
+  return (info.type==='exact' || info.type==='address_geocoded') ? info.point : null;
 }
 
 function routePointForEvent(ev,dest){
   const info=pointInfoForEvent(ev);
-  if(info.point && (info.type==='exact' || info.type==='representative'))return info.point;
+  if(info.point && (info.type==='exact' || info.type==='address_geocoded' || info.type==='representative'))return info.point;
 
   // v70: Never invent a destination point from the area/station mapping.
   // A venue without an audited coordinate is excluded from route/time calculations.
@@ -3649,6 +3692,11 @@ async function evaluateDirectMode(ev,dest,mode,start,deadline,ctx){
   const fromPoint=PLACES[from];
   const destPoint=routePointForEvent(ev,dest);
   const backPoint=PLACES[backTo];
+
+  // v75: Direct-mode plans require an audited destination coordinate.
+  // Never fall back to the area's station/representative route key, because that can
+  // create a fake 0-minute trip such as 上越妙高 -> 上越妙高 for an unknown venue.
+  if(!destPoint)return null;
   if(ev?.source==='official_catalog' && ev?.routing_ready===false && !exactPointForEvent(ev))return null;
 
   // In おまかせ, very short round trips should be walking plans.
@@ -4674,7 +4722,7 @@ async function renderPlanRouteMap(mapId,plan,ctx){
     const popup=group.items.map(({s})=>{
       const prefix=s.itineraryNo?`${s.itineraryNo}. `:(s.kind==='start'?'出発：':s.kind==='return'?'帰着：':s.kind==='transfer'?'乗換：':'');
       const detail=s.stay?`<br>滞在 約${s.stay}分`:'';
-      const pointNote=s.pointType==='representative'?`<br><small>※ 代表地点</small>`:'';
+      const pointNote=s.pointType==='representative'?`<br><small>※ 代表地点</small>`:(s.pointType==='address_geocoded'?`<br><small>※ 公式住所から位置取得</small>`:'');
       return `${prefix}${esc(s.name)}${detail}${pointNote}`;
     }).join('<hr style="margin:6px 0;border:0;border-top:1px solid #dde5ec">');
     const zIndexOffset=Math.max(...group.items.map(({s,i})=>s.kind==='start'?400:s.kind==='return'?350:s.kind==='transfer'?300:250-i));
@@ -4703,6 +4751,13 @@ async function renderPlanRouteMap(mapId,plan,ctx){
       repNote.className='route-map-note';
       repNote.textContent='※ 「'+representativeStops.map(s=>s.name).join('／')+'」はエリア代表地点です。個別施設の正確な入口位置ではありません。';
       el.parentElement?.appendChild(repNote);
+    }
+    const geocodedStops=stops.filter(s=>s.pointType==='address_geocoded');
+    if(geocodedStops.length){
+      const geoNote=document.createElement('div');
+      geoNote.className='route-map-note';
+      geoNote.textContent='※ 「'+geocodedStops.map(s=>s.name).join('／')+'」は公式住所を地図変換してルート地点に使用しています。';
+      el.parentElement?.appendChild(geoNote);
     }
   }else{
     map.fitBounds(L.latLngBounds(stops.map(s=>[s.lat,s.lon])),{padding:[38,38]});
@@ -5698,6 +5753,10 @@ function finalPlanGuard(plan,ctx,start,deadline){
   const expectedBack=ctx?.returnTo;
   const actualBack=plan?.returnTo||expectedBack;
   if(expectedBack && actualBack!==expectedBack) reasons.push('帰着先不一致');
+
+  // v75: A rendered plan must have an audited destination point.
+  // This is a second safety net for legacy/externally supplied candidates.
+  if(!routePointForEvent(plan?.ev,plan?.dest)) reasons.push('目的地の座標が未確認');
 
   if(ctx?.destination && ctx.destination!=='any'){
     const allowed=new Set(DEST_GROUPS[ctx.destination]?.areas||[]);
@@ -7270,7 +7329,7 @@ async function buildPlans(){
      const detail=s.itineraryNo
        ? `${s.move?`・移動 約${s.move}分`:''}${s.stay?`・滞在 ${s.stay}分`:''}`
        : '';
-     const quality=s.pointType==='representative'?' <em style="font-style:normal;color:#8a6d16">(代表地点)</em>':'';
+     const quality=s.pointType==='representative'?' <em style="font-style:normal;color:#8a6d16">(代表地点)</em>':(s.pointType==='address_geocoded'?' <em style="font-style:normal;color:#39755a">(公式住所)</em>':'');
      return `<span class="route-stop-chip"><strong>${esc(label)}</strong> ${esc(s.name)}${quality}${detail}</span>`;
    }).join('');
 
