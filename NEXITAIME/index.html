@@ -1825,7 +1825,7 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
   }
 }
 </style>
-<!-- NEXITAIME build v75: reject direct plans without audited destination coordinates -->
+<!-- NEXITAIME build v83: reject direct plans without audited destination coordinates -->
 
 <style id="result-action-upgrade-v82">
 .result-quick-adjust{display:flex;gap:8px;overflow-x:auto;padding:4px 0 12px;margin:0 0 10px;scrollbar-width:none}
@@ -1837,6 +1837,7 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
 .plan-compare-cell{background:#fff;border:1px solid #e5ebef;border-radius:10px;padding:8px;font-size:10px;line-height:1.35}
 .plan-compare-cell.head{background:transparent;border:0;color:#758591;font-weight:900;padding:2px 6px}
 .plan-compare-cell strong{display:block;font-size:11px;color:#263945}
+.stay-breakdown{display:block;margin-top:3px;font-size:8.5px;line-height:1.35;color:#7b8993;font-weight:750}
 .plan-pick-row{display:flex;gap:8px;margin:12px 0 2px}
 .plan-pick-btn{flex:1;min-height:46px;border:0;border-radius:14px;background:#183f35;color:#fff;font-size:13px;font-weight:950;box-shadow:0 6px 16px rgba(24,63,53,.14)}
 .plan-picked-banner{display:none;margin:0 0 12px;padding:12px 14px;border-radius:14px;background:#eaf7ef;border:1px solid #c9e7d4;color:#275b3a;font-size:12px;font-weight:900}
@@ -4020,8 +4021,10 @@ function choosePlannedStay(ev,availableMinutes){
     recommended=Math.max(recommended,quickMeal?45:60);
     maxStay=Math.min(maxStay,quickMeal?60:90);
   }else if(kind==='cafe'){
-    minStay=Math.max(minStay,30);
-    recommended=Math.max(recommended,35);
+    // Cafes are a short stop by default. Avoid occupying a small shop for an
+    // unnecessarily long time just because the user has a large free-time window.
+    minStay=Math.max(minStay,25);
+    recommended=Math.max(minStay,Math.min(recommended,30));
     maxStay=Math.min(maxStay,45);
   }
 
@@ -4938,38 +4941,68 @@ async function fetchRouteGeometry(stops,plan){
 }
 
 const renderedPlanMaps=new Set();
+const planMapInstances=new Map();
+
+function refreshPlanMapSize(mapId){
+  const map=planMapInstances.get(mapId);
+  if(!map)return;
+  [80,260,700].forEach(ms=>setTimeout(()=>{ try{ map.invalidateSize(true); }catch(_){} },ms));
+}
 
 async function renderPlanRouteMap(mapId,plan,ctx){
-  if(renderedPlanMaps.has(mapId))return;
   const el=document.getElementById(mapId);
   if(!el)return;
-  el.parentElement?.querySelectorAll('.route-map-note').forEach(n=>n.remove());
+
+  if(planMapInstances.has(mapId)){
+    refreshPlanMapSize(mapId);
+    return;
+  }
+
   if(!leafletReady()){
     const tries=Number(el.dataset.leafletRetries||0);
     if(tries<20){
       el.dataset.leafletRetries=String(tries+1);
       setTimeout(()=>renderPlanRouteMap(mapId,plan,ctx),300);
     }else{
-      el.innerHTML='<div style="padding:14px;font-size:12px;color:#6f7c89">地図を読み込めませんでした。再読み込みしてください。</div>';
+      el.innerHTML='<div style="padding:14px;font-size:12px;color:#6f7c89">地図を読み込めませんでした。ページを再読み込みしてください。</div>';
     }
     return;
   }
-  renderedPlanMaps.add(mapId);
 
+  // iPhone Safari can report zero width immediately after a disclosure panel opens.
+  // Do not mark the map as rendered until the panel has a real layout size.
+  await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+  if(el.offsetWidth<40 || el.offsetHeight<40){
+    const tries=Number(el.dataset.layoutRetries||0);
+    if(tries<12){
+      el.dataset.layoutRetries=String(tries+1);
+      setTimeout(()=>renderPlanRouteMap(mapId,plan,ctx),120);
+    }
+    return;
+  }
+
+  el.parentElement?.querySelectorAll('.route-map-note.dynamic-map-note').forEach(n=>n.remove());
   const stops=planStops(plan,ctx);
   if(stops.length<2){
     el.innerHTML='<div style="padding:14px;font-size:12px;color:#6f7c89">ルートを表示できる位置情報が不足しています。</div>';
     return;
   }
 
-  // Wait for layout so Leaflet gets a real width/height on mobile Safari.
-  await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
-
-  const map=L.map(mapId,{scrollWheelZoom:false,zoomControl:true,preferCanvas:true});
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-    maxZoom:19,
-    attribution:'&copy; OpenStreetMap contributors'
-  }).addTo(map);
+  let map;
+  try{
+    map=L.map(mapId,{scrollWheelZoom:false,zoomControl:true,preferCanvas:true});
+    planMapInstances.set(mapId,map);
+    renderedPlanMaps.add(mapId);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+      maxZoom:19,
+      attribution:'&copy; OpenStreetMap contributors'
+    }).addTo(map);
+  }catch(err){
+    renderedPlanMaps.delete(mapId);
+    planMapInstances.delete(mapId);
+    el.innerHTML='<div style="padding:14px;font-size:12px;color:#6f7c89">地図の初期化に失敗しました。詳細を閉じて、もう一度開いてください。</div>';
+    return;
+  }
 
   // Keep every marker on its true coordinate. Never move itinerary markers for visual separation.
   // Only markers with the exact same coordinate (typically S/G at the same station) are merged
@@ -5019,21 +5052,21 @@ async function renderPlanRouteMap(mapId,plan,ctx){
 
     if(geometry.label){
       const note=document.createElement('div');
-      note.className='route-map-note';
+      note.className='route-map-note dynamic-map-note';
       note.textContent=geometry.label;
       el.parentElement?.appendChild(note);
     }
     const representativeStops=stops.filter(s=>s.pointType==='representative');
     if(representativeStops.length){
       const repNote=document.createElement('div');
-      repNote.className='route-map-note';
+      repNote.className='route-map-note dynamic-map-note';
       repNote.textContent='※ 「'+representativeStops.map(s=>s.name).join('／')+'」はエリア代表地点です。個別施設の正確な入口位置ではありません。';
       el.parentElement?.appendChild(repNote);
     }
     const geocodedStops=stops.filter(s=>s.pointType==='address_geocoded');
     if(geocodedStops.length){
       const geoNote=document.createElement('div');
-      geoNote.className='route-map-note';
+      geoNote.className='route-map-note dynamic-map-note';
       geoNote.textContent='※ 「'+geocodedStops.map(s=>s.name).join('／')+'」は公式住所を地図変換してルート地点に使用しています。';
       el.parentElement?.appendChild(geoNote);
     }
@@ -5041,8 +5074,7 @@ async function renderPlanRouteMap(mapId,plan,ctx){
     map.fitBounds(L.latLngBounds(stops.map(s=>[s.lat,s.lon])),{padding:[38,38]});
   }
 
-  map.invalidateSize(true);
-  setTimeout(()=>map.invalidateSize(true),120);
+  refreshPlanMapSize(mapId);
   setTimeout(()=>map.invalidateSize(true),350);
 }
 
@@ -7409,7 +7441,8 @@ function bindPlanDisclosures(plans,ctx){
         const mapEl=panel.querySelector('.plan-map');
         const plan=plans[idx];
         if(mapEl && plan){
-          setTimeout(()=>renderPlanRouteMap(mapEl.id,plan,ctx),50);
+          setTimeout(()=>renderPlanRouteMap(mapEl.id,plan,ctx),80);
+          setTimeout(()=>refreshPlanMapSize(mapEl.id),420);
         }
       }
     });
@@ -7794,7 +7827,7 @@ async function buildPlans(){
 
      <div class="plan-quick-facts">
        <div class="plan-quick-fact"><span>往復時間</span><strong>${esc(outTime)} → ${esc(backTime)}</strong></div>
-       <div class="plan-quick-fact"><span>滞在</span><strong>約${p.stay}分</strong></div>
+       <div class="plan-quick-fact"><span>${p.itinerary?.length>1?'立ち寄り合計':'滞在'}</span><strong>約${p.stay}分</strong></div>
        <div class="plan-quick-fact"><span>帰着後の余裕</span><strong>約${Math.max(0,p.spare+buffer)}分</strong></div>
      </div>
      ${totalCostHero}
