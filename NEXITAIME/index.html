@@ -4215,9 +4215,16 @@ async function evaluateTransitAtStation(ev,dest,mode,start,deadline,ctx){
   const earliestStationReady=earliestVenueLeave+lastMile.minutes;
   const targetStationReady=targetVenueLeave+lastMile.minutes;
 
-  let back=firstTransitReturnAfter(dest,backTo,targetStationReady,deadline,null,mode);
-  if(!back){
-    back=firstTransitReturnAfter(dest,backTo,earliestStationReady,deadline,null,mode);
+  let back=null;
+  if(mood==='any'){
+    // In recommendation mode, prefer a later feasible return instead of coming back
+    // 30-40 minutes early. buildSimpleItinerary can use that local time for another
+    // nearby stop rather than stretching one cafe/restaurant stay.
+    back=findBestTransitReturn(dest,backTo,targetStationReady,deadline,null,mode);
+    if(!back) back=findBestTransitReturn(dest,backTo,earliestStationReady,deadline,null,mode);
+  }else{
+    back=firstTransitReturnAfter(dest,backTo,targetStationReady,deadline,null,mode);
+    if(!back) back=firstTransitReturnAfter(dest,backTo,earliestStationReady,deadline,null,mode);
   }
   if(!back)return null;
 
@@ -6463,10 +6470,21 @@ function multiStopPreferenceBonus(plan,freeMinutes){
   return -18;
 }
 
+function returnSpareFitBonus(plan){
+  const spare=Math.max(0,Number(plan?.spare)||0);
+  // Spare here is beyond the automatic safety buffer. A little is healthy;
+  // 25+ minutes means we should prefer a plan that uses the window better.
+  if(spare<=8) return 10;
+  if(spare<=15) return 6;
+  if(spare<=25) return 0;
+  if(spare<=35) return -8;
+  return -14;
+}
+
 function sortCandidates(rows){
   return rows.sort((a,b)=>{
-    const bp=(b.preferenceScore||0)+(b.multiStopPreferenceBonus||0);
-    const ap=(a.preferenceScore||0)+(a.multiStopPreferenceBonus||0);
+    const bp=(b.preferenceScore||0)+(b.multiStopPreferenceBonus||0)+returnSpareFitBonus(b);
+    const ap=(a.preferenceScore||0)+(a.multiStopPreferenceBonus||0)+returnSpareFitBonus(a);
     if(bp!==ap)return bp-ap;
     if((b.timeFitScore||0)!==(a.timeFitScore||0))return (b.timeFitScore||0)-(a.timeFitScore||0);
     if((b.planMinutes||0)!==(a.planMinutes||0))return (b.planMinutes||0)-(a.planMinutes||0);
@@ -7710,10 +7728,11 @@ function bindPlanPickButtons(plans,ctx){
 }
 
 function automaticReturnBufferMinutes(){
-  let minutes=10;
-  if(['train','bus','public'].includes(transport)) minutes=15;
-  else if(transport==='taxi') minutes=20;
-  else if(transport==='auto') minutes=15;
+  // Keep a practical safety margin, but do not waste a large part of a short outing.
+  let minutes=7;
+  if(['train','bus','public'].includes(transport)) minutes=12;
+  else if(transport==='taxi') minutes=15;
+  else if(transport==='auto') minutes=10;
 
   const w=weatherAtDate(planningDate||new Date());
   const precipitation=Number(w?.precipitation||0)+Number(w?.rain||0)+Number(w?.snowfall||0);
@@ -7721,16 +7740,16 @@ function automaticReturnBufferMinutes(){
   if(precipitation>0) minutes+=5;
   if(gust>=40) minutes+=5;
 
-  // 山側・妙高方面は道路や徒歩条件の変動を考えて少し多めに確保。
+  // Mountain/Myoko plans still get a little extra margin.
   if(['mountain','myoko'].includes(destinationArea)) minutes+=5;
-  return Math.max(10,Math.min(30,minutes));
+  return Math.max(5,Math.min(25,minutes));
 }
 
 async function buildPlans(){
  syncSearchStateFromControls();
  try{ trackNexitaime('search_start',{freeMinutes:Number(document.getElementById('free')?.value)||120,buffer:Number(document.getElementById('buffer')?.value)||15}); }catch(_){}
  const free=Number(document.getElementById('free').value)||120;
- const buffer=Math.max(10,Number(document.getElementById('buffer').value)||15);
+ let buffer=Math.max(5,Number(document.getElementById('buffer').value)||10);
  const now=new Date();
  const selected=selectedPlanDate();
  const summary=document.getElementById('summary'),box=document.getElementById('plans');
@@ -7749,6 +7768,10 @@ async function buildPlans(){
  }
  planningDate=selected;
  renderWeatherForDate(planningDate);
+ // Return margin is calculated by NEXITAIME from transport/weather/area.
+ buffer=automaticReturnBufferMinutes();
+ const bufferEl=document.getElementById('buffer');
+ if(bufferEl) bufferEl.value=String(buffer);
 
  // Freeze "from / to / return" at the moment the search starts.
  // Async route checks must never be affected by later UI state changes.
