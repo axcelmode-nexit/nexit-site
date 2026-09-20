@@ -4955,8 +4955,32 @@ const planMapInstances=new Map();
 
 function refreshPlanMapSize(mapId){
   const map=planMapInstances.get(mapId);
-  if(!map)return;
+  const el=document.getElementById(mapId);
+  if(!map||!el)return;
+  // If the results DOM was re-rendered, the old Leaflet instance may still be
+  // registered under the same id while pointing at a detached element.
+  // Never reuse that stale instance for the new card.
+  try{
+    if(map.getContainer && map.getContainer()!==el){
+      map.remove();
+      planMapInstances.delete(mapId);
+      renderedPlanMaps.delete(mapId);
+      return;
+    }
+  }catch(_){
+    planMapInstances.delete(mapId);
+    renderedPlanMaps.delete(mapId);
+    return;
+  }
   [80,260,700].forEach(ms=>setTimeout(()=>{ try{ map.invalidateSize(true); }catch(_){} },ms));
+}
+
+function disposePlanRouteMaps(){
+  for(const [mapId,map] of planMapInstances.entries()){
+    try{ map.remove(); }catch(_){}
+    planMapInstances.delete(mapId);
+    renderedPlanMaps.delete(mapId);
+  }
 }
 
 async function renderPlanRouteMap(mapId,plan,ctx){
@@ -4964,8 +4988,16 @@ async function renderPlanRouteMap(mapId,plan,ctx){
   if(!el)return;
 
   if(planMapInstances.has(mapId)){
-    refreshPlanMapSize(mapId);
-    return;
+    const map=planMapInstances.get(mapId);
+    let sameContainer=false;
+    try{ sameContainer=!!(map?.getContainer && map.getContainer()===el); }catch(_){}
+    if(sameContainer){
+      refreshPlanMapSize(mapId);
+      return;
+    }
+    try{ map?.remove?.(); }catch(_){}
+    planMapInstances.delete(mapId);
+    renderedPlanMaps.delete(mapId);
   }
 
   if(!leafletReady()){
@@ -7481,6 +7513,12 @@ function renderResultQuickAdjust(){
   </div>`;
 }
 
+function planDisplayTitle(p){
+  const base=String(p?.ev?.title||p?.ev?.venue||'候補').trim();
+  const multi=Array.isArray(p?.itinerary)&&p.itinerary.length>1;
+  return multi && !/他$/.test(base) ? `${base} 他` : base;
+}
+
 function planComparisonHtml(plans,start,buffer){
   if(!Array.isArray(plans)||plans.length<2)return '';
   let html=`<div class="plan-compare"><div class="plan-compare-title">3案をざっくり比較</div><div class="plan-compare-sub">合計時間を中心に、移動・滞在・余裕・料金を見比べられます。</div><div class="plan-compare-list">`;
@@ -7491,7 +7529,7 @@ function planComparisonHtml(plans,start,buffer){
     const spare=Math.max(0,Number(p.spare||0)+Number(buffer||0));
     html+=`<div class="plan-compare-card">
       <div class="plan-compare-rank">${i===0?'おすすめ':`候補${i+1}`}</div>
-      <div class="plan-compare-name">${esc(p.ev?.title||p.ev?.venue||'候補')}</div>
+      <div class="plan-compare-name">${esc(planDisplayTitle(p))}</div>
       <div class="plan-compare-mode">${esc(p.modeLabel||'')}</div>
       <div class="plan-compare-total"><span>⏱ 合計所要</span><strong>${elapsed!=null?`約${Math.round(elapsed)}分`:'要確認'}</strong></div>
       <div class="plan-compare-metrics">
@@ -7546,6 +7584,32 @@ function bindPlanPickButtons(plans,ctx){
       if(detail){detail.classList.add('is-open');}
       const detailBtn=card?.querySelector('[data-plan-disclosure="detail"]');
       if(detailBtn){detailBtn.setAttribute('aria-expanded','true');detailBtn.textContent='詳細を閉じる ▲';}
+
+      // 「この案にする」で詳細パネルを自動展開した場合も、
+      // disclosureボタン経由と同じようにLeafletを初期化する。
+      // iPhone Safariでは非表示中に初期化すると白紙になりやすいので、
+      // パネルが開いた後に少し待って描画・再計測する。
+      const mapEl=detail?.querySelector('.plan-map');
+      const plan=plans[idx];
+      if(mapEl && plan){
+        const draw=()=>renderPlanRouteMap(mapEl.id,plan,ctx);
+        setTimeout(draw,120);
+        setTimeout(()=>refreshPlanMapSize(mapEl.id),450);
+        setTimeout(()=>{
+          const m=planMapInstances.get(mapEl.id);
+          let ok=false;
+          try{ ok=!!(m?.getContainer && m.getContainer()===mapEl && mapEl.querySelector('.leaflet-pane')); }catch(_){}
+          if(!ok){
+            try{ m?.remove?.(); }catch(_){}
+            planMapInstances.delete(mapEl.id);
+            renderedPlanMaps.delete(mapEl.id);
+            draw();
+          }else{
+            refreshPlanMapSize(mapEl.id);
+          }
+        },950);
+      }
+
       try{ trackNexitaime('plan_pick',{rank:idx+1}); }catch(_){}
       card?.scrollIntoView({behavior:'smooth',block:'start'});
     });
@@ -7597,6 +7661,7 @@ async function buildPlans(){
    const toggle=adjustPanel.querySelector('#planAdjustToggle');
    if(toggle) toggle.setAttribute('aria-expanded','false');
  }
+ disposePlanRouteMaps();
  box.innerHTML='';
 
  // 「おすすめを見つける」を押したら結果エリアへ移動
@@ -7791,6 +7856,7 @@ async function buildPlans(){
 
  try{ trackNexitaime('search_result',{resultCount:top.length}); }catch(_){}
 
+ disposePlanRouteMaps();
  box.innerHTML=renderResultQuickAdjust()+planComparisonHtml(top,start,buffer)+`<div class="plan-picked-banner">この案に絞って表示中 <button type="button" data-unpick-plan>3案に戻す</button></div>`+top.map((p,idx)=>{
    const rank=idx===0&&transport==='auto'?'<span class="status">おすすめ</span>':'<span class="status">間に合う</span>';
    const recommendationHtml=renderRecommendationBadges(p,idx);
@@ -7837,7 +7903,7 @@ async function buildPlans(){
      ${rank}
      ${recommendationHtml}
      <div class="meta" style="font-weight:900;margin-bottom:6px">${p.modeIcon||''} ${esc(p.modeLabel||'')}</div>
-     <h3>${esc(p.ev.title)}</h3>
+     <h3>${esc(planDisplayTitle(p))}</h3>
      ${eventInfo}
      <div class="meta">📍 ${esc(p.ev.area_name)} · ${esc(p.ev.venue||'')}</div>
 
