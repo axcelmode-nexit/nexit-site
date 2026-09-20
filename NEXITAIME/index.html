@@ -3947,6 +3947,7 @@ async function evaluateDirectMode(ev,dest,mode,start,deadline,ctx){
     },
     back:{n:MODE_LABELS[mode],kind:mode,dep:backDep,arr:finish,[dest]:fmt(backDep),[backTo]:fmt(finish)},
     arrive,finish,spare:deadline-finish,stay,feasible:true,accessMinutes:access,service,
+    directOneWayMinutes:oneWay,directBackMinutes:backWay,
     pickupSetupMinutes:pickupSetup,returnSetupMinutes:returnSetup,
     transportCost,availability,reservation,
     returnSafety:{level:'ok',penalty:0,label:''},
@@ -4286,7 +4287,20 @@ async function evaluateAutoMultimodal(ev,dest,start,deadline,ctx){
   const backTo=ctx.returnTo;
   const rows=[];
 
+  // v94: choose a transfer station that is genuinely close to the venue.
+  // A slightly earlier train must not make us get off at a farther station and then
+  // take a taxi back across town (e.g. 春日山 for a venue next to 高田駅).
+  const venuePoint=exactPointForEvent(ev);
+  const hubDistances=venuePoint ? multimodalHubs().map(name=>{
+    const p=PLACES?.[name];
+    return p ? {name,km:haversine(p.lat,p.lon,venuePoint.lat,venuePoint.lon)*1.2} : null;
+  }).filter(Boolean).sort((a,b)=>a.km-b.km) : [];
+  const nearestHubKm=hubDistances.length ? hubDistances[0].km : null;
+
   for(const hub of multimodalHubs()){
+    const hubKm=hubDistances.find(x=>x.name===hub)?.km ?? null;
+    // Keep nearby alternatives, but reject clearly unnatural transfer hubs.
+    if(nearestHubKm!=null && hubKm!=null && hubKm>nearestHubKm+2.0) continue;
     if(hub===from || hub===dest) continue;
 
     // 1) Public transport from origin to transfer hub
@@ -4344,12 +4358,25 @@ async function evaluateAutoMultimodal(ev,dest,start,deadline,ctx){
           label:`交通費 約¥${Number(totalTransportCost).toLocaleString()}`,
           note:`${MODE_LABELS[first.kind]||'公共交通'}＋${MODE_LABELS[lastMode]}＋${MODE_LABELS[second.kind]||'公共交通'}の概算`
         },
+        hubVenueKm:hubKm,
+        localTravelMinutes:(localOut.directOneWayMinutes||0)+(localOut.directBackMinutes||0),
         reason:`${from}から${hub}まで公共交通、${hub}から${dest}は${MODE_LABELS[lastMode]}を使う複合移動案`
       });
     }
   }
 
-  rows.sort((a,b)=>a.finish-b.finish || (a.transportCost?.amount??999999)-(b.transportCost?.amount??999999));
+  rows.sort((a,b)=>{
+    // Prefer the station nearest the venue, then the shorter actual last-mile travel.
+    // Only after that compare return time and fare.
+    const ak=a.hubVenueKm??999;
+    const bk=b.hubVenueKm??999;
+    if(Math.abs(ak-bk)>0.15)return ak-bk;
+    const at=a.localTravelMinutes??999;
+    const bt=b.localTravelMinutes??999;
+    if(at!==bt)return at-bt;
+    if(a.finish!==b.finish)return a.finish-b.finish;
+    return (a.transportCost?.amount??999999)-(b.transportCost?.amount??999999);
+  });
   return rows[0]||null;
 }
 
