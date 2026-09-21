@@ -2268,17 +2268,17 @@ const CURRENT_MYOKO_MOBILITY=[
   },
   {
     id:'arai_taxi',name:'新井タクシー',category:'taxi',provider:'新井タクシー株式会社',area:'新井',
-    address:'新潟県妙高市国賀1-1-14',phone:'0255-72-3147',hours:'8:00-20:00（時間外は予約対応の場合あり）',
+    address:'新潟県妙高市国賀1-1-14',lat:37.0418612,lon:138.26143313,location_source:'verified_map_reference',phone:'0255-72-3147',hours:'8:00-20:00（時間外は予約対応の場合あり）',
     url:'https://www.arai-taxi.com/',verified_at:'2026-09-21',source_status:'official_verified'
   },
   {
     id:'imtaxi_arai',name:'アイエムタクシー 新井営業所',category:'taxi',provider:'アイエムタクシー株式会社',area:'新井',
-    address:'新潟県妙高市工団町2-32',phone:'0255-72-2038',hours:'配車・運行状況は電話で確認',
+    address:'新潟県妙高市工団町2-32',lat:37.03115147,lon:138.25756488,location_source:'verified_map_reference',phone:'0255-72-2038',hours:'配車・運行状況は電話で確認',
     url:'https://www.imtaxi.com/',verified_at:'2026-09-21',source_status:'official_verified'
   },
   {
     id:'bike_soboku',name:'HELLO CYCLING HOTEL SOBOKU',category:'bike',provider:'HELLO CYCLING',area:'新井',
-    address:'新潟県妙高市長森1555-1',hours:'8:00-20:00',stock:'電動アシスト 4台（設置台数・空きはアプリで確認）',price:'30分200円 / 以後15分ごと200円 / 12時間最大2,500円',
+    address:'新潟県妙高市長森1555-1',lat:37.0240977,lon:138.2280442,location_source:'verified_map_reference',hours:'8:00-20:00',stock:'電動アシスト 4台（設置台数・空きはアプリで確認）',price:'30分200円 / 以後15分ごと200円 / 12時間最大2,500円',
     seasonal_start:'2026-04-10',seasonal_end:'2026-11-30',url:'https://myokotourism.jp/news/%E9%9B%BB%E5%8B%95%E3%82%A2%E3%82%B7%E3%82%B9%E3%83%88%E8%87%AA%E8%BB%A2%E8%BB%8A%E3%81%AE%E3%82%B7%E3%82%A7%E3%82%A2%E3%82%B5%E3%82%A4%E3%82%AF%E3%83%AB%E3%82%B5%E3%83%BC%E3%83%93%E3%82%B9%E9%96%8B/',
     verified_at:'2026-09-21',source_status:'official_verified'
   }
@@ -3350,12 +3350,17 @@ function isLikelyOpen(s, now=new Date()){
 
 const MOBILITY_NEAR_KM=1.5;
 const MOBILITY_EXTENDED_KM=2.0;
-// v123: 新井駅を基準にしたときは、新井エリアの公式移動サービスを少し広めに案内する。
+// v124: 新井駅周辺は、地図スクロール時も新井エリアの公式移動サービスを広めに案内する。
 // HOTEL SOBOKUのシェアサイクルは駅前ではないため、距離表示を残したまま最大5kmまで候補表示する。
+const ARAI_STATION_POINT={lat:37.0267414,lon:138.2556236};
 function mobilityDisplayMaxKm(service){
   const base=String(origin||'').replace(/駅$/,'');
   const area=String(service?.area||'').replace(/駅$/,'');
-  if(!mobilityMapBrowsePoint && base==='新井' && area==='新井'){
+  const browsingArai=!!(mobilityMapBrowsePoint && haversine(
+    mobilityMapBrowsePoint.lat,mobilityMapBrowsePoint.lon,
+    ARAI_STATION_POINT.lat,ARAI_STATION_POINT.lon
+  )<=3.0);
+  if(area==='新井' && ((!mobilityMapBrowsePoint && base==='新井') || browsingArai)){
     return service?.category==='bike' ? 5.0 : 3.0;
   }
   return MOBILITY_EXTENDED_KM;
