@@ -2265,6 +2265,22 @@ const CURRENT_MYOKO_MOBILITY=[
     address:'新潟県妙高市赤倉585-1',hours:'8:00-20:00',stock:'電動アシスト 3台（設置台数・空きはアプリで確認）',price:'30分200円 / 以後15分ごと200円 / 12時間最大2,500円',
     seasonal_start:'2026-04-10',seasonal_end:'2026-11-30',url:'https://myokotourism.jp/news/%E9%9B%BB%E5%8B%95%E3%82%A2%E3%82%B7%E3%82%B9%E3%83%88%E8%87%AA%E8%BB%A2%E8%BB%8A%E3%81%AE%E3%82%B7%E3%82%A7%E3%82%A2%E3%82%B5%E3%82%A4%E3%82%AF%E3%83%AB%E3%82%B5%E3%83%BC%E3%83%93%E3%82%B9%E9%96%8B/',
     verified_at:'2026-09-21',source_status:'official_verified'
+  },
+  {
+    id:'arai_taxi',name:'新井タクシー',category:'taxi',provider:'新井タクシー株式会社',area:'新井',
+    address:'新潟県妙高市国賀1-1-14',phone:'0255-72-3147',hours:'8:00-20:00（時間外は予約対応の場合あり）',
+    url:'https://www.arai-taxi.com/',verified_at:'2026-09-21',source_status:'official_verified'
+  },
+  {
+    id:'imtaxi_arai',name:'アイエムタクシー 新井営業所',category:'taxi',provider:'アイエムタクシー株式会社',area:'新井',
+    address:'新潟県妙高市工団町2-32',phone:'0255-72-2038',hours:'配車・運行状況は電話で確認',
+    url:'https://www.imtaxi.com/',verified_at:'2026-09-21',source_status:'official_verified'
+  },
+  {
+    id:'bike_soboku',name:'HELLO CYCLING HOTEL SOBOKU',category:'bike',provider:'HELLO CYCLING',area:'新井',
+    address:'新潟県妙高市長森1555-1',hours:'8:00-20:00',stock:'電動アシスト 4台（設置台数・空きはアプリで確認）',price:'30分200円 / 以後15分ごと200円 / 12時間最大2,500円',
+    seasonal_start:'2026-04-10',seasonal_end:'2026-11-30',url:'https://myokotourism.jp/news/%E9%9B%BB%E5%8B%95%E3%82%A2%E3%82%B7%E3%82%B9%E3%83%88%E8%87%AA%E8%BB%A2%E8%BB%8A%E3%81%AE%E3%82%B7%E3%82%A7%E3%82%A2%E3%82%B5%E3%82%A4%E3%82%AF%E3%83%AB%E3%82%B5%E3%83%BC%E3%83%93%E3%82%B9%E9%96%8B/',
+    verified_at:'2026-09-21',source_status:'official_verified'
   }
 ];
 async function enrichCurrentMobilityCoordinates(rows=[]){
@@ -3334,6 +3350,16 @@ function isLikelyOpen(s, now=new Date()){
 
 const MOBILITY_NEAR_KM=1.5;
 const MOBILITY_EXTENDED_KM=2.0;
+// v123: 新井駅を基準にしたときは、新井エリアの公式移動サービスを少し広めに案内する。
+// HOTEL SOBOKUのシェアサイクルは駅前ではないため、距離表示を残したまま最大5kmまで候補表示する。
+function mobilityDisplayMaxKm(service){
+  const base=String(origin||'').replace(/駅$/,'');
+  const area=String(service?.area||'').replace(/駅$/,'');
+  if(!mobilityMapBrowsePoint && base==='新井' && area==='新井'){
+    return service?.category==='bike' ? 5.0 : 3.0;
+  }
+  return MOBILITY_EXTENDED_KM;
+}
 
 function mobilityDistanceLabel(km){
   if(km<=0.5) return 'かなり近い';
@@ -3393,7 +3419,7 @@ async function renderMobility({preserveMapViewport=false,fromMap=false}={}){
   let rows=MOBILITY
     .filter(x=>cats.includes(x.category))
     .map(s=>({...s,distanceKm:mobilityDistanceKm(s)}))
-    .filter(s=>Number.isFinite(s.distanceKm) && s.distanceKm<=MOBILITY_EXTENDED_KM)
+    .filter(s=>Number.isFinite(s.distanceKm) && s.distanceKm<=mobilityDisplayMaxKm(s))
     .sort((a,b)=>a.distanceKm-b.distanceKm);
 
   if(!rows.length){
@@ -3404,7 +3430,7 @@ async function renderMobility({preserveMapViewport=false,fromMap=false}={}){
   }
 
   const nearRows=rows.filter(s=>s.distanceKm<=MOBILITY_NEAR_KM);
-  const extendedRows=rows.filter(s=>s.distanceKm>MOBILITY_NEAR_KM && s.distanceKm<=MOBILITY_EXTENDED_KM);
+  const extendedRows=rows.filter(s=>s.distanceKm>MOBILITY_NEAR_KM && s.distanceKm<=mobilityDisplayMaxKm(s));
 
   nearestService=nearRows.length ? await getNearestService(nearRows) : null;
   renderMapRows(rows,{preserveViewport:preserveMapViewport});
@@ -3465,7 +3491,7 @@ async function renderMobility({preserveMapViewport=false,fromMap=false}={}){
     }
     if(extendedRows.length){
       out+=`<div class="mobility-section-title" style="margin-top:12px">少し離れた移動サービス</div>
-        <div class="note" style="margin-bottom:8px">基準地点から1.5〜2km。近場とは分けて表示しています。</div>
+        <div class="note" style="margin-bottom:8px">基準地点から少し離れた移動サービスです。距離を確認して利用してください。</div>
         ${extendedRows.slice(0,4).map(s=>renderCard(s)).join('')}`;
     }
   }
@@ -3496,7 +3522,8 @@ const TAXI_HUBS={
   '犀潟':{level:'C',outboundWait:15,label:'待機未確認・配車前提'},
   '土底浜':{level:'C',outboundWait:15,label:'待機未確認・配車前提'},
   '潟町':{level:'C',outboundWait:15,label:'待機未確認・配車前提'},
-  '妙高高原':{level:'B',outboundWait:5,label:'駅近くに営業所・配車確認'}
+  '妙高高原':{level:'B',outboundWait:5,label:'駅近くに営業所・配車確認'},
+  '新井':{level:'B',outboundWait:5,label:'タクシー会社2社・配車確認'}
 };
 function taxiHubMeta(name){
   return TAXI_HUBS[name]||{level:'C',outboundWait:12,label:'配車待ちを想定'};
