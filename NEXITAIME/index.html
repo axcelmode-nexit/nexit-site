@@ -1986,13 +1986,15 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
   <div class="group-subtitle" style="margin-top:12px">食べたいもの</div>
   <div class="chips wrap" id="foodKinds">
     <button class="chip active" data-food-kind="ラーメン">🍜 ラーメン</button>
-    <button class="chip" data-food-kind="定食">🍚 定食・食堂</button>
+    <button class="chip" data-food-kind="定食">🍚 定食</button>
     <button class="chip" data-food-kind="海鮮">🐟 海鮮</button>
     <button class="chip" data-food-kind="寿司">🍣 寿司</button>
     <button class="chip" data-food-kind="そば">🥢 そば・うどん</button>
     <button class="chip" data-food-kind="中華">🥟 中華</button>
     <button class="chip" data-food-kind="洋食">🍝 洋食</button>
+    <button class="chip" data-food-kind="焼肉">🥩 焼肉</button>
     <button class="chip" data-food-kind="カフェ">☕ カフェ・スイーツ</button>
+    <button class="chip" data-food-kind="居酒屋">🍺 居酒屋</button>
   </div>
 </div>
 
@@ -4119,7 +4121,7 @@ async function evaluateDirectMode(ev,dest,mode,start,deadline,ctx){
   }
 
   const cats=ev?.categories||[];
-  const foodPlace=ev?.provider==='hotpepper' || cats.some(c=>['食','ごはん','グルメ','飲食','ラーメン','定食','海鮮','寿司','そば','うどん','カフェ','中華','洋食'].some(k=>String(c).includes(k)));
+  const foodPlace=ev?.provider==='hotpepper' || cats.some(c=>['食','ごはん','グルメ','飲食','ラーメン','定食','海鮮','寿司','そば','うどん','カフェ','中華','洋食','焼肉','居酒屋'].some(k=>String(c).includes(k)));
   const directRoute=foodPlace ? routeMinutesCoordsFast : routeMinutesCoords;
 
   // For station-based mobility, calculate the actual riding/driving leg from
@@ -4888,7 +4890,7 @@ const MOOD_CATEGORY_MAP={
 
 
 const CATEGORY_ALIASES={
-  food:['食','食べる','ごはん','グルメ','飲食','ランチ','ディナー','ラーメン','定食','食堂','海鮮','寿司','そば','うどん','中華','洋食'],
+  food:['食','食べる','ごはん','グルメ','飲食','ランチ','ディナー','ラーメン','定食','食堂','海鮮','寿司','そば','うどん','中華','洋食','焼肉','ホルモン','居酒屋','酒場'],
   cafe:['カフェ','喫茶','コーヒー','珈琲','スイーツ','ジェラート','甘味'],
   onsen:['温泉','サウナ','日帰り風呂','風呂','入浴','温浴'],
   sightseeing:['観光','歴史','文化','史跡','城','神社','寺','町家','雁木','博物館','美術館','展示','資料館','科学館','水族館'],
@@ -4943,7 +4945,7 @@ function canonicalCategory(ev){
 
   // Fallback only when structured tags are missing.
   const text=[ev?.title,ev?.venue,ev?.summary].filter(Boolean).join(' ');
-  if(/ラーメン|定食|海鮮|寿司|そば|うどん|中華|洋食|食堂|ごはん|グルメ/.test(text)) return 'food';
+  if(/ラーメン|定食|海鮮|寿司|そば|うどん|中華|洋食|焼肉|ホルモン|居酒屋|酒場|食堂|ごはん|グルメ/.test(text)) return 'food';
   if(/カフェ|喫茶|コーヒー|珈琲|スイーツ|ジェラート|甘味/.test(text)) return 'cafe';
   if(/温泉|サウナ|風呂|入浴|温浴/.test(text)) return 'onsen';
   if(/博物館|美術館|展示|資料館|科学館|水族館|史跡|城跡|神社|寺|町家|雁木/.test(text)) return 'sightseeing';
@@ -4989,7 +4991,9 @@ function foodKindMatches(ev){
     '寿司':['寿司'],
     'そば':['そば','うどん'],
     '中華':['中華'],
-    '洋食':['洋食']
+    '洋食':['洋食'],
+    '焼肉':['焼肉','ホルモン'],
+    '居酒屋':['居酒屋','酒場','炉端','焼鳥','やきとり']
   }[foodKind]||[foodKind];
 
   if(aliases.some(a=>cats.has(a)))return true;
@@ -7980,7 +7984,7 @@ async function fetchHotPepperRestaurants(){
 
   const kinds=(mood==='food' && foodKind!=='any')
     ? [foodKind]
-    : ['ラーメン','定食','海鮮','寿司','そば','中華','洋食','カフェ'];
+    : ['ラーメン','定食','海鮮','寿司','そば','中華','洋食','焼肉','カフェ','居酒屋'];
 
   const fetchOne=async(kind)=>{
     try{
