@@ -2769,7 +2769,17 @@ async function locateMe(){
       txt.textContent='現在地取得済み';
     }
     await updateWeatherFor(currentPos.lat,currentPos.lon,near?.name||'現在地');
-    renderMobility();
+    // v120: when GPS/current location is refreshed, keep the mobility directory and map
+    // anchored to that newly acquired position as well. This avoids leaving the map on an
+    // area the user previously browsed while the service list has already switched to the
+    // new current-location context.
+    mobilityMapBrowsePoint=null;
+    await renderMobility();
+    initMobilityMap();
+    if(mobilityMap){
+      mobilityMap.setView([currentPos.lat,currentPos.lon],Math.max(14,mobilityMap.getZoom()||14),{animate:true});
+      requestAnimationFrame(()=>mobilityMap.invalidateSize({pan:false}));
+    }
   },()=>{
     txt.textContent='位置情報を許可してください';
     wbox.textContent='GPSを使わない場合は、下から今いる場所を選べます。';
