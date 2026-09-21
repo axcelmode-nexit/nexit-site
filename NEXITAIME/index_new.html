@@ -1387,6 +1387,13 @@ footer a{color:inherit;font-weight:900}
 window.NEXITAIME_ANALYTICS_ENDPOINT =
   "https://axcelmode-nexit-ai.pages.dev/api/nexitaime-analytics";
 </script>
+<script id="nexitaime-catalog-config">
+// v125 cutover: unified auto-refresh catalog first, legacy JSON as per-type fallback.
+window.NEXITAIME_CATALOG_ENDPOINT =
+  "https://nexitaime-data-sync.axcel-mode-nexit.workers.dev/api/catalog";
+window.NEXITAIME_CATALOG_PREFERRED = true;
+window.NEXITAIME_CATALOG_TIMEOUT_MS = 3500;
+</script>
 
 
 <style id="analytics-privacy-style">
@@ -2145,11 +2152,11 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
 <a href="https://www.joetsubusloca.jp/" rel="noopener" target="_blank">🚌 上越バスロケ</a>
 <a href="https://www.city.joetsu.niigata.jp/soshiki/kotsu/bus-jikoku.html" rel="noopener" target="_blank">🗓 上越市 総合時刻表</a>
 </div>
-<div class="note">鉄道は妙高はねうまライン公開時刻表を利用。バスは上越大通り線・佐渡汽船連絡バス・教育大学線・春日山／佐内線・山麓線の主要区間をアプリ内判定します。運休・遅延・臨時変更は上の公式運行情報を優先してください。イベントは events_auto.json があれば自動更新データを優先します。受付締切・予約条件・帰路成立性も候補判定に反映します。</div>
+<div class="note">鉄道は妙高はねうまライン公開時刻表を利用。バスは上越大通り線・佐渡汽船連絡バス・教育大学線・春日山／佐内線・山麓線の主要区間をアプリ内判定します。運休・遅延・臨時変更は上の公式運行情報を優先してください。イベント・飲食店・観光・移動サービスは自動更新カタログを優先し、取得できない場合だけ既存データへ自動で切り替えます。受付締切・予約条件・帰路成立性も候補判定に反映します。</div>
 </section>
 
 <div class="hotpepper-credit">Powered by <a href="https://webservice.recruit.co.jp/" target="_blank" rel="noopener">ホットペッパーグルメ Webサービス</a></div>
-<footer data-build="v82">NEXITAIME 〜上越版〜 · Powered by 
+<footer data-build="v125-cutover">NEXITAIME 〜上越版〜 · Powered by 
 <a href="https://axcelmode-nexit.jp/" target="_blank" rel="noopener">AXCEL MODE NEXIT</a> · Beta1.0
 <section class="operator-card" aria-label="運営会社">
   <div class="operator-card-inner">
@@ -2316,18 +2323,232 @@ async function enrichCurrentMobilityCoordinates(rows=[]){
 
 let EVENTS=[], RESTAURANTS=[], TRAIN={up:[],down:[]}, SHINANO={up:[],down:[]}, BUS={trips:[]}, BUS_MAIN={weekday:{},holiday:{}}, BUS_EXT={routes:[]}, PLACES={}, MOBILITY=[], origin='上越妙高', destinationArea='any', returnTarget='same', timingMode='now', planningDate=new Date(), mood='any', foodKind='ラーメン', onsenKind='温泉', sightseeingKind='歴史・文化', activeKind='散歩・ウォーキング', eventKind='お祭り・催し', transport='auto', budget='any', companion='any', currentPos=null, weather=null, weatherForecast=null, mobilityMap=null, mobilityMarkers=[], currentPosMarker=null, nearestService=null;
 
+function legacyFetch(url, fallback){
+  return fetch(url,{cache:'no-store'})
+    .then(r=>r.ok?r.json():Promise.reject(new Error(`HTTP ${r.status}`)))
+    .catch(()=>fallback);
+}
+
+function legacyEventsFetch(){
+  return fetch('./events_auto.json',{cache:'no-store'})
+    .then(r=>r.ok?r.json():Promise.reject())
+    .catch(()=>legacyFetch('./events.json',[]));
+}
+
+function catalogDateParts(value){
+  if(!value)return {date:null,time:null};
+  const d=new Date(value);
+  if(Number.isNaN(d.getTime())){
+    const raw=String(value);
+    const m=raw.match(/^(\d{4}-\d{2}-\d{2})(?:[T\s](\d{2}:\d{2}))?/);
+    return {date:m?.[1]||null,time:m?.[2]||null};
+  }
+  const fmt=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Tokyo',year:'numeric',month:'2-digit',day:'2-digit'});
+  const tFmt=new Intl.DateTimeFormat('ja-JP',{timeZone:'Asia/Tokyo',hour:'2-digit',minute:'2-digit',hour12:false});
+  return {date:fmt.format(d),time:tFmt.format(d)};
+}
+
+function catalogAreaCode(value){
+  const v=String(value||'').trim();
+  if(!v)return null;
+  const low=v.toLowerCase();
+  if(/myoko|妙高|赤倉|池の平|杉野沢|燕温泉|関温泉/.test(low))return 'myoko_kogen';
+  if(/上越妙高|joetsu.?myoko/.test(low))return 'joetsumyoko';
+  if(/高田|takada/.test(low))return 'takada';
+  if(/直江津|naoetsu/.test(low))return 'naoetsu';
+  if(/春日山|kasugayama/.test(low))return 'kasugayama';
+  if(/名立|nadachi/.test(low))return 'nadachi';
+  if(/大潟|ogata|柿崎|kakizaki/.test(low))return 'ogata';
+  if(/安塚|yasuzuka/.test(low))return 'yasuzuka';
+  if(/浦川原|uragawara/.test(low))return 'uragawara';
+  if(/大島|oshima/.test(low))return 'oshima';
+  if(/牧|maki/.test(low))return 'maki';
+  if(/板倉|itakura/.test(low))return 'itakura';
+  if(/清里|kiyosato/.test(low))return 'kiyosato';
+  if(/頸城|kubiki/.test(low))return 'kubiki';
+  if(/吉川|yoshikawa/.test(low))return 'yoshikawa';
+  if(/三和|sanwa/.test(low))return 'sanwa';
+  return v;
+}
+
+function catalogPriceYen(price){
+  if(price==null)return null;
+  if(typeof price==='number' && Number.isFinite(price))return price;
+  if(typeof price==='string'){
+    const nums=[...price.matchAll(/([0-9][0-9,]*)\s*円/g)].map(m=>Number(m[1].replaceAll(',',''))).filter(Number.isFinite);
+    return nums.length?Math.min(...nums):null;
+  }
+  if(typeof price==='object'){
+    for(const key of ['yen','amount','value','min','minimum','adult']){
+      const n=Number(price?.[key]);
+      if(Number.isFinite(n))return n;
+    }
+    for(const val of Object.values(price)){
+      const n=catalogPriceYen(val);
+      if(n!=null)return n;
+    }
+  }
+  return null;
+}
+
+function catalogCategories(row){
+  const raw=[row?.category,row?.data?.category].filter(Boolean).flatMap(v=>String(v).split(/[、,／/|]/)).map(v=>v.trim()).filter(Boolean);
+  const base=row?.entity_type==='restaurant'?['食']:
+    row?.entity_type==='event'?['イベント']:
+    row?.entity_type==='place'?['観光']:[];
+  return [...new Set([...base,...raw])];
+}
+
+function catalogRowToCandidate(row){
+  const start=catalogDateParts(row?.start_at);
+  const finish=catalogDateParts(row?.end_at);
+  const type=row?.entity_type;
+  const title=String(row?.name||'').trim();
+  const summary=row?.data?.description||'';
+  const url=row?.official_url||row?.source_url||'';
+  const out={
+    id:`catalog-${row?.id||title}`,
+    title,
+    venue:title,
+    area:catalogAreaCode(row?.area),
+    area_name:row?.area||'',
+    categories:catalogCategories(row),
+    summary,
+    address:row?.address||null,
+    lat:Number.isFinite(Number(row?.lat))?Number(row.lat):null,
+    lon:Number.isFinite(Number(row?.lon))?Number(row.lon):null,
+    phone:row?.phone||null,
+    url,
+    opening_hours:row?.opening_hours||null,
+    estimated_cost_yen:catalogPriceYen(row?.price),
+    verified_at:row?.verified_at||null,
+    source:'catalog_api',
+    source_name:'NEXITAIME自動更新カタログ',
+    catalog_id:row?.id||null,
+    catalog_confidence:row?.confidence??null,
+    catalog_status:row?.status||'active',
+    routing_ready:Number.isFinite(Number(row?.lat))&&Number.isFinite(Number(row?.lon)),
+    stay_minutes:{min:30,recommended:type==='restaurant'?60:type==='event'?60:45,max:type==='restaurant'?90:120}
+  };
+  if(type==='event'){
+    out.start_date=start.date;
+    out.end_date=finish.date||start.date;
+    if(start.time)out.start_time=start.time;
+    if(finish.time)out.end_time=finish.time;
+  }
+  if(type==='restaurant'){
+    out.primary_category='food';
+    out.indoor=true;
+  }
+  return out;
+}
+
+function catalogRowToMobility(row){
+  return {
+    id:`catalog-${row?.id||row?.name||''}`,
+    name:row?.name||'',
+    category:row?.category||row?.data?.category||'other',
+    provider:row?.data?.provider||'',
+    area:row?.area||'',
+    address:row?.address||'',
+    lat:Number.isFinite(Number(row?.lat))?Number(row.lat):null,
+    lon:Number.isFinite(Number(row?.lon))?Number(row.lon):null,
+    phone:row?.phone||null,
+    url:row?.official_url||row?.source_url||'',
+    opening_hours:row?.opening_hours||null,
+    price:row?.price||null,
+    verified_at:row?.verified_at||null,
+    source_status:'catalog_active',
+    catalog_id:row?.id||null
+  };
+}
+
+function mergeCatalogCandidates(staticRows=[], catalogRows=[]){
+  const rows=Array.isArray(staticRows)?staticRows.map(x=>({...x})):[];
+  const byName=new Map();
+  const byUrl=new Map();
+  rows.forEach((row,idx)=>{
+    const name=normalizeShopName(row?.venue||row?.title||row?.name);
+    if(name && !byName.has(name))byName.set(name,idx);
+    const u=String(row?.url||'').trim();
+    if(u && !byUrl.has(u))byUrl.set(u,idx);
+  });
+
+  for(const apiRow of catalogRows||[]){
+    const candidate=apiRow?.entity_type==='mobility'?catalogRowToMobility(apiRow):catalogRowToCandidate(apiRow);
+    const name=normalizeShopName(candidate?.venue||candidate?.title||candidate?.name);
+    const u=String(candidate?.url||'').trim();
+    const idx=(u&&byUrl.has(u))?byUrl.get(u):(name&&byName.has(name)?byName.get(name):-1);
+    if(idx>=0){
+      const prior=rows[idx];
+      const preservedCategories=prior?.categories||[];
+      const merged={...prior,...candidate};
+      if(preservedCategories.length || candidate.categories?.length){
+        merged.categories=[...new Set([...(preservedCategories||[]),...(candidate.categories||[])])];
+      }
+      // Keep the richer hand-audited fields when the catalog does not provide them.
+      for(const field of ['stay_minutes','family_friendly','couple_friendly','solo_friendly','indoor','always_open','daylight_only','seasonal','closed_weekdays','seasonal_hours','hours_note','schedule_required','schedule_note']){
+        if(candidate[field]==null && prior[field]!=null)merged[field]=prior[field];
+      }
+      rows[idx]=merged;
+    }else{
+      rows.push(candidate);
+      const newIdx=rows.length-1;
+      if(name)byName.set(name,newIdx);
+      if(u)byUrl.set(u,newIdx);
+    }
+  }
+  return rows;
+}
+
+async function fetchCatalogType(type){
+  if(window.NEXITAIME_CATALOG_PREFERRED===false)return {ok:false,items:[]};
+  const endpoint=String(window.NEXITAIME_CATALOG_ENDPOINT||'').trim();
+  if(!endpoint)return {ok:false,items:[]};
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),Number(window.NEXITAIME_CATALOG_TIMEOUT_MS||3500));
+  try{
+    const url=new URL(endpoint);
+    url.searchParams.set('type',type);
+    url.searchParams.set('status','active');
+    url.searchParams.set('limit','500');
+    const r=await fetch(url.toString(),{cache:'no-store',signal:controller.signal,headers:{Accept:'application/json'}});
+    if(!r.ok)throw new Error(`catalog ${type}: HTTP ${r.status}`);
+    const data=await r.json();
+    if(!data?.ok || !Array.isArray(data?.items))throw new Error(`catalog ${type}: invalid response`);
+    return {ok:true,items:data.items};
+  }catch(err){
+    console.warn('[NEXITAIME] catalog fallback',type,err?.message||err);
+    return {ok:false,items:[]};
+  }finally{
+    clearTimeout(timer);
+  }
+}
+
 Promise.all([
- fetch('./events_auto.json',{cache:'no-store'}).then(r=>r.ok?r.json():Promise.reject()).catch(()=>fetch('./events.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>[])),
- fetch('./restaurants.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>[]),
- fetch('./spots.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>[]),
- fetch('./train_timetable.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>({up:[],down:[]})),
- fetch('./north_shinano_timetable.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>({up:[],down:[]})),
- fetch('./bus_timetable.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>({trips:[]})),
- fetch('./bus_mainline.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>({weekday:{},holiday:{}})),
- fetch('./bus_extended.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>({routes:[]})),
- fetch('./places.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>({})),
- fetch('./mobility_services.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>[])
- ]).then(async ([e,r,s,t,shinanoData,b,bm,bx,p,m])=>{
+ legacyEventsFetch(),
+ legacyFetch('./restaurants.json',[]),
+ legacyFetch('./spots.json',[]),
+ legacyFetch('./train_timetable.json',{up:[],down:[]}),
+ legacyFetch('./north_shinano_timetable.json',{up:[],down:[]}),
+ legacyFetch('./bus_timetable.json',{trips:[]}),
+ legacyFetch('./bus_mainline.json',{weekday:{},holiday:{}}),
+ legacyFetch('./bus_extended.json',{routes:[]}),
+ legacyFetch('./places.json',{}),
+ legacyFetch('./mobility_services.json',[]),
+ fetchCatalogType('event'),
+ fetchCatalogType('restaurant'),
+ fetchCatalogType('place'),
+ fetchCatalogType('mobility')
+ ]).then(async ([legacyE,legacyR,legacyS,t,shinanoData,b,bm,bx,p,legacyM,catE,catR,catS,catM])=>{
+  const e=catE.ok?mergeCatalogCandidates(legacyE,catE.items):legacyE;
+  const r=catR.ok?mergeCatalogCandidates(legacyR,catR.items):legacyR;
+  const s=catS.ok?mergeCatalogCandidates(legacyS,catS.items):legacyS;
+  const m=catM.ok?mergeCatalogCandidates(legacyM,catM.items):legacyM;
+  window.NEXITAIME_CATALOG_STATE={
+    event:catE.ok,restaurant:catR.ok,place:catS.ok,mobility:catM.ok,
+    fetched_at:new Date().toISOString()
+  };
   RESTAURANTS=Array.isArray(r)?r:[];
   const SPOTS=Array.isArray(s)?s:[];
   const seenSpotNames=new Set(SPOTS.map(x=>String(x?.title||x?.venue||'').trim()).filter(Boolean));
@@ -8429,7 +8650,7 @@ async function buildPlans(){
 
  // 3) Explicit mood selections are strict.
  // Never relax 温泉/観光/イベント/体験など into an unrelated category just to fill results.
- // If exact candidates are unavailable, only same-mood flexible activities may be used.
+ // If exact catalog candidates are unavailable, only same-mood flexible activities may be used.
  if(!scored.length){
    let flex=FLEX_ACTIVITIES.filter(budgetAllows).filter(companionAllows);
    if(searchCtx.destination!=='any') flex=flex.filter(destinationMatchesEvent);
