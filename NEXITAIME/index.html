@@ -2232,6 +2232,41 @@ const CURRENT_TIMES_CAR_STATIONS=[
   {id:'times_leparc_naoetsu_1',name:'ル・パルク直江津第１駐車場',category:'carshare',provider:'Times CAR',area:'直江津',address:'新潟県上越市西本町4-3-3',lat:37.1727693,lon:138.2410939,location_source:'verified_address_map_reference',hours:'空車は公式で確認',url:'https://share.timescar.jp/',verified_at:'2026-09-20',source_status:'current_station_verified'},
   {id:'times_naoetsu_1',name:'直江津駅第１',category:'carshare',provider:'Times CAR',area:'直江津',address:'新潟県上越市東町3',lat:37.1709,lon:138.2428,location_source:'address_map_reference',hours:'空車は公式で確認',url:'https://share.timescar.jp/view/station/detail.jsp?scd=OV67',verified_at:'2026-09-20',source_status:'official_station_verified'}
 ];
+
+// v121: Officially confirmed mobility services around Myoko Kogen / Akakura.
+// These rows make the mobility directory useful when the user selects Myoko Kogen,
+// refreshes GPS there, or pans the map into the Myoko highland area.
+const CURRENT_MYOKO_MOBILITY=[
+  {
+    id:'myoko_kogen_taxi',name:'高原タクシー',category:'taxi',provider:'高原タクシー株式会社',area:'妙高高原',
+    address:'新潟県妙高市大字田口321-2',phone:'0255-86-3141',hours:'配車・運行状況は電話で確認',
+    url:'https://myokokogentaxi.com/',verified_at:'2026-09-21',source_status:'official_verified'
+  },
+  {
+    id:'myoko_niconico_rental',name:'ニコニコレンタカー妙高高原店',category:'rentalcar',provider:'ニコニコレンタカー',area:'妙高高原',
+    address:'新潟県妙高市田口1174',phone:'0255-86-2255',hours:'営業時間・空車は公式で確認',
+    url:'https://myokotourism.jp/access/',verified_at:'2026-09-21',source_status:'official_tourism_verified'
+  },
+  {
+    id:'bike_myoko_kogen_info',name:'HELLO CYCLING 妙高高原観光案内所',category:'bike',provider:'HELLO CYCLING',area:'妙高高原',
+    address:'新潟県妙高市大字田口309-1',lat:36.873233622497146,lon:138.21198973501362,
+    hours:'8:00-20:00',stock:'電動アシスト 5台（設置台数・空きはアプリで確認）',price:'30分200円 / 以後15分ごと200円 / 12時間最大2,500円',
+    seasonal_start:'2026-04-10',seasonal_end:'2026-11-30',url:'https://myokotourism.jp/news/%E9%9B%BB%E5%8B%95%E3%82%A2%E3%82%B7%E3%82%B9%E3%83%88%E8%87%AA%E8%BB%A2%E8%BB%8A%E3%81%AE%E3%82%B7%E3%82%A7%E3%82%A2%E3%82%B5%E3%82%A4%E3%82%AF%E3%83%AB%E3%82%B5%E3%83%BC%E3%83%93%E3%82%B9%E9%96%8B/',
+    verified_at:'2026-09-21',source_status:'official_verified'
+  },
+  {
+    id:'bike_myoko_skycable',name:'HELLO CYCLING 妙高高原スカイケーブル乗り場',category:'bike',provider:'HELLO CYCLING',area:'新赤倉',
+    address:'新潟県妙高市田切216',hours:'8:00-20:00',stock:'電動アシスト 2台（設置台数・空きはアプリで確認）',price:'30分200円 / 以後15分ごと200円 / 12時間最大2,500円',
+    seasonal_start:'2026-04-10',seasonal_end:'2026-11-30',url:'https://myokotourism.jp/news/%E9%9B%BB%E5%8B%95%E3%82%A2%E3%82%B7%E3%82%B9%E3%83%88%E8%87%AA%E8%BB%A2%E8%BB%8A%E3%81%AE%E3%82%B7%E3%82%A7%E3%82%A2%E3%82%B5%E3%82%A4%E3%82%AF%E3%83%AB%E3%82%B5%E3%83%BC%E3%83%93%E3%82%B9%E9%96%8B/',
+    verified_at:'2026-09-21',source_status:'official_verified'
+  },
+  {
+    id:'bike_akakura_info',name:'HELLO CYCLING 赤倉インフォメーションセンター',category:'bike',provider:'HELLO CYCLING',area:'赤倉',
+    address:'新潟県妙高市赤倉585-1',hours:'8:00-20:00',stock:'電動アシスト 3台（設置台数・空きはアプリで確認）',price:'30分200円 / 以後15分ごと200円 / 12時間最大2,500円',
+    seasonal_start:'2026-04-10',seasonal_end:'2026-11-30',url:'https://myokotourism.jp/news/%E9%9B%BB%E5%8B%95%E3%82%A2%E3%82%B7%E3%82%B9%E3%83%88%E8%87%AA%E8%BB%A2%E8%BB%8A%E3%81%AE%E3%82%B7%E3%82%A7%E3%82%A2%E3%82%B5%E3%82%A4%E3%82%AF%E3%83%AB%E3%82%B5%E3%83%BC%E3%83%93%E3%82%B9%E9%96%8B/',
+    verified_at:'2026-09-21',source_status:'official_verified'
+  }
+];
 async function enrichCurrentMobilityCoordinates(rows=[]){
   for(const s of rows){
     const lat=Number(s?.lat),lon=Number(s?.lon);
@@ -2292,7 +2327,8 @@ Promise.all([
       return row;
     });
   const currentCarshare=await enrichCurrentMobilityCoordinates(CURRENT_TIMES_CAR_STATIONS.map(x=>({...x})));
-  MOBILITY=[...baseMobility,...currentCarshare];
+  const currentMyokoMobility=CURRENT_MYOKO_MOBILITY.map(x=>({...x}));
+  MOBILITY=[...baseMobility,...currentCarshare,...currentMyokoMobility];
   await enrichMobilityServiceCoordinates(MOBILITY);
   renderMobility(); setTimeout(()=>{initMobilityMap();renderMobility();},250);
   try{const audit=coordinateAuditReport(); if(audit.duplicateUrls.length||audit.exactDuplicates.length) console.warn('[NEXITAIME coordinate audit]',audit);}catch(_){}});
@@ -2313,11 +2349,20 @@ document.querySelectorAll('#origins .chip').forEach(b=>b.onclick=async ()=>{
  document.querySelectorAll('#origins .chip').forEach(x=>x.classList.remove('active'));
  b.classList.add('active');
  origin=b.dataset.station;
+ // v121: A manual origin selection takes precedence over a previously acquired GPS point.
+ // This is especially important for Myoko Kogen: the mobility list and map must follow the
+ // selected station instead of staying anchored to the old physical location.
+ currentPos=null;
  mobilityMapBrowsePoint=null;
  document.getElementById('locationText').textContent=`${origin}付近`;
  const p=PLACES[origin];
  if(p) await updateWeatherFor(p.lat,p.lon,origin);
- renderMobility();
+ await renderMobility();
+ initMobilityMap();
+ if(p && mobilityMap){
+   mobilityMap.setView([p.lat,p.lon],14,{animate:true});
+   requestAnimationFrame(()=>mobilityMap.invalidateSize({pan:false}));
+ }
 });
 document.querySelectorAll('#destinations .chip').forEach(b=>b.onclick=()=>{
  document.querySelectorAll('#destinations .chip').forEach(x=>x.classList.remove('active'));
@@ -3252,6 +3297,20 @@ function isLikelyOpen(s, now=new Date()){
   const day=now.getDay();
   const rainy=weather && ((weather.rain||0)>0 || (weather.precipitation||0)>0);
 
+  // v121: services such as Myoko's HELLO CYCLING have an official seasonal operation period.
+  if(s?.seasonal_start && s?.seasonal_end){
+    const key=dateKey(now);
+    if(key<s.seasonal_start || key>s.seasonal_end) return false;
+  }
+  if(s?.hours){
+    const m=String(s.hours).match(/(\d{1,2}):(\d{2})\s*[-〜~]\s*(\d{1,2}):(\d{2})/);
+    if(m){
+      const open=Number(m[1])+Number(m[2])/60;
+      const close=Number(m[3])+Number(m[4])/60;
+      if(h<open || h>=close) return false;
+    }
+  }
+
   if(s.id==='bike_takada_sekaikan'){
     if(month<3 || month>11 || day===2 || rainy) return false;
     return h>=10 && h<17;
@@ -3436,7 +3495,8 @@ const TAXI_HUBS={
   '黒井':{level:'C',outboundWait:15,label:'待機未確認・配車前提'},
   '犀潟':{level:'C',outboundWait:15,label:'待機未確認・配車前提'},
   '土底浜':{level:'C',outboundWait:15,label:'待機未確認・配車前提'},
-  '潟町':{level:'C',outboundWait:15,label:'待機未確認・配車前提'}
+  '潟町':{level:'C',outboundWait:15,label:'待機未確認・配車前提'},
+  '妙高高原':{level:'B',outboundWait:5,label:'駅近くに営業所・配車確認'}
 };
 function taxiHubMeta(name){
   return TAXI_HUBS[name]||{level:'C',outboundWait:12,label:'配車待ちを想定'};
