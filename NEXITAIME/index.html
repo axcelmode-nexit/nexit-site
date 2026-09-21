@@ -6847,7 +6847,14 @@ function recommendationReasonParts(plan){
   if(outMin!=null) parts.push(`${plan.modeLabel||'移動'}で片道約${outMin}分`);
   if(plan?.availability?.verified!==false && plan?.availability?.label) parts.push(plan.availability.label);
   if(Number.isFinite(plan?.stay)) parts.push(`滞在約${plan.stay}分`);
-  if(Number.isFinite(plan?.spare)) parts.push(`帰着に約${Math.max(0,plan.spare)}分余裕`);
+  // plan.spare is the margin beyond the automatically reserved return buffer.
+  // User-facing "帰着後の余裕" must show the actual remaining time to hardEnd,
+  // matching the quick facts / schedule / detail displays.
+  if(Number.isFinite(plan?.spare)){
+    const selectedBuffer=Number(document.getElementById('buffer')?.value ?? 0);
+    const displaySpare=Math.max(0,Math.round(Number(plan.spare)+(Number.isFinite(selectedBuffer)?selectedBuffer:0)));
+    parts.push(`帰着に約${displaySpare}分余裕`);
+  }
   if(plan?.weatherReason) parts.push(plan.weatherReason);
   if(plan?.reservation?.label) parts.push(plan.reservation.label);
   const conf=plan?.informationConfidence||informationConfidenceMeta(ev);
@@ -8363,6 +8370,7 @@ async function buildPlans(){
  if(transport!=='auto' && scored.length<3){
    let wider=candidateEvents.filter(ev=>eventIsAvailableAt(ev,planningDate)).filter(budgetAllows).filter(companionAllows);
    if(destinationArea!=='any') wider=wider.filter(destinationMatchesEvent);
+   if(mood!=='any') wider=wider.filter(ev=>moodMatches(ev,mood));
    wider=wider.filter(foodKindMatches).filter(secondaryMoodMatches);
    const extra=await scoreEventSet(wider,requestedModes,start,deadline,searchCtx);
    const before=scored.length;
@@ -8374,6 +8382,7 @@ async function buildPlans(){
    if(scored.length<3){
      let flexFill=FLEX_ACTIVITIES.filter(budgetAllows).filter(companionAllows);
      if(searchCtx.destination!=='any') flexFill=flexFill.filter(destinationMatchesEvent);
+     if(mood!=='any') flexFill=flexFill.filter(ev=>moodMatches(ev,mood)).filter(secondaryMoodMatches);
      const flexExtra=await scoreEventSet(flexFill,requestedModes,start,deadline,searchCtx);
      const beforeFlex=scored.length;
      scored=dedupeCandidates([...scored,...flexExtra]);
@@ -8381,22 +8390,13 @@ async function buildPlans(){
    }
  }
 
- // 3) If still none, relax mood while keeping destination/budget/companion AND transport.
- if(!scored.length && mood!=='any'){
-   let relaxed=candidateEvents.filter(ev=>eventIsAvailableAt(ev,planningDate)).filter(budgetAllows).filter(companionAllows);
-   if(destinationArea!=='any') relaxed=relaxed.filter(destinationMatchesEvent);
-   relaxed=relaxed.filter(foodKindMatches).filter(secondaryMoodMatches);
-   scored=await scoreEventSet(relaxed,requestedModes,start,deadline,searchCtx);
-   if(scored.length) relaxationLevel=2;
- }
-
- // 4) Never change destination or an explicitly selected transport.
- // Flexible activities are evaluated with the same requested transport modes.
+ // 3) Explicit mood selections are strict.
+ // Never relax 温泉/観光/イベント/体験など into an unrelated category just to fill results.
+ // If exact candidates are unavailable, only same-mood flexible activities may be used.
  if(!scored.length){
    let flex=FLEX_ACTIVITIES.filter(budgetAllows).filter(companionAllows);
-   if(searchCtx.destination!=='any'){
-     flex=flex.filter(destinationMatchesEvent);
-   }
+   if(searchCtx.destination!=='any') flex=flex.filter(destinationMatchesEvent);
+   if(mood!=='any') flex=flex.filter(ev=>moodMatches(ev,mood)).filter(secondaryMoodMatches);
    scored=await scoreEventSet(flex,requestedModes,start,deadline,searchCtx);
    if(scored.length) relaxationLevel=3;
  }
