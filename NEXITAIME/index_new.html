@@ -2544,6 +2544,55 @@ function autoDurationLabel(minutes){
   return 'たっぷり';
 }
 
+function derivedAutoOfferMinutes(plan,start){
+  // おまかせは、完成したプランの実所要を30分単位で切り上げて表示する。
+  // 例: 141分で成立する案 -> 約150分コース。
+  if(!Number.isFinite(plan?.finish) || !Number.isFinite(start)) return null;
+  const elapsed=Math.max(1,Math.round(plan.finish-start));
+  return Math.max(30,Math.min(360,Math.ceil(elapsed/30)*30));
+}
+
+function displayedPlanSpareMinutes(plan,start,fallbackBuffer=0){
+  // おまかせ案では探索枠の余りではなく、表示時間と実所要の差だけを余裕として見せる。
+  if(Number.isFinite(plan?.offerFreeMinutes) && Number.isFinite(plan?.finish) && Number.isFinite(start)){
+    const elapsed=Math.max(0,Math.round(plan.finish-start));
+    return Math.max(0,Math.round(Number(plan.offerFreeMinutes)-elapsed));
+  }
+  return Math.max(0,Math.round(Number(plan?.spare||0)+Number(fallbackBuffer||0)));
+}
+
+function autoDurationPlanUtilization(plan,duration,buffer){
+  const total=Math.max(1,Number(duration)||1);
+  const safeBuffer=Math.max(0,Number(buffer)||0);
+  const spareBeyondBuffer=Math.max(0,Number(plan?.spare)||0);
+  const actualSpare=spareBeyondBuffer+safeBuffer;
+  const used=Math.max(0,total-actualSpare);
+  return {
+    total,
+    actualSpare,
+    used,
+    ratio:used/total
+  };
+}
+
+function autoDurationPlanFits(plan,duration,buffer){
+  const u=autoDurationPlanUtilization(plan,duration,buffer);
+  // 「時間おまかせ」の時間帯ラベルは、その時間をちゃんと使える案だけ表示する。
+  // 長時間枠なのに半分近く余る案を「たっぷり300分」などとして出さない。
+  const maxSpare=duration<=90 ? 30 : duration<=180 ? 40 : 60;
+  const minRatio=duration<=90 ? 0.62 : duration<=180 ? 0.68 : 0.72;
+  if(u.actualSpare>maxSpare)return false;
+  if(u.ratio<minRatio)return false;
+  if(duration>=180){
+    const stops=Array.isArray(plan?.itinerary)?plan.itinerary.length:1;
+    const cats=(plan?.ev?.categories||[]).map(String);
+    const focusedExperience=cats.some(c=>/体験|ワークショップ|収穫|講演|上映|ライブ|公演/.test(c)) || !!(plan?.ev?.start_time&&plan?.ev?.end_time);
+    // 180分以上は、固定時間のイベント等を除き、基本は周遊案を優先。
+    if(!focusedExperience && stops<2)return false;
+  }
+  return true;
+}
+
 function classicRouteBoostForEvent(ev){
   const ranked=rankedClassicRoutes();
   if(!ranked.length)return 0;
@@ -7014,6 +7063,8 @@ async function scoreEventSet(events, modes, start, deadline, ctx){
       const reservationScore=Number(c.reservation?.penalty||0);
       const returnSafetyScore=Number(c.returnSafety?.penalty||0);
       const classicRouteScore=classicRouteBoostForEvent(ev);
+      const ramenFeaturedScore=featuredRamenBoost(ev);
+      c.featuredRamenScore=ramenFeaturedScore;
       c.reservationScore=reservationScore;
       c.returnSafetyScore=returnSafetyScore;
       c.classicRouteScore=classicRouteScore;
@@ -7032,6 +7083,7 @@ async function scoreEventSet(events, modes, start, deadline, ctx){
         + reservationScore
         + returnSafetyScore
         + classicRouteScore
+        + ramenFeaturedScore
         + routeSense.score
         + directionSense.score;
 
@@ -7405,7 +7457,10 @@ function recommendationReasonParts(plan){
   // matching the quick facts / schedule / detail displays.
   if(Number.isFinite(plan?.spare)){
     const selectedBuffer=Number(document.getElementById('buffer')?.value ?? 0);
-    const displaySpare=Math.max(0,Math.round(Number(plan.spare)+(Number.isFinite(selectedBuffer)?selectedBuffer:0)));
+    const planStart=Number.isFinite(plan?.out?.dep)?Number(plan.out.dep):null;
+    const displaySpare=(Number.isFinite(plan?.offerFreeMinutes) && Number.isFinite(planStart))
+      ? displayedPlanSpareMinutes(plan,planStart,plan.offerBuffer??selectedBuffer)
+      : Math.max(0,Math.round(Number(plan.spare)+(Number.isFinite(selectedBuffer)?selectedBuffer:0)));
     parts.push(`帰着に約${displaySpare}分余裕`);
   }
   if(plan?.weatherReason) parts.push(plan.weatherReason);
@@ -8499,6 +8554,41 @@ function normalizeShopName(value){
     .replace(/店$/,'');
 }
 
+
+// 上越ラーメン重要店（宅麺.com 2025上越10選を発見ソースとして利用）
+// 営業時間・定休日は固定せず、Hot Pepper / 公式情報 / 自動更新カタログを優先する。
+const FEATURED_JOETSU_RAMEN_SHOPS=[
+  {name:'上越家',aliases:['上越家','じょうえつや']},
+  {name:'麺屋 あごすけ',aliases:['麺屋あごすけ','麺屋 あごすけ','あごすけ']},
+  {name:'龍馬軒',aliases:['龍馬軒']},
+  {name:'ラーメンショップ 福橋店',aliases:['ラーメンショップ福橋店','ラーメンショップ 福橋店']},
+  {name:'春紀',aliases:['春紀']},
+  {name:'ラーメンショップ 大潟店',aliases:['ラーメンショップ大潟店','ラーメンショップ 大潟店']},
+  {name:'食堂 ニューミサ',aliases:['食堂ニューミサ','食堂 ニューミサ','ニューミサ']},
+  {name:'中華そば 煮干屋',aliases:['中華そば煮干屋','中華そば 煮干屋','煮干屋']},
+  {name:'麺屋しょうじ',aliases:['麺屋しょうじ','麺屋 しょうじ']},
+  {name:'中華そば 亀屋',aliases:['中華そば亀屋','中華そば 亀屋','亀屋']}
+];
+
+function featuredRamenMeta(ev){
+  const raw=[ev?.venue,ev?.title,ev?.name].filter(Boolean).join(' ');
+  const key=normalizeShopName(raw);
+  if(!key)return null;
+  for(const shop of FEATURED_JOETSU_RAMEN_SHOPS){
+    if(shop.aliases.some(alias=>{
+      const a=normalizeShopName(alias);
+      return key===a || key.includes(a) || a.includes(key);
+    })) return shop;
+  }
+  return null;
+}
+
+function featuredRamenBoost(ev){
+  // ラーメン検索時に名店を埋もれさせない。営業時間・帰着成立性などの安全判定は従来通り優先。
+  if(mood!=='food' || foodKind!=='ラーメン') return 0;
+  return featuredRamenMeta(ev) ? 55 : 0;
+}
+
 function dedupeHotPepperRows(rows=[]){
   const seen=new Set();
   return rows.filter(row=>{
@@ -8703,7 +8793,7 @@ function planComparisonHtml(plans,start,buffer){
     const travel=elapsed!=null?Math.max(0,elapsed-Number(p.stay||0)):null;
     const total=totalPlanCost(p);
     const planBuffer=Number(p.offerBuffer??buffer??0);
-    const spare=Math.max(0,Number(p.spare||0)+planBuffer);
+    const spare=displayedPlanSpareMinutes(p,start,planBuffer);
     const durationRank=p.offerFreeMinutes
       ? `${autoDurationLabel(p.offerFreeMinutes)}・約${p.offerFreeMinutes}分コース`
       : (i===0?'おすすめ':(i===1?'別の候補':'もう一案'));
@@ -8938,9 +9028,10 @@ async function buildPlans(){
      .map((ev,i)=>({
        ev,i,
        exactFood:foodKindMatches(ev)?1:0,
+       featuredRamen:featuredRamenBoost(ev)>0?1:0,
        staticBoost:ev?.provider==='hotpepper'?0:1
      }))
-     .sort((a,b)=>b.exactFood-a.exactFood || b.staticBoost-a.staticBoost || a.i-b.i)
+     .sort((a,b)=>b.exactFood-a.exactFood || b.featuredRamen-a.featuredRamen || b.staticBoost-a.staticBoost || a.i-b.i)
      .slice(0,12)
      .map(x=>x.ev);
  }
@@ -9119,23 +9210,35 @@ async function buildPlans(){
        return (bStops-aStops)*multiWeight || (Number(b.score||0)-Number(a.score||0));
      });
 
-     let pick=prepared.find(row=>{
+     const wellFilled=prepared.filter(row=>autoDurationPlanFits(row,duration,dBuffer));
+     let pick=wellFilled.find(row=>{
        const key=row.ev.id||`${row.ev.title}|${row.ev.venue||''}`;
        return !usedKeys.has(key);
-     }) || prepared[0];
+     }) || wellFilled[0];
      if(pick){
        const key=pick.ev.id||`${pick.ev.title}|${pick.ev.venue||''}`;
        usedKeys.add(key);
-       pick.offerFreeMinutes=duration;
-       pick.offerBuffer=dBuffer;
-       pick.offerDurationLabel=autoDurationLabel(duration);
+       const derivedMinutes=derivedAutoOfferMinutes(pick,start) || duration;
+       pick.offerFreeMinutes=derivedMinutes;
+       pick.offerBuffer=Math.max(0,derivedMinutes-Math.max(0,Math.round(pick.finish-start)));
+       pick.offerDurationLabel=autoDurationLabel(derivedMinutes);
        durationPlans.push(pick);
      }
    }
 
-   if(durationPlans.length>=2){
-     top=durationPlans.slice(0,3);
-     multiDurationAuto=true;
+   if(durationPlans.length){
+     const uniqueByDuration=[];
+     const seenDurations=new Set();
+     for(const plan of durationPlans){
+       const d=Number(plan.offerFreeMinutes)||0;
+       if(seenDurations.has(d)) continue;
+       seenDurations.add(d);
+       uniqueByDuration.push(plan);
+     }
+     if(uniqueByDuration.length){
+       top=uniqueByDuration.slice(0,3);
+       multiDurationAuto=true;
+     }
    }
  }
  clearTimeout(searchWatchdog);
@@ -9175,7 +9278,7 @@ async function buildPlans(){
  const routeSummary=`${searchCtx.origin} → ${destinationGroupLabel(searchCtx.destination)} → ${searchCtx.returnTo}`;
  if(multiDurationAuto){
    const durations=top.map(p=>p.offerFreeMinutes).filter(Boolean).join('分・');
-   summary.innerHTML=`<h2>時間別に${top.length}案あります</h2><p><strong>${routeSummary}</strong><br>時間はおまかせなので、${durations}${durations?'分':''}の中から成立するプランを提案しています。長いコースほど複数スポットの周遊を優先します。</p>`;
+   summary.innerHTML=`<h2>時間別に${top.length}案あります</h2><p><strong>${routeSummary}</strong><br>時間はおまかせなので、実際に成立するプランから必要時間を算出しています。${durations?`今回は約${durations}分の案です。`:''}長めの案ほど複数スポットの周遊を優先します。</p>`;
  }else if(relaxationLevel===0){
    if(transport==='auto'){
      {
@@ -9275,7 +9378,7 @@ async function buildPlans(){
        <div class="plan-quick-fact"><span>往復時間</span><strong>${esc(outTime)} → ${esc(backTime)}</strong></div>
        <div class="plan-quick-fact"><span>合計所要</span><strong>${(Number.isFinite(p.finish)&&Number.isFinite(start))?`約${Math.max(0,Math.round(p.finish-start))}分`:'要確認'}</strong></div>
        <div class="plan-quick-fact"><span>${p.itinerary?.length>1?'立ち寄り合計':'滞在'}</span><strong>約${p.stay}分</strong></div>
-       <div class="plan-quick-fact"><span>帰着後の余裕</span><strong>約${Math.max(0,p.spare+buffer)}分</strong></div>
+       <div class="plan-quick-fact"><span>帰着後の余裕</span><strong>約${displayedPlanSpareMinutes(p,start,p.offerBuffer??buffer)}分</strong></div>
      </div>
      ${totalCostHero}
      <div class="plan-reason-compact"><strong>この案の理由：</strong>${reasonText}</div>
