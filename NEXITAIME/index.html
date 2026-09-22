@@ -1882,56 +1882,45 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
 @media(max-width:620px){.plan-compare{padding:12px}.plan-compare-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.plan-compare-total strong{font-size:17px}}
 </style>
 
-<style>
-/* 「あとどれくらい？」を「今すぐ／日時を指定」と同じ2列レイアウトへ完全統一 */
-#freeModeRow,
-.free-mode-row,
-.duration-mode-row,
-#durationModeRow {
-  display: grid !important;
-  grid-template-columns: minmax(0,1fr) minmax(0,1fr) !important;
-  gap: 10px !important;
-  width: 100% !important;
-  align-items: stretch !important;
-}
-
-#freeModeRow > *,
-.free-mode-row > *,
-.duration-mode-row > *,
-#durationModeRow > * {
-  width: 100% !important;
-  min-width: 0 !important;
-  box-sizing: border-box !important;
-  height: 44px !important;
-  min-height: 44px !important;
-  max-height: 44px !important;
-  border-radius: 16px !important;
-  margin: 0 !important;
-}
-</style>
 
 
-<style id="free-row-width-match">
+
+
+<style id="free-row-match-timing-exact">
 @media (max-width:700px){
   #freeModeRow{
     display:flex !important;
-    flex-wrap:nowrap !important;
+    flex-wrap:wrap !important;
+    overflow:visible !important;
     gap:8px !important;
-    margin-left:14px !important;
-    margin-right:14px !important;
-    width:auto !important;
+    width:100% !important;
+    margin:0 !important;
+    padding:0 !important;
   }
   #freeModeRow > *{
-    flex:1 1 0 !important;
-    width:0 !important;
+    flex:1 1 calc(50% - 10px) !important;
     min-width:0 !important;
-    height:44px !important;
+    max-width:100% !important;
+    width:auto !important;
+    height:auto !important;
     min-height:44px !important;
-    max-height:44px !important;
+    max-height:none !important;
+    padding:8px 10px !important;
+    border-radius:16px !important;
+    margin:0 !important;
     box-sizing:border-box !important;
+    justify-content:center !important;
+  }
+  #freeModeRow select{
+    width:100% !important;
+    height:100% !important;
+    min-height:26px !important;
+    font-size:14px !important;
+    margin:0 !important;
   }
 }
 </style>
+
 </head>
 <body>
 <div class="app">
@@ -2007,14 +1996,14 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
 <div class="note" style="margin-top:10px">初期値は「今すぐ」。日時を指定した場合は、その日時を起点にイベント開催時間・営業時間・公開時刻表を判定します。</div>
 </div><div class="group-part group-part-divider">
 <div class="group-subtitle">あとどれくらい？</div>
-<div id="freeModeRow" class="chips wrap" style="margin-left:14px;margin-right:14px;width:auto">
-  <button type="button" class="chip active" id="freeAutoBtn" data-free-mode="auto" style="flex:1 1 calc(50% - 5px);width:0;min-width:0;min-height:44px;justify-content:center;font-size:14px;border-radius:16px;padding:8px 10px">✨ おまかせ</button>
-  <div class="field" style="flex:1 1 calc(50% - 5px);width:0;min-width:0;min-height:44px;display:flex;align-items:center;padding:8px 10px;border-radius:16px"><select id="free" style="font-size:14px">
+<div id="freeModeRow" class="chips wrap">
+  <button type="button" class="chip active" id="freeAutoBtn" data-free-mode="auto">✨ おまかせ</button>
+  <div class="field"><select id="free" style="font-size:14px">
     <option value="60">60分</option>
     <option value="90">90分</option>
-    <option selected="" value="120">120分</option>
+    <option value="120">120分</option>
     <option value="150">150分</option>
-    <option value="180">180分</option>
+    <option selected="" value="180">180分</option>
     <option value="210">210分</option>
     <option value="240">240分</option>
     <option value="270">270分</option>
@@ -2024,7 +2013,7 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
   </select></div>
 </div>
 <input id="buffer" type="hidden" value="15">
-<div class="note" style="margin-top:10px">初期値は「おまかせ」。時間指定を選ぶと、その時間内で提案します（初期値120分）。「おまかせ」では、現在地・帰着先・移動手段・天気・営業時間・当日イベントと王道ルートを見て、複数の時間帯から成立するプランを提案します。</div>
+<div class="note" style="margin-top:10px">初期値は「おまかせ」。時間指定を選ぶと、その時間内で提案します（初期値180分）。「おまかせ」では、現在地・帰着先・移動手段・天気・営業時間・当日イベントと王道ルートを見て、複数の時間帯から成立するプランを提案します。</div>
 </div></section><section class="card input-group-card"><div class="group-title">3. どう過ごす？</div><div class="group-part">
 <div class="group-subtitle">気分</div>
 <div class="chips" id="moods">
@@ -6037,7 +6026,7 @@ function itineraryProgressFlowBonus(plan,ctx){
   return Math.max(-45,Math.min(45,bonus));
 }
 
-function buildSimpleItinerary(plan,candidateEvents=[],freeMinutes=120){
+function buildSimpleItinerary(plan,candidateEvents=[],freeMinutes=180){
   const area=plan.ev?.area;
   const legacyPool=ITINERARY_SPOTS.filter(s=>s.area===area);
   if(!Number.isFinite(plan.stay) || plan.stay<30)return null;
@@ -7238,7 +7227,7 @@ function planDiversityStation(plan){
 
 function planTimeStyle(plan,freeMinutes){
   const used=Number(plan?.planMinutes)||0;
-  const available=Math.max(1,Number(freeMinutes)||120);
+  const available=Math.max(1,Number(freeMinutes)||180);
   const ratio=used/available;
   if(ratio>=0.78)return 'full';
   if(ratio<=0.58)return 'relaxed';
@@ -7639,7 +7628,7 @@ function favoritePayload(plan,ctx){
       foodKind,
       budget,
       companion,
-      freeMinutes:Number(document.getElementById('free')?.value)||120,
+      freeMinutes:Number(document.getElementById('free')?.value)||180,
       autoReturnBuffer:Number(document.getElementById('buffer')?.value)||15
     }
   };
@@ -7733,7 +7722,7 @@ async function restoreFavoriteSearch(row,{keepCurrentOrigin=false}={}){
   setFoodKindChoice(s.foodKind||'any');
   setSelectChoice('budget',s.budget||'any');
   setSelectChoice('companion',s.companion||'any');
-  setFreeMinutes(s.freeMinutes||120);
+  setFreeMinutes(s.freeMinutes||180);
   setTimingChoice('now');
 
   const p=PLACES[origin];
@@ -7906,7 +7895,7 @@ function setFreeMinutes(value){
 
 function currentFreeMinutes(){
   if(freeTimeMode==='auto')return resolveAutoFreeMinutes();
-  return Number(document.getElementById('free')?.value)||120;
+  return Number(document.getElementById('free')?.value)||180;
 }
 
 function showAdjustFeedback(message){
@@ -8566,10 +8555,10 @@ function bindPlanPickButtons(plans,ctx){
   }));
 }
 
-function automaticReturnBufferMinutes(freeMinutes=120){
+function automaticReturnBufferMinutes(freeMinutes=180){
   // Short outings should spend most of the available time on the plan itself.
   // The margin grows gradually as the available time grows.
-  const free=Math.max(1,Number(freeMinutes)||120);
+  const free=Math.max(1,Number(freeMinutes)||180);
   let minutes=free<=60?5:free<=90?8:free<=150?10:12;
 
   // Add only the uncertainty that materially affects the return trip.
@@ -8624,7 +8613,7 @@ async function buildPlans(){
  await ensureClassicRoutesLoaded();
  const freeControl=document.getElementById('free');
  const isAutoFree=freeTimeMode==='auto';
- let free=isAutoFree?resolveAutoFreeMinutes():(Number(freeControl?.value)||120);
+ let free=isAutoFree?resolveAutoFreeMinutes():(Number(freeControl?.value)||180);
  try{ trackNexitaime('search_start',{freeMinutes:free,freeMode:isAutoFree?'auto':'manual',classicRouteId:LAST_CLASSIC_ROUTE?.id||null,buffer:Number(document.getElementById('buffer')?.value)||15}); }catch(_){}
  let buffer=Math.max(5,Number(document.getElementById('buffer').value)||10);
  const now=new Date();
