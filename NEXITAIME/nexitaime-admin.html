@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>NEXITAIME Admin</title>
+<style>
+:root{
+  --bg:#f6f8fb;--card:#fff;--text:#17324d;--muted:#72839a;--line:#dfe7ef;
+  --accent:#20a8e8;--accent2:#6b74f8;--soft:#eef8ff;--ok:#16835b;--warn:#b56b00;--bad:#c0392b;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP",sans-serif}
+.wrap{max-width:1120px;margin:auto;padding:22px 16px 70px}
+.header{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:18px}
+h1{font-size:24px;margin:0}.sub{color:var(--muted);font-size:13px;margin-top:5px}
+.controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+button,select,input{font:inherit}
+button,.select,input.settings-input{border:1px solid var(--line);background:#fff;border-radius:14px;padding:10px 14px;color:var(--text);font-weight:700}
+button{cursor:pointer}button.primary{border:0;color:#fff;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+button.danger{color:#a73434;border-color:#efd0d0;background:#fff8f8}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px;box-shadow:0 8px 24px rgba(38,72,106,.05)}
+.kpi .label{font-size:12px;color:var(--muted);font-weight:700}.kpi .value{font-size:30px;font-weight:900;margin-top:6px}
+.section{margin-top:16px}.section-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 12px}.section-title h2{font-size:18px;margin:0}.section-title .hint{font-size:11px;color:var(--muted)}
+.bar-row{display:grid;grid-template-columns:minmax(90px,1fr) 3fr 46px;gap:10px;align-items:center;margin:9px 0;font-size:13px}
+.bar{height:12px;border-radius:999px;background:#edf2f7;overflow:hidden}.bar>i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:999px}
+.spark{display:flex;gap:4px;height:110px;align-items:flex-end;padding-top:8px}.spark i{flex:1;min-width:6px;border-radius:5px 5px 0 0;background:linear-gradient(var(--accent2),var(--accent));position:relative}.spark i span{display:none}
+.empty{color:var(--muted);font-size:13px}.login{max-width:460px;margin:15vh auto 0;background:#fff;border:1px solid var(--line);border-radius:24px;padding:22px}.login h1{margin-bottom:8px}.login p{color:var(--muted);font-size:13px}.login input{width:100%;border:1px solid var(--line);border-radius:14px;padding:13px;margin:8px 0 10px}.error{color:var(--bad);font-size:13px;margin-top:9px}.meta{color:var(--muted);font-size:12px;margin-top:14px}
+.divider{height:1px;background:var(--line);margin:28px 0 22px}.eyebrow{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;background:#eef6ff;color:#326b96;font-size:10px;font-weight:900;margin-bottom:8px}
+.sync-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.sync-metric{padding:14px;border-radius:14px;background:#f8fafc;border:1px solid #edf1f5}.sync-metric span{display:block;font-size:11px;color:var(--muted);font-weight:800}.sync-metric b{display:block;font-size:25px;margin-top:4px}
+.scroll{overflow:auto}table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;border-bottom:1px solid #edf0f4;padding:10px 8px;vertical-align:top}th{color:var(--muted);font-weight:800;white-space:nowrap}.ok{color:var(--ok)}.bad{color:var(--bad)}.warn{color:var(--warn)}.pill{display:inline-block;border-radius:999px;padding:3px 8px;background:#eef2f6;font-size:11px}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.spacer{flex:1}
+.sync-status{font-size:12px;color:var(--muted);margin-top:8px}.sync-status.ok{color:var(--ok)}.sync-status.bad{color:var(--bad)}
+.settings{margin-top:10px;padding:12px;border-radius:14px;background:#f8fafc;border:1px solid #edf1f5}.settings summary{cursor:pointer;font-size:12px;font-weight:900;color:#45617b}.settings-body{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.settings label{font-size:10px;color:var(--muted);font-weight:800}.settings-input{width:100%;margin-top:4px;font-size:12px}
+@media(max-width:820px){.grid,.sync-grid{grid-template-columns:repeat(2,1fr)}.header{display:block}.controls{margin-top:12px}.settings-body{grid-template-columns:1fr}}
+@media(max-width:520px){.bar-row{grid-template-columns:100px 1fr 36px}.kpi .value{font-size:26px}.sync-metric b{font-size:22px}}
+</style>
+</head>
+<body>
+<div id="login" class="login">
+  <h1>NEXITAIME Admin</h1>
+  <p>利用分析とデータ更新状況を1つの画面で確認します。管理用キーはこのタブを閉じるまでだけ保持します。</p>
+  <input id="key" type="password" autocomplete="current-password" placeholder="管理用キー">
+  <button class="primary" id="loginBtn">管理画面を開く</button>
+  <div class="error" id="loginErr"></div>
+</div>
+
+<div id="app" class="wrap" hidden>
+  <div class="header">
+    <div>
+      <div class="eyebrow">NEXITAIME 管理</div>
+      <h1>NEXITAIME Admin</h1>
+      <div class="sub">利用分析 ＋ データ自動更新監視</div>
+    </div>
+    <div class="controls">
+      <select id="days" class="select">
+        <option value="7">直近7日</option>
+        <option value="30" selected>直近30日</option>
+        <option value="90">直近90日</option>
+      </select>
+      <button id="reload">更新</button>
+      <button id="logout">ログアウト</button>
+    </div>
+  </div>
+
+  <section id="analyticsSection">
+    <div class="section-title"><h2>利用分析</h2><div class="hint">匿名イベント集計</div></div>
+    <div class="grid">
+      <div class="card kpi"><div class="label">検索回数</div><div class="value" id="searches">—</div></div>
+      <div class="card kpi"><div class="label">ページ表示</div><div class="value" id="pageViews">—</div></div>
+      <div class="card kpi"><div class="label">セッション</div><div class="value" id="sessions">—</div></div>
+      <div class="card kpi"><div class="label">平均空き時間</div><div class="value" id="avgFree">—</div></div>
+      <div class="card kpi"><div class="label">AI/条件調整</div><div class="value" id="adjusts">—</div></div>
+      <div class="card kpi"><div class="label">シェア</div><div class="value" id="shares">—</div></div>
+      <div class="card kpi"><div class="label">お気に入り追加</div><div class="value" id="favorites">—</div></div>
+      <div class="card kpi"><div class="label">全イベント</div><div class="value" id="events">—</div></div>
+    </div>
+
+    <div class="card section">
+      <div class="section-title"><h2>検索回数の推移</h2></div>
+      <div id="daily" class="spark"></div>
+    </div>
+
+    <div class="grid section">
+      <div class="card"><h2 style="font-size:16px;margin:0 0 12px">移動手段</h2><div id="transport"></div></div>
+      <div class="card"><h2 style="font-size:16px;margin:0 0 12px">気分</h2><div id="mood"></div></div>
+      <div class="card"><h2 style="font-size:16px;margin:0 0 12px">行き先エリア</h2><div id="destination"></div></div>
+      <div class="card"><h2 style="font-size:16px;margin:0 0 12px">イベント内訳</h2><div id="eventsBreakdown"></div></div>
+    </div>
+    <div class="meta" id="meta"></div>
+  </section>
+
+  <div class="divider"></div>
+
+  <section id="syncSection">
+    <div class="section-title">
+      <div><h2>データ自動更新</h2><div class="hint">追加・更新・終了・鮮度・要確認</div></div>
+      <div class="row"><button id="syncReload">同期状況を更新</button><button class="primary" id="runSync">今すぐ同期</button></div>
+    </div>
+
+    <div class="card">
+      <div id="syncMetrics" class="sync-grid"></div>
+      <div id="syncMessage" class="sync-status">読み込み中…</div>
+      <details class="settings">
+        <summary>Data Sync接続設定</summary>
+        <div class="settings-body">
+          <label>Worker URL<input id="syncApi" class="settings-input" type="url" placeholder="https://nexitaime-data-sync...workers.dev"></label>
+          <label>Data Sync専用キー（空欄なら上の管理キーを使用）<input id="syncKey" class="settings-input" type="password" placeholder="必要な場合のみ"></label>
+        </div>
+      </details>
+    </div>
+
+    <div class="card section">
+      <div class="section-title"><h2>ソース</h2></div>
+      <div class="scroll"><table><thead><tr><th>ソース</th><th>対象</th><th>最終成功</th><th>失敗</th><th>状態</th></tr></thead><tbody id="sources"></tbody></table></div>
+    </div>
+
+    <div class="card section">
+      <div class="section-title"><h2>要確認</h2><span id="reviewCount" class="pill">—</span></div>
+      <div class="scroll"><table><thead><tr><th>ID</th><th>対象</th><th>理由</th><th>重要度</th><th>作成</th><th>操作</th></tr></thead><tbody id="review"></tbody></table></div>
+    </div>
+
+    <div class="card section">
+      <div class="section-title"><h2>最近の同期</h2></div>
+      <div class="scroll"><table><thead><tr><th>開始</th><th>ソース</th><th>状態</th><th>発見</th><th>追加</th><th>更新</th><th>欠落</th><th>エラー</th></tr></thead><tbody id="runs"></tbody></table></div>
+    </div>
+
+    <div class="card section">
+      <div class="section-title"><h2>最近の変更</h2></div>
+      <div class="scroll"><table><thead><tr><th>時刻</th><th>種別</th><th>Catalog ID</th><th>Source</th></tr></thead><tbody id="changes"></tbody></table></div>
+    </div>
+  </section>
+</div>
+
+<script>
+const ANALYTICS_API = "/api/nexitaime-analytics";
+const DEFAULT_SYNC_API = "https://nexitaime-data-sync.axcel-mode-nexit.workers.dev";
+const labels = {
+  auto:"おまかせ", privatecar:"自家用車", mobilitycar:"カーシェア・レンタカー",
+  public:"公共交通", taxi:"タクシー", walk:"徒歩", bike:"レンタル自転車",
+  any:"指定なし", food:"食事", cafe:"カフェ", sightseeing:"観光", event:"イベント",
+  nature:"自然", onsen:"温泉", active:"アクティブ", rain:"雨向け",
+  central:"高田周辺", kasugayama:"春日山", sea:"直江津・海側", east:"東部",
+  mountain:"山側", myoko:"妙高",
+  page_view:"ページ表示", search_start:"検索開始", search_result:"検索結果",
+  plan_adjust:"プラン調整", favorite_add:"お気に入り追加", favorite_remove:"お気に入り解除",
+  favorite_rerun:"お気に入り再検索", share:"シェア", corporate_click:"会社リンク"
+};
+const $ = id => document.getElementById(id);
+let adminKey = sessionStorage.getItem("nexitaime-admin-key") || "";
+$("key").value = adminKey;
+$("syncApi").value = sessionStorage.getItem("nexitaime-sync-api") || DEFAULT_SYNC_API;
+$("syncKey").value = sessionStorage.getItem("nexitaime-sync-key") || "";
+
+$("loginBtn").onclick = async () => {
+  adminKey = $("key").value.trim();
+  if (!adminKey) return;
+  sessionStorage.setItem("nexitaime-admin-key", adminKey);
+  await loadAnalytics(true);
+};
+$("reload").onclick = () => loadAll(false);
+$("days").onchange = () => loadAnalytics(false);
+$("logout").onclick = () => { sessionStorage.clear(); location.reload(); };
+$("syncReload").onclick = () => loadSync();
+$("runSync").onclick = runSync;
+$("syncApi").onchange = saveSyncSettings;
+$("syncKey").onchange = saveSyncSettings;
+
+function saveSyncSettings(){
+  sessionStorage.setItem("nexitaime-sync-api", $("syncApi").value.trim());
+  sessionStorage.setItem("nexitaime-sync-key", $("syncKey").value.trim());
+}
+function syncCfg(){
+  saveSyncSettings();
+  return {
+    api: ($("syncApi").value.trim() || DEFAULT_SYNC_API).replace(/\/$/,""),
+    key: $("syncKey").value.trim() || adminKey
+  };
+}
+async function syncReq(path,opt={}){
+  const {api,key}=syncCfg();
+  const r=await fetch(api+path,{...opt,headers:{"Content-Type":"application/json","X-Admin-Key":key,...(opt.headers||{})},cache:"no-store"});
+  if(!r.ok) throw new Error(`${r.status} ${await r.text()}`);
+  return r.json();
+}
+async function loadAll(fromLogin=false){
+  await loadAnalytics(fromLogin);
+  if(!$("app").hidden) loadSync();
+}
+async function loadAnalytics(fromLogin){
+  try{
+    $("loginErr").textContent="";
+    const days = $("days")?.value || "30";
+    const res = await fetch(`${ANALYTICS_API}?days=${encodeURIComponent(days)}`, {headers:{"X-Admin-Key":adminKey},cache:"no-store"});
+    if(res.status===401) throw new Error("管理用キーが違います。");
+    if(!res.ok){const x=await res.json().catch(()=>({}));throw new Error(x.error || `HTTP ${res.status}`)}
+    const data=await res.json();
+    $("login").hidden=true;$("app").hidden=false;renderAnalytics(data);
+    loadSync();
+  }catch(e){
+    if(fromLogin){$("loginErr").textContent=e.message || "読み込みに失敗しました。"}
+    else alert(e.message || "利用分析の読み込みに失敗しました。");
+  }
+}
+function renderAnalytics(data){
+  const t=data.totals||{};
+  $("searches").textContent=num(t.searches);$("pageViews").textContent=num(t.page_views);$("sessions").textContent=num(t.sessions);
+  $("avgFree").textContent=t.avg_free_minutes==null?"—":`${Math.round(t.avg_free_minutes)}分`;
+  $("adjusts").textContent=num(t.plan_adjusts);$("shares").textContent=num(t.shares);$("favorites").textContent=num(t.favorites);$("events").textContent=num(t.events);
+  bars("transport",data.topTransport||[]);bars("mood",data.topMood||[]);bars("destination",data.topDestination||[]);bars("eventsBreakdown",data.eventBreakdown||[]);spark("daily",data.dailySearches||[]);
+  $("meta").textContent=`集計期間：直近${data.days}日 / 最終イベント：${t.latest_event_at ? new Date(t.latest_event_at).toLocaleString("ja-JP") : "まだありません"}`;
+}
+async function loadSync(){
+  $("syncMessage").className="sync-status";$("syncMessage").textContent="Data Syncを読み込み中…";
+  try{
+    const [s,r]=await Promise.all([syncReq("/api/admin/status"),syncReq("/api/admin/review")]);
+    renderSyncStatus(s);renderReview(r);
+    $("syncMessage").className="sync-status ok";$("syncMessage").textContent="Data Sync接続正常";
+  }catch(e){
+    $("syncMessage").className="sync-status bad";$("syncMessage").textContent=`Data Syncを取得できません：${e.message}`;
+    $("syncMetrics").innerHTML='<div class="empty">接続設定またはADMIN_KEYを確認してください。</div>';
+  }
+}
+function renderSyncStatus(d){
+  const counts=Object.fromEntries((d.counts||[]).map(x=>[x.status,Number(x.count)]));
+  const metrics=[["active","稼働"],["candidate_new","新規候補"],["candidate_removed","終了候補"],["needs_review","要確認"],["stale","古い"],["expired","期限切れ"],["inactive","停止"]];
+  $("syncMetrics").innerHTML=metrics.map(([k,l])=>`<div class="sync-metric"><span>${l}</span><b>${counts[k]||0}</b></div>`).join("")+`<div class="sync-metric"><span>要確認キュー</span><b>${d.open_review_count||0}</b></div>`;
+  $("sources").innerHTML=(d.sources||[]).map(x=>`<tr><td>${esc(x.name)}</td><td>${esc(x.entity_type)}</td><td>${fmtDate(x.last_success_at)}</td><td>${x.consecutive_failures||0}</td><td>${x.enabled?'<span class="ok">有効</span>':'<span class="warn">無効</span>'}${x.last_error?`<div class="bad">${esc(x.last_error)}</div>`:""}</td></tr>`).join("") || '<tr><td colspan="5" class="empty">データなし</td></tr>';
+  $("runs").innerHTML=(d.recent_runs||[]).map(x=>`<tr><td>${fmtDate(x.started_at)}</td><td>${esc(x.source_id||"-")}</td><td>${esc(x.status)}</td><td>${x.discovered_count||0}</td><td>${x.added_count||0}</td><td>${x.updated_count||0}</td><td>${x.missing_count||0}</td><td>${x.error_count||0}</td></tr>`).join("") || '<tr><td colspan="8" class="empty">データなし</td></tr>';
+  $("changes").innerHTML=(d.recent_changes||[]).map(x=>`<tr><td>${fmtDate(x.created_at)}</td><td>${esc(x.change_type)}</td><td>${esc(x.catalog_id||"-")}</td><td>${esc(x.source_id||"-")}</td></tr>`).join("") || '<tr><td colspan="4" class="empty">データなし</td></tr>';
+}
+function renderReview(d){
+  const items=d.items||[];$("reviewCount").textContent=`${items.length}件`;
+  $("review").innerHTML=items.map(x=>`<tr><td>${x.id}</td><td>${esc(x.canonical_name||x.catalog_id||"-")}<div class="sub">${esc(x.entity_type||"")}</div></td><td>${esc(x.reason)}</td><td>${esc(x.severity)}</td><td>${fmtDate(x.created_at)}</td><td><button onclick="resolveReview(${x.id},'approve')">承認</button> <button onclick="resolveReview(${x.id},'inactive')">停止</button> <button onclick="resolveReview(${x.id},'dismiss')">無視</button></td></tr>`).join("") || '<tr><td colspan="6" class="empty">要確認はありません</td></tr>';
+}
+async function resolveReview(id,action){
+  if(!confirm(`${action} で処理しますか？`))return;
+  try{await syncReq("/api/admin/review",{method:"POST",body:JSON.stringify({review_id:id,action})});await loadSync()}catch(e){alert(e.message)}
+}
+async function runSync(){
+  if(!confirm("全ソースの同期を開始しますか？"))return;
+  try{await syncReq("/api/admin/sync",{method:"POST",body:"{}"});alert("同期を開始しました。少し待ってから『同期状況を更新』を押してください。")}
+  catch(e){alert(e.message)}
+}
+function bars(id, rows){
+  const el=$(id);if(!rows.length){el.innerHTML='<div class="empty">まだデータがありません</div>';return}
+  const max=Math.max(...rows.map(r=>Number(r.value)||0),1);
+  el.innerHTML=rows.map(r=>{const v=Number(r.value)||0;const name=labels[r.label]||r.label||"不明";return `<div class="bar-row"><b>${esc(name)}</b><div class="bar"><i style="width:${Math.max(4,v/max*100)}%"></i></div><strong>${v}</strong></div>`}).join("");
+}
+function spark(id,rows){
+  const el=$(id);if(!rows.length){el.innerHTML='<div class="empty">まだ検索データがありません</div>';return}
+  const max=Math.max(...rows.map(r=>Number(r.value)||0),1);
+  el.innerHTML=rows.map(r=>{const v=Number(r.value)||0;const h=Math.max(5,v/max*100);return `<i style="height:${h}%" title="${esc(r.label)}: ${v}回"><span>${v}</span></i>`}).join("");
+}
+function num(v){return Number(v||0).toLocaleString("ja-JP")}
+function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function fmtDate(v){if(!v)return "-";const d=new Date(v);return Number.isNaN(d.getTime())?esc(v):d.toLocaleString("ja-JP")}
+if(adminKey) loadAnalytics(true);
+</script>
+</body>
+</html>
