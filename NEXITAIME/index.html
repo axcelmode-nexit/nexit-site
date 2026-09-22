@@ -8212,7 +8212,7 @@ function planDisplayTitle(p){
 
 function planComparisonHtml(plans,start,buffer){
   if(!Array.isArray(plans)||plans.length<2)return '';
-  let html=`<div class="plan-compare"><div class="plan-compare-title">3案をざっくり比較</div><div class="plan-compare-sub">合計時間を中心に、移動・滞在・余裕・料金を見比べられます。</div><div class="plan-compare-list">`;
+  let html=`<div class="plan-compare"><div class="plan-compare-title">ざっくり比較</div><div class="plan-compare-sub">合計時間を中心に、移動・滞在・余裕・料金を見比べられます。</div><div class="plan-compare-list">`;
   plans.forEach((p,i)=>{
     const elapsed=(Number.isFinite(p.finish)&&Number.isFinite(start))?Math.max(0,p.finish-start):null;
     const travel=elapsed!=null?Math.max(0,elapsed-Number(p.stay||0)):null;
