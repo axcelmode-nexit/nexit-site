@@ -8836,6 +8836,35 @@ function automaticReturnBufferMinutes(freeMinutes=120){
   return Math.max(5,Math.min(maxByFree,minutes));
 }
 
+
+async function scoreEventSetFast(events,modes,start,deadline,ctx,timeoutMs=4200){
+  // External routing/timetable services can be slow. Never keep the result screen waiting forever.
+  let timer;
+  try{
+    return await Promise.race([
+      scoreEventSet(events,modes,start,deadline,ctx),
+      new Promise(resolve=>{ timer=setTimeout(()=>resolve([]),timeoutMs); })
+    ]);
+  }finally{
+    if(timer)clearTimeout(timer);
+  }
+}
+
+function fastAutoCandidatePool(events,ctx,limit=12){
+  const staged=stagedAutoCandidates(events,ctx);
+  const merged=[...(staged.first||[]),...(staged.rest||[])];
+  const out=[];
+  const seen=new Set();
+  for(const ev of merged){
+    const key=ev?.id||`${ev?.title||''}|${ev?.venue||''}`;
+    if(!key||seen.has(key))continue;
+    seen.add(key);
+    out.push(ev);
+    if(out.length>=limit)break;
+  }
+  return out;
+}
+
 async function buildPlans(){
  syncSearchStateFromControls();
  await ensureClassicRoutesLoaded();
@@ -8878,10 +8907,10 @@ async function buildPlans(){
  const start=planningDate.getHours()*60+planningDate.getMinutes(), hardEnd=start+free, deadline=hardEnd-buffer;
  summary.innerHTML=`<h2>おすすめを探しています…</h2><p>${isAutoFree?'時間別のプランを比較しながら、':''}移動時間・営業時間・時刻表・必要な戻り余裕を判定しています。</p>`;
  const searchWatchdog=setTimeout(()=>{
-   if(summary.textContent.includes('再検索中')){
+   if(summary.textContent.includes('再検索中') || summary.textContent.includes('おすすめを探しています')){
      summary.innerHTML='<h2>検索に時間がかかっています</h2><p>外部サービスの応答が遅いため、処理を継続しています。検索条件は変更していません。</p>';
    }
- },10000);
+ },8000);
  const adjustPanel=document.getElementById('planAdjustPanel');
  if(adjustPanel){
    adjustPanel.hidden=true;
@@ -8906,6 +8935,12 @@ async function buildPlans(){
  if(destinationArea!=='any')events=events.filter(destinationMatchesEvent);
  if(mood!=='any')events=events.filter(ev=>moodMatches(ev,mood));
  events=events.filter(foodKindMatches).filter(secondaryMoodMatches);
+
+ // 時間おまかせは、近さ・王道・現在条件で優先度の高い候補だけ先にルート判定する。
+ // 全件を90/180/300分で繰り返し評価するとモバイルで待ち時間が長くなるため。
+ if(isAutoFree && events.length>12){
+   events=fastAutoCandidatePool(events,searchCtx,12);
+ }
 
  // Food/cafe can contain many API + static shops. Keep the transport comparison
  // responsive by scoring the most relevant subset first.
@@ -8938,15 +8973,15 @@ async function buildPlans(){
  // 1) Exact requested conditions
  if(isAllAutoSearch()){
    const staged=stagedAutoCandidates(events,searchCtx);
-   scored=await scoreEventSet(staged.first,requestedModes,start,deadline,searchCtx);
+   scored=await scoreEventSetFast(staged.first,requestedModes,start,deadline,searchCtx);
 
    // If we already have enough useful candidates, do not scan the whole region.
    if(scored.length<5 && staged.rest.length){
-     const extra=await scoreEventSet(staged.rest.slice(0,28),requestedModes,start,deadline,searchCtx);
+     const extra=await scoreEventSetFast(staged.rest.slice(0,28),requestedModes,start,deadline,searchCtx);
      scored=dedupeCandidates([...scored,...extra]);
    }
  }else{
-   scored=await scoreEventSet(events,requestedModes,start,deadline,searchCtx);
+   scored=await scoreEventSetFast(events,requestedModes,start,deadline,searchCtx);
  }
 
  // 2) Explicitly selected transport is strict.
@@ -8958,7 +8993,7 @@ async function buildPlans(){
    if(destinationArea!=='any') wider=wider.filter(destinationMatchesEvent);
    if(mood!=='any') wider=wider.filter(ev=>moodMatches(ev,mood));
    wider=wider.filter(foodKindMatches).filter(secondaryMoodMatches);
-   const extra=await scoreEventSet(wider,requestedModes,start,deadline,searchCtx);
+   const extra=await scoreEventSetFast(wider,requestedModes,start,deadline,searchCtx);
    const before=scored.length;
    scored=dedupeCandidates([...scored,...extra]);
    if(scored.length>before) expandedForMultiple=true;
@@ -8969,7 +9004,7 @@ async function buildPlans(){
      let flexFill=FLEX_ACTIVITIES.filter(budgetAllows).filter(companionAllows);
      if(searchCtx.destination!=='any') flexFill=flexFill.filter(destinationMatchesEvent);
      if(mood!=='any') flexFill=flexFill.filter(ev=>moodMatches(ev,mood)).filter(secondaryMoodMatches);
-     const flexExtra=await scoreEventSet(flexFill,requestedModes,start,deadline,searchCtx);
+     const flexExtra=await scoreEventSetFast(flexFill,requestedModes,start,deadline,searchCtx);
      const beforeFlex=scored.length;
      scored=dedupeCandidates([...scored,...flexExtra]);
      if(scored.length>beforeFlex) expandedForMultiple=true;
@@ -8983,7 +9018,7 @@ async function buildPlans(){
    let flex=FLEX_ACTIVITIES.filter(budgetAllows).filter(companionAllows);
    if(searchCtx.destination!=='any') flex=flex.filter(destinationMatchesEvent);
    if(mood!=='any') flex=flex.filter(ev=>moodMatches(ev,mood)).filter(secondaryMoodMatches);
-   scored=await scoreEventSet(flex,requestedModes,start,deadline,searchCtx);
+   scored=await scoreEventSetFast(flex,requestedModes,start,deadline,searchCtx);
    if(scored.length) relaxationLevel=3;
  }
 
@@ -9050,17 +9085,18 @@ async function buildPlans(){
  if(isAutoFree){
    const durationPlans=[];
    const usedKeys=new Set();
-   const durationPool=events.length?events:(()=>{
+   const rawDurationPool=events.length?events:(()=>{
      let rows=candidateEvents.filter(ev=>eventIsAvailableAt(ev,planningDate)).filter(budgetAllows).filter(companionAllows);
      if(searchCtx.destination!=='any') rows=rows.filter(destinationMatchesEvent);
      if(mood!=='any') rows=rows.filter(ev=>moodMatches(ev,mood));
      return rows.filter(foodKindMatches).filter(secondaryMoodMatches);
    })();
+   const durationPool=fastAutoCandidatePool(rawDurationPool,searchCtx,10);
 
    for(const duration of autoDurationChoices()){
      const dBuffer=automaticReturnBufferMinutes(duration);
      const dDeadline=start+duration-dBuffer;
-     let rows=await scoreEventSet(durationPool,requestedModes,start,dDeadline,searchCtx);
+     let rows=await scoreEventSetFast(durationPool,requestedModes,start,dDeadline,searchCtx,3500);
      rows=sortCandidates(rows);
      if(budget!=='any'){
        const maxBudget=Number(budget);
