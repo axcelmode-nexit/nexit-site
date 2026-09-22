@@ -1,5 +1,5 @@
 {
-  "version": "1.1",
+  "version": "1.2",
   "name": "NEXITAIME 王道ルートマスタ",
   "description": "NEXITAIMEのおまかせ提案用の初期テンプレート。実運用では営業時間・天気・イベント・交通・現在地・帰着先に応じて差し替え・短縮・延長する。",
   "routes": [
@@ -432,12 +432,137 @@
         "各施設の営業時間・休館日・うみがたりの最終入館時刻を優先して成立判定する",
         "時間不足時は高田城三重櫓または春日山城跡の滞在時間を短縮し、3エリア訪問を優先する"
       ]
+    },
+    {
+      "id": "R17",
+      "name": "上越妙高から高田城王道",
+      "origin_area": "joetsumyoko",
+      "return_area": "joetsumyoko",
+      "recommended_minutes": [
+        90,
+        150
+      ],
+      "stops": [
+        "上越妙高駅",
+        "高田城址公園",
+        "高田城三重櫓",
+        "上越妙高駅"
+      ],
+      "tags": [
+        "first_visit",
+        "must_see",
+        "history",
+        "sightseeing",
+        "family",
+        "solo",
+        "couple",
+        "car",
+        "public_transport"
+      ],
+      "transport_guidance": {
+        "car_minutes": [
+          90,
+          120
+        ],
+        "public_transport_minutes": [
+          120,
+          150
+        ]
+      },
+      "notes": [
+        "上越妙高駅から高田の代表観光地へ足を伸ばす王道ルート"
+      ]
+    },
+    {
+      "id": "R18",
+      "name": "上越妙高から春日山・謙信王道",
+      "origin_area": "joetsumyoko",
+      "return_area": "joetsumyoko",
+      "recommended_minutes": [
+        120,
+        210
+      ],
+      "stops": [
+        "上越妙高駅",
+        "春日山神社",
+        "春日山城跡",
+        "林泉寺",
+        "上越妙高駅"
+      ],
+      "tags": [
+        "first_visit",
+        "must_see",
+        "history",
+        "sightseeing",
+        "active",
+        "family",
+        "solo",
+        "couple",
+        "car",
+        "public_transport",
+        "fair_weather"
+      ],
+      "transport_guidance": {
+        "car_minutes": [
+          120,
+          180
+        ],
+        "public_transport_minutes": [
+          180,
+          240
+        ]
+      },
+      "notes": [
+        "カーシェア・レンタカーなら上越妙高駅から春日山を有力候補として扱う",
+        "天候や日没、施設営業時間を見て城跡・林泉寺の滞在を調整する"
+      ]
+    },
+    {
+      "id": "R19",
+      "name": "上越妙高からうみがたり王道",
+      "origin_area": "joetsumyoko",
+      "return_area": "joetsumyoko",
+      "recommended_minutes": [
+        150,
+        240
+      ],
+      "stops": [
+        "上越妙高駅",
+        "上越市立水族博物館 うみがたり",
+        "直江津周辺",
+        "上越妙高駅"
+      ],
+      "tags": [
+        "first_visit",
+        "must_see",
+        "sea",
+        "sightseeing",
+        "family",
+        "couple",
+        "car",
+        "public_transport",
+        "rain_ok"
+      ],
+      "transport_guidance": {
+        "car_minutes": [
+          150,
+          210
+        ],
+        "public_transport_minutes": [
+          180,
+          240
+        ]
+      },
+      "notes": [
+        "上越妙高駅から直江津・うみがたりへ足を伸ばす王道ルート",
+        "最終入館時刻を優先して成立判定する"
+      ]
     }
   ],
   "selection_rules": {
     "auto_duration": {
       "enabled": true,
-      "description": "現在地・帰着先・営業時間・イベント・交通・天気を見て、収まる王道ルートを選び、スポット数を増減する。"
+      "description": "現在地・帰着先・営業時間・イベント・交通・天気を見て、近場だけに固定せず、時間内に成立する複数の王道ルートを比較して自動決定する。"
     },
     "weather": {
       "rain": "rain_okタグを優先し、屋外比率を下げる",
@@ -449,7 +574,8 @@
     },
     "transport": {
       "public": "public_transportタグを優先",
-      "car": "carタグを許可"
+      "car": "carタグを許可",
+      "carshare": "上越妙高駅発でも高田・春日山・直江津まで時間内なら積極的に候補化する"
     },
     "duration_fit": {
       "shorten": "最後尾または滞在時間の長いスポットから削る",

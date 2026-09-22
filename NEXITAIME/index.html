@@ -2398,57 +2398,86 @@ function classicDesiredTags(){
   return tags;
 }
 
-function chooseClassicRoute(){
+function classicTransportRange(route){
+  const g=route?.transport_guidance||{};
+  if(['privatecar','mobilitycar'].includes(transport) && Array.isArray(g.car_minutes))return g.car_minutes;
+  if(transport==='public' && Array.isArray(g.public_transport_minutes))return g.public_transport_minutes;
+  return Array.isArray(route?.recommended_minutes)?route.recommended_minutes:[120,120];
+}
+
+function rankedClassicRoutes(){
   const routes=CLASSIC_ROUTES_MASTER?.routes||[];
-  if(!routes.length)return null;
+  if(!routes.length)return [];
   const area=classicOriginArea();
   const desired=classicDesiredTags();
-  let best=null,bestScore=-1e9;
-  for(const route of routes){
+  const carLike=['privatecar','mobilitycar'].includes(transport);
+  return routes.map(route=>{
     let score=0;
     if(route.origin_area===area)score+=80;
     else if(route.origin_area && area)score-=25;
     const tags=new Set(route.tags||[]);
     for(const tag of desired)if(tags.has(tag))score+=16;
+    if(carLike && tags.has('car'))score+=24;
+    if(transport==='public' && tags.has('public_transport'))score+=20;
     if(destinationArea==='myoko' && route.origin_area==='myoko')score+=30;
-    if(destinationArea==='central' && route.origin_area==='takada')score+=25;
-    if(destinationArea==='sea' && route.origin_area==='naoetsu')score+=25;
-    if(destinationArea==='kasugayama' && route.origin_area==='kasugayama')score+=25;
+    if(destinationArea==='central' && (route.origin_area==='takada'||(route.stops||[]).some(s=>String(s).includes('高田'))))score+=25;
+    if(destinationArea==='sea' && (route.origin_area==='naoetsu'||(route.stops||[]).some(s=>String(s).includes('うみがたり'))))score+=25;
+    if(destinationArea==='kasugayama' && (route.origin_area==='kasugayama'||(route.stops||[]).some(s=>String(s).includes('春日山'))))score+=25;
     if(returnTarget==='same' && route.return_area===route.origin_area)score+=10;
-    if(score>bestScore){bestScore=score;best=route;}
-  }
-  return bestScore>=35?best:null;
+    const range=classicTransportRange(route);
+    const min=Number(range?.[0])||120;
+    // おまかせでは「近いだけ」を優先し過ぎず、足を伸ばせる王道も残す。
+    if(carLike && area==='joetsumyoko' && min<=210)score+=Math.max(0,30-Math.floor(min/30)*3);
+    return {route,score,min};
+  }).filter(x=>x.score>=35).sort((a,b)=>b.score-a.score||a.min-b.min);
+}
+
+function chooseClassicRoute(){
+  return rankedClassicRoutes()[0]?.route||null;
 }
 
 function resolveAutoFreeMinutes(){
-  const route=chooseClassicRoute();
+  const ranked=rankedClassicRoutes();
+  const route=ranked[0]?.route||null;
   LAST_CLASSIC_ROUTE=route;
   let minutes=120;
-  if(route && Array.isArray(route.recommended_minutes)){
-    const lo=Number(route.recommended_minutes[0])||90;
-    const hi=Number(route.recommended_minutes[1])||lo;
+  const carLike=['privatecar','mobilitycar'].includes(transport);
+  // 車・カーシェアは上越妙高駅周辺だけに閉じず、高田・春日山まで候補に入る時間を確保。
+  if(carLike && classicOriginArea()==='joetsumyoko'){
+    const mins=ranked.map(x=>x.min).filter(v=>Number.isFinite(v)&&v<=210).sort((a,b)=>a-b);
+    if(mins.length>=3)minutes=mins[Math.min(2,mins.length-1)];
+    else if(mins.length)minutes=Math.max(120,mins[mins.length-1]);
+    else minutes=150;
+  }else if(route){
+    const range=classicTransportRange(route);
+    const lo=Number(range?.[0])||90;
+    const hi=Number(range?.[1])||lo;
     minutes=Math.round(((lo+hi)/2)/30)*30;
   }else{
     if(mood==='onsen'||mood==='active')minutes=180;
     else if(mood==='sightseeing')minutes=150;
     else if(mood==='food'||mood==='event')minutes=120;
   }
-  const d=planningDate||new Date();
-  const hm=d.getHours()*60+d.getMinutes();
-  return Math.max(60,Math.min(360,Math.round(minutes/30)*30));
+  return Math.max(60,Math.min(360,Math.ceil(minutes/30)*30));
 }
 
 function classicRouteBoostForEvent(ev){
-  const route=LAST_CLASSIC_ROUTE;
-  if(!route)return 0;
+  const ranked=rankedClassicRoutes();
+  if(!ranked.length)return 0;
   const hay=String(ev?.title||ev?.venue||'').normalize('NFKC');
   if(!hay)return 0;
-  const stops=Array.isArray(route.stops)?route.stops:[];
-  for(const stop of stops){
-    const key=String(stop||'').normalize('NFKC');
-    if(key && key.length>=2 && (hay.includes(key)||key.includes(hay)))return 32;
+  let best=0;
+  // 1本だけでなく上位の王道ルートを横断評価。カーシェアなら高田・春日山・直江津も候補に残す。
+  for(const {route,score} of ranked.slice(0,6)){
+    const stops=Array.isArray(route.stops)?route.stops:[];
+    for(const stop of stops){
+      const key=String(stop||'').normalize('NFKC');
+      if(key && key.length>=2 && (hay.includes(key)||key.includes(hay))){
+        best=Math.max(best,32+Math.max(0,Math.min(18,Math.round((score-35)/8))));
+      }
+    }
   }
-  return 0;
+  return best;
 }
 
 
