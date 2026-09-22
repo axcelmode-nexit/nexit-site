@@ -2488,6 +2488,22 @@ function resolveAutoFreeMinutes(){
   return Math.max(60,Math.min(360,Math.ceil(minutes/30)*30));
 }
 
+function autoDurationChoices(){
+  // 「時間おまかせ」は1つの所要時間に固定せず、短・中・長の3段階で提案する。
+  // 車系は借りる価値が出るよう、長めの周遊枠を用意する。
+  const vehicleSelected=['privatecar','mobilitycar'].includes(transport);
+  if(vehicleSelected) return [90,180,300];
+  if(mood==='food'||mood==='cafe') return [60,90,150];
+  if(mood==='event') return [60,120,180];
+  return [90,180,300];
+}
+
+function autoDurationLabel(minutes){
+  if(minutes<=90)return 'サクッと';
+  if(minutes<=180)return 'しっかり';
+  return 'たっぷり';
+}
+
 function classicRouteBoostForEvent(ev){
   const ranked=rankedClassicRoutes();
   if(!ranked.length)return 0;
@@ -2885,6 +2901,16 @@ document.querySelectorAll('#moods .chip').forEach(b=>b.onclick=()=>{
 document.querySelectorAll('#foodKinds .chip').forEach(b=>b.onclick=()=>{
  document.querySelectorAll('#foodKinds .chip').forEach(x=>x.classList.remove('active'));
  b.classList.add('active'); foodKind=b.dataset.foodKind||'any';
+
+ // 居酒屋を選んだ時は、飲酒運転・自転車利用につながる移動手段を残さない。
+ // 公共交通かタクシーを比較できるよう「おまかせ」へ戻す。
+ if(foodKind==='居酒屋' && !['auto','public','taxi'].includes(transport)){
+   transport='auto';
+   document.querySelectorAll('#transport .chip').forEach(x=>{
+     x.classList.toggle('active', x.dataset.mode==='auto');
+   });
+   renderMobility();
+ }
 });
 document.querySelectorAll('#onsenKinds .chip').forEach(b=>b.onclick=()=>{
  document.querySelectorAll('#onsenKinds .chip').forEach(x=>x.classList.remove('active'));
@@ -2904,8 +2930,17 @@ document.querySelectorAll('#eventKinds .chip').forEach(b=>b.onclick=()=>{
  eventKind=b.dataset.eventKind||'お祭り・催し';
 });
 document.querySelectorAll('#transport .chip').forEach(b=>b.onclick=()=>{
+ const requested=b.dataset.mode;
+ if(mood==='food' && foodKind==='居酒屋' && !['auto','public','taxi'].includes(requested)){
+   transport='auto';
+   document.querySelectorAll('#transport .chip').forEach(x=>{
+     x.classList.toggle('active', x.dataset.mode==='auto');
+   });
+   renderMobility();
+   return;
+ }
  document.querySelectorAll('#transport .chip').forEach(x=>x.classList.remove('active'));
- b.classList.add('active'); transport=b.dataset.mode; renderMobility();
+ b.classList.add('active'); transport=requested; renderMobility();
 });
 document.getElementById('budget').onchange=e=>budget=e.target.value;
 document.getElementById('companion').onchange=e=>companion=e.target.value;
@@ -6628,7 +6663,32 @@ function stagedAutoCandidates(events, ctx){
 }
 
 
+
+function alcoholVenueLike(ev){
+  // 飲酒前提になりやすい店舗では、運転・自転車・徒歩単独を提案しない。
+  // 公共交通（電車・バス）またはタクシーのみ。
+  if(mood==='food' && foodKind==='居酒屋') return true;
+  const cats=(ev?.categories||[]).join(' ');
+  const text=[
+    ev?.title,ev?.venue,ev?.summary,ev?.genre,ev?.genre_name,
+    ev?.catch,ev?.provider,ev?.name,cats
+  ].filter(Boolean).join(' ');
+  return /居酒屋|酒場|炉端|焼鳥|やきとり|焼き鳥|バー|BAR|ビアホール|ダイニングバー|ワインバー|立ち飲み|スナック/i.test(text);
+}
+
+function alcoholSafeModes(modes){
+  const safe=new Set(['public','train','bus','taxi','multimodal']);
+  return (modes||[]).filter(m=>safe.has(m));
+}
 function autoModesForEvent(ev,dest,modes,ctx,start,deadline){
+  // 居酒屋・酒場など飲酒前提になりやすい候補は、
+  // 公共交通（電車・バス）またはタクシーだけを許可する。
+  if(alcoholVenueLike(ev)){
+    const safe=alcoholSafeModes(modes);
+    if(safe.length) return safe;
+    return ['public','taxi'];
+  }
+
   // Explicitly selected transport must never be changed.
   if(transport!=='auto') return modes;
 
@@ -8594,9 +8654,13 @@ function planComparisonHtml(plans,start,buffer){
     const elapsed=(Number.isFinite(p.finish)&&Number.isFinite(start))?Math.max(0,p.finish-start):null;
     const travel=elapsed!=null?Math.max(0,elapsed-Number(p.stay||0)):null;
     const total=totalPlanCost(p);
-    const spare=Math.max(0,Number(p.spare||0)+Number(buffer||0));
+    const planBuffer=Number(p.offerBuffer??buffer??0);
+    const spare=Math.max(0,Number(p.spare||0)+planBuffer);
+    const durationRank=p.offerFreeMinutes
+      ? `${autoDurationLabel(p.offerFreeMinutes)}・約${p.offerFreeMinutes}分コース`
+      : (i===0?'おすすめ':(i===1?'別の候補':'もう一案'));
     html+=`<div class="plan-compare-card">
-      <div class="plan-compare-rank">${i===0?'おすすめ':(i===1?'別の候補':'もう一案')}</div>
+      <div class="plan-compare-rank">${durationRank}</div>
       <div class="plan-compare-name">${esc(planDisplayTitle(p))}</div>
       <div class="plan-compare-mode">${esc(p.modeLabel||'')}</div>
       <div class="plan-compare-total"><span>⏱ 合計所要</span><strong>${elapsed!=null?`約${Math.round(elapsed)}分`:'要確認'}</strong></div>
@@ -8753,7 +8817,7 @@ async function buildPlans(){
  };
 
  const start=planningDate.getHours()*60+planningDate.getMinutes(), hardEnd=start+free, deadline=hardEnd-buffer;
- summary.innerHTML=`<h2>現在の条件で検索中…</h2><p>${isAutoFree?`おまかせ時間は約${free}分${LAST_CLASSIC_ROUTE?.name?`（${esc(LAST_CLASSIC_ROUTE.name)}を参考）`:''}。`:''}近い候補から順に、移動時間・時刻表・必要な戻り余裕を判定しています。</p>`;
+ summary.innerHTML=`<h2>おすすめを探しています…</h2><p>${isAutoFree?'時間別のプランを比較しながら、':''}移動時間・営業時間・時刻表・必要な戻り余裕を判定しています。</p>`;
  const searchWatchdog=setTimeout(()=>{
    if(summary.textContent.includes('再検索中')){
      summary.innerHTML='<h2>検索に時間がかかっています</h2><p>外部サービスの応答が遅いため、処理を継続しています。検索条件は変更していません。</p>';
@@ -8801,11 +8865,16 @@ async function buildPlans(){
  let scored=[];
  let relaxationLevel=0;
  let expandedForMultiple=false;
- const requestedModes=transport==='auto'
+ let requestedModes=transport==='auto'
    ? (['food','cafe'].includes(mood)
        ? ['carshare','public','taxi','walk','bike']
        : AUTO_MODES)
    : (transport==='mobilitycar' ? ['carshare','rentalcar'] : [transport]);
+
+ // 「居酒屋」指定時は公共交通・タクシーだけ。
+ if(mood==='food' && foodKind==='居酒屋'){
+   requestedModes=['public','taxi'];
+ }
 
  // 1) Exact requested conditions
  if(isAllAutoSearch()){
@@ -8914,7 +8983,77 @@ async function buildPlans(){
    }
  }
 
- const top=selectDiverseTopPlans(topPool,free,3);
+ let top=selectDiverseTopPlans(topPool,free,3);
+ let multiDurationAuto=false;
+
+ // 時間がおまかせなら、単一の時間に決め打ちせず、成立する「短・中・長」のプランを1案ずつ作る。
+ // 明示された気分・行き先・飲酒時の安全な移動手段など、既存の厳格条件はそのまま維持する。
+ if(isAutoFree){
+   const durationPlans=[];
+   const usedKeys=new Set();
+   const durationPool=events.length?events:(()=>{
+     let rows=candidateEvents.filter(ev=>eventIsAvailableAt(ev,planningDate)).filter(budgetAllows).filter(companionAllows);
+     if(searchCtx.destination!=='any') rows=rows.filter(destinationMatchesEvent);
+     if(mood!=='any') rows=rows.filter(ev=>moodMatches(ev,mood));
+     return rows.filter(foodKindMatches).filter(secondaryMoodMatches);
+   })();
+
+   for(const duration of autoDurationChoices()){
+     const dBuffer=automaticReturnBufferMinutes(duration);
+     const dDeadline=start+duration-dBuffer;
+     let rows=await scoreEventSet(durationPool,requestedModes,start,dDeadline,searchCtx);
+     rows=sortCandidates(rows);
+     if(budget!=='any'){
+       const maxBudget=Number(budget);
+       rows=rows.filter(row=>{
+         const total=totalPlanCost(row);
+         return total==null || total<=maxBudget;
+       });
+     }
+
+     const prepared=[];
+     const localSeen=new Set();
+     for(const row of rows){
+       const key=row.ev.id||`${row.ev.title}|${row.ev.venue||''}`;
+       if(localSeen.has(key))continue;
+       localSeen.add(key);
+       row.itinerary=buildSimpleItinerary(row,candidateEvents,duration);
+       if(Array.isArray(row.itinerary)&&row.itinerary.length<2)row.itinerary=null;
+       row.multiStopPreferenceBonus=multiStopPreferenceBonus(row,duration);
+       row.routeProgressFlowBonus=itineraryProgressFlowBonus(row,searchCtx);
+       if(originOnlyStopBeforeDifferentGoal(row,searchCtx))continue;
+       if(filterFinalPlans([row],searchCtx,start,dDeadline).length)prepared.push(row);
+       if(prepared.length>=8)break;
+     }
+     sortCandidates(prepared);
+
+     // 長い時間ほど複数スポット案を優先。カーシェア/レンタカーは特に周遊を優先する。
+     prepared.sort((a,b)=>{
+       const aStops=Array.isArray(a.itinerary)?a.itinerary.length:1;
+       const bStops=Array.isArray(b.itinerary)?b.itinerary.length:1;
+       const multiWeight=duration>=150?30:10;
+       return (bStops-aStops)*multiWeight || (Number(b.score||0)-Number(a.score||0));
+     });
+
+     let pick=prepared.find(row=>{
+       const key=row.ev.id||`${row.ev.title}|${row.ev.venue||''}`;
+       return !usedKeys.has(key);
+     }) || prepared[0];
+     if(pick){
+       const key=pick.ev.id||`${pick.ev.title}|${pick.ev.venue||''}`;
+       usedKeys.add(key);
+       pick.offerFreeMinutes=duration;
+       pick.offerBuffer=dBuffer;
+       pick.offerDurationLabel=autoDurationLabel(duration);
+       durationPlans.push(pick);
+     }
+   }
+
+   if(durationPlans.length>=2){
+     top=durationPlans.slice(0,3);
+     multiDurationAuto=true;
+   }
+ }
  clearTimeout(searchWatchdog);
 
  const previousSnapshot=lastSearchSnapshot;
@@ -8950,7 +9089,10 @@ async function buildPlans(){
  }
 
  const routeSummary=`${searchCtx.origin} → ${destinationGroupLabel(searchCtx.destination)} → ${searchCtx.returnTo}`;
- if(relaxationLevel===0){
+ if(multiDurationAuto){
+   const durations=top.map(p=>p.offerFreeMinutes).filter(Boolean).join('分・');
+   summary.innerHTML=`<h2>時間別に${top.length}案あります</h2><p><strong>${routeSummary}</strong><br>時間はおまかせなので、${durations}${durations?'分':''}の中から成立するプランを提案しています。長いコースほど複数スポットの周遊を優先します。</p>`;
+ }else if(relaxationLevel===0){
    if(transport==='auto'){
      {
      let changeNote='現在の条件で再検索しました。';
@@ -8993,12 +9135,14 @@ async function buildPlans(){
 
  disposePlanRouteMaps();
  box.innerHTML=renderResultQuickAdjust()+planComparisonHtml(top,start,buffer)+`<div id="aiPlanSuggestion" class="ai-suggestion-card"></div><div class="plan-picked-banner">選んだプランを詳しく見ています <button type="button" data-unpick-plan>ほかの案を見る</button></div>`+top.map((p,idx)=>{
-   const rankLabel=idx===0?'おすすめ':idx===1?'別の候補':'もう一案';
+   const rankLabel=p.offerFreeMinutes
+     ? `${autoDurationLabel(p.offerFreeMinutes)} 約${p.offerFreeMinutes}分`
+     : (idx===0?'おすすめ':idx===1?'別の候補':'もう一案');
    const rank=`<span class="status">${rankLabel}</span>`;
    const recommendationHtml=renderRecommendationBadges(p,idx);
    const eventInfo=eventInfoHtml(p.ev);
    const providerInfo=providerInfoHtml(p.ev);
-   const scheduleHtml=renderPlanSchedule(p,{...searchCtx,buffer});
+   const scheduleHtml=renderPlanSchedule(p,{...searchCtx,buffer:Number(p.offerBuffer??buffer)});
    const transitGuideHtml=renderTransitGuide(p,searchCtx);
    const serviceNote=p.service?`<div class="note">利用候補：${esc(p.service.name)}${p.accessMinutes?`（拠点まで徒歩 約${p.accessMinutes}分）`:''}</div>`:'';
    const itineraryHtml=renderSimpleItinerary(p.itinerary);
