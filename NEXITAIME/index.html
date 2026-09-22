@@ -1881,6 +1881,57 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
 #plans.focus-plan .plan-picked-banner{display:flex}
 @media(max-width:620px){.plan-compare{padding:12px}.plan-compare-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.plan-compare-total strong{font-size:17px}}
 </style>
+
+<style>
+/* 「あとどれくらい？」を「今すぐ／日時を指定」と同じ2列レイアウトへ完全統一 */
+#freeModeRow,
+.free-mode-row,
+.duration-mode-row,
+#durationModeRow {
+  display: grid !important;
+  grid-template-columns: minmax(0,1fr) minmax(0,1fr) !important;
+  gap: 10px !important;
+  width: 100% !important;
+  align-items: stretch !important;
+}
+
+#freeModeRow > *,
+.free-mode-row > *,
+.duration-mode-row > *,
+#durationModeRow > * {
+  width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+  height: 44px !important;
+  min-height: 44px !important;
+  max-height: 44px !important;
+  border-radius: 16px !important;
+  margin: 0 !important;
+}
+</style>
+
+
+<style id="free-row-width-match">
+@media (max-width:700px){
+  #freeModeRow{
+    display:flex !important;
+    flex-wrap:nowrap !important;
+    gap:8px !important;
+    margin-left:14px !important;
+    margin-right:14px !important;
+    width:auto !important;
+  }
+  #freeModeRow > *{
+    flex:1 1 0 !important;
+    width:0 !important;
+    min-width:0 !important;
+    height:44px !important;
+    min-height:44px !important;
+    max-height:44px !important;
+    box-sizing:border-box !important;
+  }
+}
+</style>
 </head>
 <body>
 <div class="app">
@@ -1956,24 +2007,24 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
 <div class="note" style="margin-top:10px">初期値は「今すぐ」。日時を指定した場合は、その日時を起点にイベント開催時間・営業時間・公開時刻表を判定します。</div>
 </div><div class="group-part group-part-divider">
 <div class="group-subtitle">あとどれくらい？</div>
-<div class="grid">
-<div class="field"><label>空き時間</label><select id="free">
-<option selected="" value="auto">✨ おまかせ</option>
-<option value="60">60分</option>
-<option value="90">90分</option>
-<option value="120">120分</option>
-<option value="150">150分</option>
-<option value="180">180分</option>
-<option value="210">210分</option>
-<option value="240">240分</option>
-<option value="270">270分</option>
-<option value="300">300分</option>
-<option value="330">330分</option>
-<option value="360">360分</option>
-</select></div>
+<div id="freeModeRow" class="chips wrap" style="margin-left:14px;margin-right:14px;width:auto">
+  <button type="button" class="chip active" id="freeAutoBtn" data-free-mode="auto" style="flex:1 1 calc(50% - 5px);width:0;min-width:0;min-height:44px;justify-content:center;font-size:14px;border-radius:16px;padding:8px 10px">✨ おまかせ</button>
+  <div class="field" style="flex:1 1 calc(50% - 5px);width:0;min-width:0;min-height:44px;display:flex;align-items:center;padding:8px 10px;border-radius:16px"><select id="free" style="font-size:14px">
+    <option value="60">60分</option>
+    <option value="90">90分</option>
+    <option selected="" value="120">120分</option>
+    <option value="150">150分</option>
+    <option value="180">180分</option>
+    <option value="210">210分</option>
+    <option value="240">240分</option>
+    <option value="270">270分</option>
+    <option value="300">300分</option>
+    <option value="330">330分</option>
+    <option value="360">360分</option>
+  </select></div>
 </div>
 <input id="buffer" type="hidden" value="15">
-<div class="note" style="margin-top:10px">「おまかせ」では、現在地・帰着先・移動手段・天気・営業時間・当日イベントと王道ルートを見て、無理のない時間を自動で決めます。戻りの余裕時間も自動で確保します。</div>
+<div class="note" style="margin-top:10px">初期値は「おまかせ」。時間指定を選ぶと、その時間内で提案します（初期値120分）。「おまかせ」では、現在地・帰着先・移動手段・天気・営業時間・当日イベントと王道ルートを見て、複数の時間帯から成立するプランを提案します。</div>
 </div></section><section class="card input-group-card"><div class="group-title">3. どう過ごす？</div><div class="group-part">
 <div class="group-subtitle">気分</div>
 <div class="chips" id="moods">
@@ -2356,7 +2407,7 @@ function mergeManualTimelyEvents(rows=[]){
   ];
 }
 
-let EVENTS=[], RESTAURANTS=[], TRAIN={up:[],down:[]}, SHINANO={up:[],down:[]}, BUS={trips:[]}, BUS_MAIN={weekday:{},holiday:{}}, BUS_EXT={routes:[]}, PLACES={}, MOBILITY=[], origin='上越妙高', destinationArea='any', returnTarget='same', timingMode='now', planningDate=new Date(), mood='any', foodKind='ラーメン', onsenKind='温泉', sightseeingKind='歴史・文化', activeKind='散歩・ウォーキング', eventKind='お祭り・催し', transport='auto', budget='any', companion='any', currentPos=null, weather=null, weatherForecast=null, mobilityMap=null, mobilityMarkers=[], currentPosMarker=null, nearestService=null;
+let EVENTS=[], RESTAURANTS=[], TRAIN={up:[],down:[]}, SHINANO={up:[],down:[]}, BUS={trips:[]}, BUS_MAIN={weekday:{},holiday:{}}, BUS_EXT={routes:[]}, PLACES={}, MOBILITY=[], origin='上越妙高', destinationArea='any', returnTarget='same', timingMode='now', planningDate=new Date(), mood='any', foodKind='ラーメン', onsenKind='温泉', sightseeingKind='歴史・文化', activeKind='散歩・ウォーキング', eventKind='お祭り・催し', transport='auto', budget='any', companion='any', currentPos=null, weather=null, weatherForecast=null, mobilityMap=null, mobilityMarkers=[], currentPosMarker=null, nearestService=null, freeTimeMode='auto';
 
 // v128: 王道ルートマスタ。外部JSONを優先し、取得できない場合は従来提案へフォールバック。
 const NEXITAIME_CLASSIC_ROUTES_URL='./nexitaime_classic_routes.json';
@@ -7310,7 +7361,8 @@ function setDestinationChoice(value){
 function adjustFreeTime(delta){
   const el=document.getElementById('free');
   const current=Number(el.value)||120;
-  el.value=Math.min(720, Math.max(30, current+delta));
+  el.value=Math.min(360, Math.max(60, current+delta));
+  setFreeTimeMode('manual');
 }
 
 function shiftDepartureMinutes(delta){
@@ -7834,6 +7886,14 @@ function setMoodChoice(value){
   });
 }
 
+function setFreeTimeMode(mode){
+  freeTimeMode=mode==='manual'?'manual':'auto';
+  const autoBtn=document.getElementById('freeAutoBtn');
+  if(autoBtn) autoBtn.classList.toggle('active',freeTimeMode==='auto');
+  const select=document.getElementById('free');
+  if(select) select.classList.toggle('free-manual-active',freeTimeMode==='manual');
+}
+
 function setFreeMinutes(value){
   const el=document.getElementById('free');
   if(!el)return;
@@ -7841,12 +7901,12 @@ function setFreeMinutes(value){
   const rounded=Math.round(raw/30)*30;
   const clamped=Math.max(60,Math.min(360,rounded));
   el.value=String(clamped);
+  setFreeTimeMode('manual');
 }
 
 function currentFreeMinutes(){
-  const raw=document.getElementById('free')?.value;
-  if(raw==='auto')return resolveAutoFreeMinutes();
-  return Number(raw)||120;
+  if(freeTimeMode==='auto')return resolveAutoFreeMinutes();
+  return Number(document.getElementById('free')?.value)||120;
 }
 
 function showAdjustFeedback(message){
@@ -8534,7 +8594,7 @@ async function buildPlans(){
  syncSearchStateFromControls();
  await ensureClassicRoutesLoaded();
  const freeControl=document.getElementById('free');
- const isAutoFree=freeControl?.value==='auto';
+ const isAutoFree=freeTimeMode==='auto';
  let free=isAutoFree?resolveAutoFreeMinutes():(Number(freeControl?.value)||120);
  try{ trackNexitaime('search_start',{freeMinutes:free,freeMode:isAutoFree?'auto':'manual',classicRouteId:LAST_CLASSIC_ROUTE?.id||null,buffer:Number(document.getElementById('buffer')?.value)||15}); }catch(_){}
  let buffer=Math.max(5,Number(document.getElementById('buffer').value)||10);
@@ -9065,6 +9125,16 @@ if ('serviceWorker' in navigator) {
 </script>
 <script>
 document.addEventListener('DOMContentLoaded',()=>{
+  const freeAutoBtn=document.getElementById('freeAutoBtn');
+  const freeSelect=document.getElementById('free');
+  if(freeAutoBtn){
+    freeAutoBtn.addEventListener('click',()=>setFreeTimeMode('auto'));
+  }
+  if(freeSelect){
+    freeSelect.addEventListener('pointerdown',()=>setFreeTimeMode('manual'));
+    freeSelect.addEventListener('change',()=>setFreeTimeMode('manual'));
+  }
+  setFreeTimeMode('auto');
   try{ trackNexitaime('page_view'); }catch(_){}
   try{ renderFavoriteTray(); }catch(_){}
 });
