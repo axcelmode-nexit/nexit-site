@@ -2313,6 +2313,48 @@ async function enrichCurrentMobilityCoordinates(rows=[]){
   return rows;
 }
 
+
+const MANUAL_TIMELY_EVENTS=[
+  {
+    id:'manual-furusatto-softbank-kids-license-20260922',
+    title:'ソフトバンク はたらくくるま 子ども免許証',
+    venue:'上越妙高駅西口 フルサット',
+    area:'joetsumyoko',
+    area_name:'上越妙高',
+    categories:['イベント','催し','体験','親子','子ども','お祭り・催し','親子・子ども向け'],
+    primary_category:'event',
+    summary:'見て・食べて・体験して楽しむ週末イベント。車とフルサットについてのクイズや、参加者向けのくじ引きを実施。',
+    start_date:'2026-09-22',
+    end_date:'2026-09-23',
+    start_time:'10:00',
+    end_time:'16:00',
+    estimated_cost_yen:0,
+    stay_minutes:{min:20,recommended:40,max:75},
+    family_friendly:true,
+    couple_friendly:true,
+    solo_friendly:true,
+    indoor:false,
+    address:'新潟県上越市大和5丁目1-5',
+    lat:37.0805,
+    lon:138.2473,
+    routing_ready:true,
+    url:'https://www.instagram.com/furusatto_joetsumyoko/',
+    source:'manual_instagram',
+    source_name:'FURUSATTO公式Instagram',
+    verified_at:'2026-09-22',
+    source_note:'FURUSATTO公式Instagram投稿画像を確認して手動追加。'
+  }
+];
+
+function mergeManualTimelyEvents(rows=[]){
+  const base=Array.isArray(rows)?rows:[];
+  const manualKeys=new Set(MANUAL_TIMELY_EVENTS.map(x=>normalizeShopName(x?.title||x?.venue)).filter(Boolean));
+  return [
+    ...MANUAL_TIMELY_EVENTS.map(x=>({...x})),
+    ...base.filter(x=>!manualKeys.has(normalizeShopName(x?.title||x?.venue)))
+  ];
+}
+
 let EVENTS=[], RESTAURANTS=[], TRAIN={up:[],down:[]}, SHINANO={up:[],down:[]}, BUS={trips:[]}, BUS_MAIN={weekday:{},holiday:{}}, BUS_EXT={routes:[]}, PLACES={}, MOBILITY=[], origin='上越妙高', destinationArea='any', returnTarget='same', timingMode='now', planningDate=new Date(), mood='any', foodKind='ラーメン', onsenKind='温泉', sightseeingKind='歴史・文化', activeKind='散歩・ウォーキング', eventKind='お祭り・催し', transport='auto', budget='any', companion='any', currentPos=null, weather=null, weatherForecast=null, mobilityMap=null, mobilityMarkers=[], currentPosMarker=null, nearestService=null;
 
 Promise.all([
@@ -2342,7 +2384,7 @@ Promise.all([
     }
     return true;
   });
-  EVENTS=[...(Array.isArray(e)?e:[]),...RESTAURANTS,...SPOTS,...EXTRA_SPOTS];
+  EVENTS=[...mergeManualTimelyEvents(Array.isArray(e)?e:[]),...RESTAURANTS,...SPOTS,...EXTRA_SPOTS];
   applyOfficialAddressOverrides(EVENTS);
   await enrichOfficialAddressCoordinates(EVENTS);
   TRAIN=t;SHINANO=shinanoData||{up:[],down:[]};BUS=b;BUS_MAIN=bm;BUS_EXT=bx;PLACES=p;
