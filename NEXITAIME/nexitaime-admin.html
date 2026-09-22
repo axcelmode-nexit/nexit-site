@@ -105,7 +105,6 @@ button.danger{color:#a73434;border-color:#efd0d0;background:#fff8f8}
         <summary>Data Sync接続設定</summary>
         <div class="settings-body">
           <label>Worker URL<input id="syncApi" class="settings-input" type="url" placeholder="https://nexitaime-data-sync...workers.dev"></label>
-          <label>Data Sync専用キー（空欄なら上の管理キーを使用）<input id="syncKey" class="settings-input" type="password" placeholder="必要な場合のみ"></label>
         </div>
       </details>
     </div>
@@ -150,7 +149,6 @@ const $ = id => document.getElementById(id);
 let adminKey = sessionStorage.getItem("nexitaime-admin-key") || "";
 $("key").value = adminKey;
 $("syncApi").value = sessionStorage.getItem("nexitaime-sync-api") || DEFAULT_SYNC_API;
-$("syncKey").value = sessionStorage.getItem("nexitaime-sync-key") || "";
 
 $("loginBtn").onclick = async () => {
   adminKey = $("key").value.trim();
@@ -164,17 +162,15 @@ $("logout").onclick = () => { sessionStorage.clear(); location.reload(); };
 $("syncReload").onclick = () => loadSync();
 $("runSync").onclick = runSync;
 $("syncApi").onchange = saveSyncSettings;
-$("syncKey").onchange = saveSyncSettings;
 
 function saveSyncSettings(){
   sessionStorage.setItem("nexitaime-sync-api", $("syncApi").value.trim());
-  sessionStorage.setItem("nexitaime-sync-key", $("syncKey").value.trim());
 }
 function syncCfg(){
   saveSyncSettings();
   return {
     api: ($("syncApi").value.trim() || DEFAULT_SYNC_API).replace(/\/$/,""),
-    key: $("syncKey").value.trim() || adminKey
+    key: adminKey
   };
 }
 async function syncReq(path,opt={}){
@@ -218,7 +214,7 @@ async function loadSync(){
     $("syncMessage").className="sync-status ok";$("syncMessage").textContent="Data Sync接続正常";
   }catch(e){
     $("syncMessage").className="sync-status bad";$("syncMessage").textContent=`Data Syncを取得できません：${e.message}`;
-    $("syncMetrics").innerHTML='<div class="empty">接続設定またはADMIN_KEYを確認してください。</div>';
+    $("syncMetrics").innerHTML='<div class="empty">ログイン時の管理キーでData Syncへ接続しています。</div>';
   }
 }
 function renderSyncStatus(d){
