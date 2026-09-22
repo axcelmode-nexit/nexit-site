@@ -1307,7 +1307,7 @@ window.NEXITAIME_GOURMET_ENDPOINT =
 // ▼ NEXITAIMEからひとこと：ここを true / false に変えるだけで即ON/OFFできます
 window.NEXITAIME_AI_SUGGESTION_ENABLED = true;
 </script>
-<script>window.NEXITAIME_BUILD="v126";</script>
+<script>window.NEXITAIME_BUILD="v128";</script>
 
 
 <style id="nexitaime-existing-ai-style">
@@ -1958,9 +1958,10 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
 <div class="group-subtitle">あとどれくらい？</div>
 <div class="grid">
 <div class="field"><label>空き時間</label><select id="free">
+<option selected="" value="auto">✨ おまかせ</option>
 <option value="60">60分</option>
 <option value="90">90分</option>
-<option selected="" value="120">120分</option>
+<option value="120">120分</option>
 <option value="150">150分</option>
 <option value="180">180分</option>
 <option value="210">210分</option>
@@ -1972,7 +1973,7 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
 </select></div>
 </div>
 <input id="buffer" type="hidden" value="15">
-<div class="note" style="margin-top:10px">戻りの余裕時間は、移動手段・天気・乗換などを見て自動で確保します。</div>
+<div class="note" style="margin-top:10px">「おまかせ」では、現在地・帰着先・移動手段・天気・営業時間・当日イベントと王道ルートを見て、無理のない時間を自動で決めます。戻りの余裕時間も自動で確保します。</div>
 </div></section><section class="card input-group-card"><div class="group-title">3. どう過ごす？</div><div class="group-part">
 <div class="group-subtitle">気分</div>
 <div class="chips" id="moods">
@@ -2148,7 +2149,7 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
 </section>
 
 <div class="hotpepper-credit">Powered by <a href="https://webservice.recruit.co.jp/" target="_blank" rel="noopener">ホットペッパーグルメ Webサービス</a></div>
-<footer data-build="v82">NEXITAIME 〜上越版〜 · Powered by 
+<footer data-build="v128">NEXITAIME 〜上越版〜 · Powered by 
 <a href="https://axcelmode-nexit.jp/" target="_blank" rel="noopener">AXCEL MODE NEXIT</a> · Beta1.0
 <section class="operator-card" aria-label="運営会社">
   <div class="operator-card-inner">
@@ -2356,6 +2357,103 @@ function mergeManualTimelyEvents(rows=[]){
 }
 
 let EVENTS=[], RESTAURANTS=[], TRAIN={up:[],down:[]}, SHINANO={up:[],down:[]}, BUS={trips:[]}, BUS_MAIN={weekday:{},holiday:{}}, BUS_EXT={routes:[]}, PLACES={}, MOBILITY=[], origin='上越妙高', destinationArea='any', returnTarget='same', timingMode='now', planningDate=new Date(), mood='any', foodKind='ラーメン', onsenKind='温泉', sightseeingKind='歴史・文化', activeKind='散歩・ウォーキング', eventKind='お祭り・催し', transport='auto', budget='any', companion='any', currentPos=null, weather=null, weatherForecast=null, mobilityMap=null, mobilityMarkers=[], currentPosMarker=null, nearestService=null;
+
+// v128: 王道ルートマスタ。外部JSONを優先し、取得できない場合は従来提案へフォールバック。
+const NEXITAIME_CLASSIC_ROUTES_URL='./nexitaime_classic_routes_v1.json';
+let CLASSIC_ROUTES_MASTER=null;
+let LAST_CLASSIC_ROUTE=null;
+
+async function ensureClassicRoutesLoaded(){
+  if(CLASSIC_ROUTES_MASTER)return CLASSIC_ROUTES_MASTER;
+  try{
+    const r=await fetch(NEXITAIME_CLASSIC_ROUTES_URL,{cache:'no-store'});
+    if(!r.ok)throw new Error(`HTTP ${r.status}`);
+    const data=await r.json();
+    if(!Array.isArray(data?.routes))throw new Error('routes missing');
+    CLASSIC_ROUTES_MASTER=data;
+  }catch(err){
+    console.warn('[NEXITAIME] classic routes unavailable; fallback to normal planning',err);
+    CLASSIC_ROUTES_MASTER={routes:[]};
+  }
+  return CLASSIC_ROUTES_MASTER;
+}
+
+function classicOriginArea(){
+  return ({'上越妙高':'joetsumyoko','高田':'takada','直江津':'naoetsu','妙高高原':'myoko'})[origin]||'';
+}
+
+function classicDesiredTags(){
+  const tags=[];
+  if(mood==='food')tags.push('food');
+  if(mood==='onsen')tags.push('onsen');
+  if(mood==='sightseeing')tags.push('sightseeing','history','culture');
+  if(mood==='active')tags.push('active','walk','nature');
+  if(mood==='event')tags.push('event');
+  if(mood==='rain')tags.push('rain_ok');
+  if(companion==='family')tags.push('family');
+  if(companion==='couple')tags.push('couple');
+  if(companion==='solo')tags.push('solo');
+  if(transport==='public')tags.push('public_transport');
+  if(['privatecar','mobilitycar'].includes(transport))tags.push('car');
+  return tags;
+}
+
+function chooseClassicRoute(){
+  const routes=CLASSIC_ROUTES_MASTER?.routes||[];
+  if(!routes.length)return null;
+  const area=classicOriginArea();
+  const desired=classicDesiredTags();
+  let best=null,bestScore=-1e9;
+  for(const route of routes){
+    let score=0;
+    if(route.origin_area===area)score+=80;
+    else if(route.origin_area && area)score-=25;
+    const tags=new Set(route.tags||[]);
+    for(const tag of desired)if(tags.has(tag))score+=16;
+    if(destinationArea==='myoko' && route.origin_area==='myoko')score+=30;
+    if(destinationArea==='central' && route.origin_area==='takada')score+=25;
+    if(destinationArea==='sea' && route.origin_area==='naoetsu')score+=25;
+    if(destinationArea==='kasugayama' && route.origin_area==='kasugayama')score+=25;
+    if(returnTarget==='same' && route.return_area===route.origin_area)score+=10;
+    if(score>bestScore){bestScore=score;best=route;}
+  }
+  return bestScore>=35?best:null;
+}
+
+function resolveAutoFreeMinutes(){
+  const route=chooseClassicRoute();
+  LAST_CLASSIC_ROUTE=route;
+  let minutes=120;
+  if(route && Array.isArray(route.recommended_minutes)){
+    const lo=Number(route.recommended_minutes[0])||90;
+    const hi=Number(route.recommended_minutes[1])||lo;
+    minutes=Math.round(((lo+hi)/2)/30)*30;
+  }else{
+    if(mood==='onsen'||mood==='active')minutes=180;
+    else if(mood==='sightseeing')minutes=150;
+    else if(mood==='food'||mood==='event')minutes=120;
+  }
+  const d=planningDate||new Date();
+  const hm=d.getHours()*60+d.getMinutes();
+  const until2100=Math.max(60,21*60-hm);
+  minutes=Math.min(minutes,until2100);
+  return Math.max(60,Math.min(360,Math.round(minutes/30)*30));
+}
+
+function classicRouteBoostForEvent(ev){
+  const route=LAST_CLASSIC_ROUTE;
+  if(!route)return 0;
+  const hay=String(ev?.title||ev?.venue||'').normalize('NFKC');
+  if(!hay)return 0;
+  const stops=Array.isArray(route.stops)?route.stops:[];
+  for(const stop of stops){
+    const key=String(stop||'').normalize('NFKC');
+    if(key && key.length>=2 && (hay.includes(key)||key.includes(hay)))return 32;
+  }
+  return 0;
+}
+
+
 
 Promise.all([
  fetch('./events_auto.json',{cache:'no-store'}).then(r=>r.ok?r.json():Promise.reject()).catch(()=>fetch('./events.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>[])),
@@ -6541,8 +6639,10 @@ async function scoreEventSet(events, modes, start, deadline, ctx){
       c.directionalProgressReasons=directionSense.reasons;
       const reservationScore=Number(c.reservation?.penalty||0);
       const returnSafetyScore=Number(c.returnSafety?.penalty||0);
+      const classicRouteScore=classicRouteBoostForEvent(ev);
       c.reservationScore=reservationScore;
       c.returnSafetyScore=returnSafetyScore;
+      c.classicRouteScore=classicRouteScore;
 
       c.preferenceScore=
         timeFitScore
@@ -6557,6 +6657,7 @@ async function scoreEventSet(events, modes, start, deadline, ctx){
         + autoModePenalty
         + reservationScore
         + returnSafetyScore
+        + classicRouteScore
         + routeSense.score
         + directionSense.score;
 
@@ -7656,7 +7757,9 @@ function setFreeMinutes(value){
 }
 
 function currentFreeMinutes(){
-  return Number(document.getElementById('free')?.value)||120;
+  const raw=document.getElementById('free')?.value;
+  if(raw==='auto')return resolveAutoFreeMinutes();
+  return Number(raw)||120;
 }
 
 function showAdjustFeedback(message){
@@ -8338,8 +8441,11 @@ function automaticReturnBufferMinutes(freeMinutes=120){
 
 async function buildPlans(){
  syncSearchStateFromControls();
- try{ trackNexitaime('search_start',{freeMinutes:Number(document.getElementById('free')?.value)||120,buffer:Number(document.getElementById('buffer')?.value)||15}); }catch(_){}
- const free=Number(document.getElementById('free').value)||120;
+ await ensureClassicRoutesLoaded();
+ const freeControl=document.getElementById('free');
+ const isAutoFree=freeControl?.value==='auto';
+ const free=isAutoFree?resolveAutoFreeMinutes():(Number(freeControl?.value)||120);
+ try{ trackNexitaime('search_start',{freeMinutes:free,freeMode:isAutoFree?'auto':'manual',classicRouteId:LAST_CLASSIC_ROUTE?.id||null,buffer:Number(document.getElementById('buffer')?.value)||15}); }catch(_){}
  let buffer=Math.max(5,Number(document.getElementById('buffer').value)||10);
  const now=new Date();
  const selected=selectedPlanDate();
@@ -8373,7 +8479,7 @@ async function buildPlans(){
  };
 
  const start=planningDate.getHours()*60+planningDate.getMinutes(), hardEnd=start+free, deadline=hardEnd-buffer;
- summary.innerHTML='<h2>現在の条件で検索中…</h2><p>近い候補から順に、移動時間・時刻表・必要な戻り余裕を判定しています。</p>';
+ summary.innerHTML=`<h2>現在の条件で検索中…</h2><p>${isAutoFree?`おまかせ時間は約${free}分${LAST_CLASSIC_ROUTE?.name?`（${esc(LAST_CLASSIC_ROUTE.name)}を参考）`:''}。`:''}近い候補から順に、移動時間・時刻表・必要な戻り余裕を判定しています。</p>`;
  const searchWatchdog=setTimeout(()=>{
    if(summary.textContent.includes('再検索中')){
      summary.innerHTML='<h2>検索に時間がかかっています</h2><p>外部サービスの応答が遅いため、処理を継続しています。検索条件は変更していません。</p>';
