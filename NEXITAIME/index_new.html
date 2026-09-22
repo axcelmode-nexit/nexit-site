@@ -1307,7 +1307,7 @@ window.NEXITAIME_GOURMET_ENDPOINT =
 // ▼ NEXITAIMEからひとこと：ここを true / false に変えるだけで即ON/OFFできます
 window.NEXITAIME_AI_SUGGESTION_ENABLED = true;
 </script>
-<script>window.NEXITAIME_BUILD="v126";</script>
+<script>window.NEXITAIME_BUILD="v127-cutover";</script>
 
 
 <style id="nexitaime-existing-ai-style">
@@ -1388,7 +1388,7 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
   "https://axcelmode-nexit-ai.pages.dev/api/nexitaime-analytics";
 </script>
 <script id="nexitaime-catalog-config">
-// v125 cutover: unified auto-refresh catalog first, legacy JSON as per-type fallback.
+// v127 cutover: Shadow v2.3 catalog first (FURUSATTO Instagram + cocola discovery), legacy JSON as per-type fallback.
 window.NEXITAIME_CATALOG_ENDPOINT =
   "https://nexitaime-data-sync.axcel-mode-nexit.workers.dev/api/catalog";
 window.NEXITAIME_CATALOG_PREFERRED = true;
@@ -2155,7 +2155,7 @@ window.NEXITAIME_CATALOG_TIMEOUT_MS = 3500;
 </section>
 
 <div class="hotpepper-credit">Powered by <a href="https://webservice.recruit.co.jp/" target="_blank" rel="noopener">ホットペッパーグルメ Webサービス</a></div>
-<footer data-build="v125-cutover">NEXITAIME 〜上越版〜 · Powered by 
+<footer data-build="v127-cutover">NEXITAIME 〜上越版〜 · Powered by 
 <a href="https://axcelmode-nexit.jp/" target="_blank" rel="noopener">AXCEL MODE NEXIT</a> · Beta1.0
 <section class="operator-card" aria-label="運営会社">
   <div class="operator-card-inner">
@@ -2320,6 +2320,68 @@ async function enrichCurrentMobilityCoordinates(rows=[]){
   return rows;
 }
 
+
+const MANUAL_TIMELY_EVENTS=[
+  {
+    id:'manual-furusatto-softbank-kids-license-20260922',
+    title:'ソフトバンク はたらくくるま 子ども免許証',
+    venue:'上越妙高駅西口 フルサット',
+    area:'joetsumyoko',
+    area_name:'上越妙高',
+    categories:['イベント','催し','体験','親子','子ども','お祭り・催し','親子・子ども向け'],
+    primary_category:'event',
+    summary:'見て・食べて・体験して楽しむ週末イベント。車とフルサットについてのクイズや、参加者向けのくじ引きを実施。',
+    start_date:'2026-09-22',
+    end_date:'2026-09-23',
+    start_time:'10:00',
+    end_time:'16:00',
+    estimated_cost_yen:0,
+    stay_minutes:{min:20,recommended:40,max:75},
+    family_friendly:true,
+    couple_friendly:true,
+    solo_friendly:true,
+    indoor:false,
+    address:'新潟県上越市大和5丁目1-5',
+    lat:37.0805,
+    lon:138.2473,
+    routing_ready:true,
+    url:'https://www.instagram.com/furusatto_joetsumyoko/',
+    source:'manual_instagram',
+    source_name:'FURUSATTO公式Instagram',
+    verified_at:'2026-09-22',
+    source_note:'FURUSATTO公式Instagram投稿画像を確認して手動追加。'
+  }
+];
+
+function mergeManualTimelyEvents(rows=[]){
+  const base=Array.isArray(rows)?rows:[];
+  const sameEvent=(a,b)=>{
+    const an=normalizeShopName(a?.title||a?.venue);
+    const bn=normalizeShopName(b?.title||b?.venue);
+    if(!an||!bn)return false;
+    const nameMatch=an===bn || (Math.min(an.length,bn.length)>=8 && (an.includes(bn)||bn.includes(an)));
+    if(!nameMatch)return false;
+    const ad=String(a?.start_date||'');
+    const bd=String(b?.start_date||'');
+    if(ad&&bd&&ad!==bd)return false;
+    const av=normalizeShopName(a?.venue||'');
+    const bv=normalizeShopName(b?.venue||'');
+    return !av||!bv||av===bv||av.includes(bv)||bv.includes(av);
+  };
+  const apiOrLegacy=base.map(x=>({...x}));
+  const additions=[];
+  for(const manual of MANUAL_TIMELY_EVENTS){
+    const existing=apiOrLegacy.find(x=>sameEvent(manual,x));
+    if(existing){
+      // Prefer live catalog timing/source while retaining richer hand-entered fallback fields.
+      const merged={...manual,...existing};
+      merged.categories=[...new Set([...(manual.categories||[]),...(existing.categories||[])])];
+      Object.assign(existing,merged);
+    }else additions.push({...manual});
+  }
+  return [...additions,...apiOrLegacy];
+}
+
 let EVENTS=[], RESTAURANTS=[], TRAIN={up:[],down:[]}, SHINANO={up:[],down:[]}, BUS={trips:[]}, BUS_MAIN={weekday:{},holiday:{}}, BUS_EXT={routes:[]}, PLACES={}, MOBILITY=[], origin='上越妙高', destinationArea='any', returnTarget='same', timingMode='now', planningDate=new Date(), mood='any', foodKind='ラーメン', onsenKind='温泉', sightseeingKind='歴史・文化', activeKind='散歩・ウォーキング', eventKind='お祭り・催し', transport='auto', budget='any', companion='any', currentPos=null, weather=null, weatherForecast=null, mobilityMap=null, mobilityMarkers=[], currentPosMarker=null, nearestService=null;
 
 function legacyFetch(url, fallback){
@@ -2391,7 +2453,11 @@ function catalogPriceYen(price){
 }
 
 function catalogCategories(row){
-  const raw=[row?.category,row?.data?.category].filter(Boolean).flatMap(v=>String(v).split(/[、,／/|]/)).map(v=>v.trim()).filter(Boolean);
+  const values=[
+    row?.category,row?.categories,row?.tags,row?.event_category,row?.event_tags,
+    row?.data?.category,row?.data?.categories,row?.data?.tags,row?.data?.event_category,row?.data?.event_tags
+  ].filter(v=>v!=null);
+  const raw=values.flatMap(v=>Array.isArray(v)?v:String(v).split(/[、,／/|]/)).map(v=>String(v).trim()).filter(Boolean);
   const base=row?.entity_type==='restaurant'?['食']:
     row?.entity_type==='event'?['イベント']:
     row?.entity_type==='place'?['観光']:[];
@@ -2402,15 +2468,15 @@ function catalogRowToCandidate(row){
   const start=catalogDateParts(row?.start_at);
   const finish=catalogDateParts(row?.end_at);
   const type=row?.entity_type;
-  const title=String(row?.name||'').trim();
-  const summary=row?.data?.description||'';
-  const url=row?.official_url||row?.source_url||'';
+  const title=String(row?.name||row?.title||row?.data?.name||row?.data?.title||'').trim();
+  const summary=row?.summary||row?.description||row?.data?.summary||row?.data?.description||'';
+  const url=row?.official_url||row?.source_url||row?.data?.official_url||row?.data?.source_url||'';
   const out={
     id:`catalog-${row?.id||title}`,
     title,
-    venue:title,
-    area:catalogAreaCode(row?.area),
-    area_name:row?.area||'',
+    venue:row?.venue||row?.data?.venue||title,
+    area:catalogAreaCode(row?.area||row?.data?.area),
+    area_name:row?.area||row?.data?.area||'',
     categories:catalogCategories(row),
     summary,
     address:row?.address||null,
@@ -2422,7 +2488,7 @@ function catalogRowToCandidate(row){
     estimated_cost_yen:catalogPriceYen(row?.price),
     verified_at:row?.verified_at||null,
     source:'catalog_api',
-    source_name:'NEXITAIME自動更新カタログ',
+    source_name:row?.source_name||row?.data?.source_name||'NEXITAIME自動更新カタログ',
     catalog_id:row?.id||null,
     catalog_confidence:row?.confidence??null,
     catalog_status:row?.status||'active',
@@ -2434,6 +2500,9 @@ function catalogRowToCandidate(row){
     out.end_date=finish.date||start.date;
     if(start.time)out.start_time=start.time;
     if(finish.time)out.end_time=finish.time;
+    const eventText=[title,summary,...(out.categories||[])].join(' ');
+    if(/親子|子ども|こども|キッズ|ファミリー|家族/.test(eventText))out.family_friendly=true;
+    out.primary_category='event';
   }
   if(type==='restaurant'){
     out.primary_category='food';
@@ -2540,7 +2609,7 @@ Promise.all([
  fetchCatalogType('place'),
  fetchCatalogType('mobility')
  ]).then(async ([legacyE,legacyR,legacyS,t,shinanoData,b,bm,bx,p,legacyM,catE,catR,catS,catM])=>{
-  const e=catE.ok?mergeCatalogCandidates(legacyE,catE.items):legacyE;
+  const e=mergeManualTimelyEvents(catE.ok?mergeCatalogCandidates(legacyE,catE.items):legacyE);
   const r=catR.ok?mergeCatalogCandidates(legacyR,catR.items):legacyR;
   const s=catS.ok?mergeCatalogCandidates(legacyS,catS.items):legacyS;
   const m=catM.ok?mergeCatalogCandidates(legacyM,catM.items):legacyM;
@@ -8391,7 +8460,7 @@ function planDisplayTitle(p){
 
 function planComparisonHtml(plans,start,buffer){
   if(!Array.isArray(plans)||plans.length<2)return '';
-  let html=`<div class="plan-compare"><div class="plan-compare-title">3案をざっくり比較</div><div class="plan-compare-sub">合計時間を中心に、移動・滞在・余裕・料金を見比べられます。</div><div class="plan-compare-list">`;
+  let html=`<div class="plan-compare"><div class="plan-compare-title">ざっくり比較</div><div class="plan-compare-sub">合計時間を中心に、移動・滞在・余裕・料金を見比べられます。</div><div class="plan-compare-list">`;
   plans.forEach((p,i)=>{
     const elapsed=(Number.isFinite(p.finish)&&Number.isFinite(start))?Math.max(0,p.finish-start):null;
     const travel=elapsed!=null?Math.max(0,elapsed-Number(p.stay||0)):null;
