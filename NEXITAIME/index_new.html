@@ -1969,11 +1969,9 @@ window.NEXITAIME_CATALOG_TIMEOUT_MS = 3500;
     height:42px !important;
     min-height:42px !important;
     margin:0 !important;
-    padding:0 36px !important;
+    padding:0 !important;
     font-size:14px !important;
     line-height:1.2 !important;
-    text-align:center !important;
-    text-align-last:center !important;
   }
 }
 </style>
@@ -4277,6 +4275,40 @@ function seasonalAllows(ev,d){
   return {ok:true,label:s.label||''};
 }
 
+
+function hotPepperWeekdayLabelMatches(label,d){
+  const jp=['日','月','火','水','木','金','土'];
+  const target=jp[d.getDay()];
+  const clean=String(label||'').replace(/\s+/g,'').replace(/～/g,'〜');
+  if(clean.includes(target))return true;
+  const order=['月','火','水','木','金','土','日'];
+  for(const m of clean.matchAll(/([月火水木金土日])〜([月火水木金土日])/g)){
+    const a=order.indexOf(m[1]), b=order.indexOf(m[2]), t=order.indexOf(target);
+    if(a<0||b<0||t<0)continue;
+    if(a<=b ? (t>=a&&t<=b) : (t>=a||t<=b))return true;
+  }
+  return false;
+}
+
+function hotPepperHoursRangesForDate(ev,d){
+  if(ev?.provider!=='hotpepper' || !ev?.hours_text)return [];
+  const text=String(ev.hours_text)
+    .replace(/\uFF1A/g,':')
+    .replace(/～/g,'〜')
+    .replace(/[‐‑–—−]/g,'-');
+  const re=/((?:月|火|水|木|金|土|日|祝日|祝前日|、|,|〜|\s)+):\s*(\d{1,2}:\d{2})\s*[〜~-]\s*(翌)?\s*(\d{1,2}:\d{2})/g;
+  const ranges=[];
+  for(const m of text.matchAll(re)){
+    if(!hotPepperWeekdayLabelMatches(m[1],d))continue;
+    const open=mins(m[2]);
+    let close=mins(m[4]);
+    if(open==null||close==null)continue;
+    if(m[3] || close<=open)close+=1440;
+    ranges.push({open,close,openText:m[2],closeText:m[3]?`翌${m[4]}`:m[4]});
+  }
+  return ranges.sort((a,b)=>a.open-b.open);
+}
+
 function hoursSpecForDate(ev,d){
   const dk=dateKey(d);
   const wd=weekdayKey(d);
@@ -4493,6 +4525,20 @@ function availabilityWindow(ev,baseDate){
     result.label=`屋外・${fmt(result.close)}頃まで推奨`;
   }
 
+  // Hot Pepper live rows carry human-readable hours_text rather than opening_hours.
+  // Parse it conservatively so a restaurant is never placed into a route outside
+  // a confirmed opening window (including split lunch/dinner hours).
+  if(ev?.provider==='hotpepper' && !ev?.opening_hours){
+    const hpRanges=hotPepperHoursRangesForDate(ev,baseDate);
+    if(hpRanges.length){
+      result.ranges=hpRanges;
+      result.open=Math.min(...hpRanges.map(r=>r.open));
+      result.close=Math.max(...hpRanges.map(r=>r.close));
+      result.verified=true;
+      result.label=`営業時間 ${hpRanges.map(r=>`${r.openText}〜${r.closeText}`).join(' / ')}`;
+    }
+  }
+
   const spec=hoursSpecForDate(ev,baseDate);
   if(spec==='closed'){
     return {...result,closed:true,verified:true,label:'休業日',reason:'指定日は休業日のため除外'};
@@ -4560,6 +4606,16 @@ function spotAvailability(ev, arrive, leave, baseDate){
 
   if(w.closed){
     return {ok:false,verified:w.verified,label:w.label,reason:w.reason,window:w};
+  }
+
+  if(Array.isArray(w.ranges) && w.ranges.length){
+    const fits=w.ranges.some(r=>arrive>=r.open && leave<=r.close);
+    if(!fits){
+      return {
+        ok:false,verified:true,label:w.label,
+        reason:'予定滞在時間が確認できた営業時間内に収まらないため除外',window:w
+      };
+    }
   }
 
   if(w.open!=null && arrive<w.open){
@@ -6268,6 +6324,11 @@ function itineraryCandidateAvailable(ev, arrive, leave){
     // with an "営業時間要確認" warning, but add-on stops should be stricter.
     if(ev?.indoor===true && availability?.verified===false) return false;
 
+    // Dining stops are time-sensitive. Never put a restaurant/cafe into a
+    // generated itinerary unless its hours are actually confirmed for the visit.
+    const kind=itineraryCategory(ev);
+    if(['food','cafe'].includes(kind) && availability?.verified!==true) return false;
+
     return true;
   }catch(_){
     return false;
@@ -7636,8 +7697,13 @@ function finalPlanGuard(plan,ctx,start,deadline){
     }
     if(row?.sourceEv){
       const av=spotAvailability(row.sourceEv,rArr,rLeave,planningDate);
+      const rowKind=itineraryCategory(row.sourceEv);
       if(av?.ok===false){
         reasons.push('営業時間外の立ち寄り');
+        break;
+      }
+      if(['food','cafe'].includes(rowKind) && av?.verified!==true){
+        reasons.push('飲食店の営業時間を確認できないため除外');
         break;
       }
     }
@@ -7648,6 +7714,9 @@ function finalPlanGuard(plan,ctx,start,deadline){
     const venueLeave=finite(plan?.venueLeave) ? Number(plan.venueLeave) : arrive+Math.max(0,stay||0);
     const av=spotAvailability(plan.ev,arrive,venueLeave,planningDate);
     if(av?.ok===false) reasons.push('営業時間条件不成立');
+    if(['food','cafe'].includes(itineraryCategory(plan.ev)) && av?.verified!==true){
+      reasons.push('飲食店の営業時間未確認');
+    }
   }
 
   return {ok:reasons.length===0,reasons:[...new Set(reasons)]};
