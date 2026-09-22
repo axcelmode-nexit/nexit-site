@@ -2359,7 +2359,7 @@ function mergeManualTimelyEvents(rows=[]){
 let EVENTS=[], RESTAURANTS=[], TRAIN={up:[],down:[]}, SHINANO={up:[],down:[]}, BUS={trips:[]}, BUS_MAIN={weekday:{},holiday:{}}, BUS_EXT={routes:[]}, PLACES={}, MOBILITY=[], origin='上越妙高', destinationArea='any', returnTarget='same', timingMode='now', planningDate=new Date(), mood='any', foodKind='ラーメン', onsenKind='温泉', sightseeingKind='歴史・文化', activeKind='散歩・ウォーキング', eventKind='お祭り・催し', transport='auto', budget='any', companion='any', currentPos=null, weather=null, weatherForecast=null, mobilityMap=null, mobilityMarkers=[], currentPosMarker=null, nearestService=null;
 
 // v128: 王道ルートマスタ。外部JSONを優先し、取得できない場合は従来提案へフォールバック。
-const NEXITAIME_CLASSIC_ROUTES_URL='./nexitaime_classic_routes_v1.json';
+const NEXITAIME_CLASSIC_ROUTES_URL='./nexitaime_classic_routes.json';
 let CLASSIC_ROUTES_MASTER=null;
 let LAST_CLASSIC_ROUTE=null;
 
@@ -2435,8 +2435,6 @@ function resolveAutoFreeMinutes(){
   }
   const d=planningDate||new Date();
   const hm=d.getHours()*60+d.getMinutes();
-  const until2100=Math.max(60,21*60-hm);
-  minutes=Math.min(minutes,until2100);
   return Math.max(60,Math.min(360,Math.round(minutes/30)*30));
 }
 
@@ -8444,7 +8442,7 @@ async function buildPlans(){
  await ensureClassicRoutesLoaded();
  const freeControl=document.getElementById('free');
  const isAutoFree=freeControl?.value==='auto';
- const free=isAutoFree?resolveAutoFreeMinutes():(Number(freeControl?.value)||120);
+ let free=isAutoFree?resolveAutoFreeMinutes():(Number(freeControl?.value)||120);
  try{ trackNexitaime('search_start',{freeMinutes:free,freeMode:isAutoFree?'auto':'manual',classicRouteId:LAST_CLASSIC_ROUTE?.id||null,buffer:Number(document.getElementById('buffer')?.value)||15}); }catch(_){}
  let buffer=Math.max(5,Number(document.getElementById('buffer').value)||10);
  const now=new Date();
@@ -8478,7 +8476,8 @@ async function buildPlans(){
    returnTo:returnTarget==='same' ? origin : returnTarget
  };
 
- const start=planningDate.getHours()*60+planningDate.getMinutes(), hardEnd=start+free, deadline=hardEnd-buffer;
+ const start=planningDate.getHours()*60+planningDate.getMinutes();
+ let hardEnd=start+free, deadline=hardEnd-buffer;
  summary.innerHTML=`<h2>現在の条件で検索中…</h2><p>${isAutoFree?`おまかせ時間は約${free}分${LAST_CLASSIC_ROUTE?.name?`（${esc(LAST_CLASSIC_ROUTE.name)}を参考）`:''}。`:''}近い候補から順に、移動時間・時刻表・必要な戻り余裕を判定しています。</p>`;
  const searchWatchdog=setTimeout(()=>{
    if(summary.textContent.includes('再検索中')){
@@ -8583,6 +8582,34 @@ async function buildPlans(){
    if(mood!=='any') flex=flex.filter(ev=>moodMatches(ev,mood)).filter(secondaryMoodMatches);
    scored=await scoreEventSet(flex,requestedModes,start,deadline,searchCtx);
    if(scored.length) relaxationLevel=3;
+ }
+
+ // おまかせ時間では「候補なし」を極力避ける。
+ // 明示された気分カテゴリは崩さず、同カテゴリのまま時間枠だけを段階的に広げて再判定する。
+ if(isAutoFree && !scored.length){
+   const rescuePool=events.length?events:(()=>{
+     let rows=candidateEvents.filter(ev=>eventIsAvailableAt(ev,planningDate)).filter(budgetAllows).filter(companionAllows);
+     if(searchCtx.destination!=='any') rows=rows.filter(destinationMatchesEvent);
+     if(mood!=='any') rows=rows.filter(ev=>moodMatches(ev,mood));
+     return rows.filter(foodKindMatches).filter(secondaryMoodMatches);
+   })();
+   const baseFree=free;
+   for(const add of [30,60,90,120]){
+     const rescueFree=Math.min(480,baseFree+add);
+     const rescueBuffer=automaticReturnBufferMinutes(rescueFree);
+     const rescueDeadline=start+rescueFree-rescueBuffer;
+     const retry=await scoreEventSet(rescuePool,requestedModes,start,rescueDeadline,searchCtx);
+     if(retry.length){
+       free=rescueFree;
+       buffer=rescueBuffer;
+       hardEnd=start+free;
+       deadline=rescueDeadline;
+       if(bufferEl) bufferEl.value=String(buffer);
+       scored=retry;
+       relaxationLevel=4;
+       break;
+     }
+   }
  }
 
  scored=sortCandidates(scored);
@@ -8694,6 +8721,8 @@ async function buildPlans(){
    }
  }else if(relaxationLevel===2){
    summary.innerHTML=`<h2>気分条件を広げると${top.length}案あります</h2><p><strong>${routeSummary}</strong><br>出発地・行き先・帰着先はそのままです。</p>`;
+ }else if(relaxationLevel===4){
+   summary.innerHTML=`<h2>おまかせで${top.length}案見つけました</h2><p><strong>${routeSummary}</strong><br>気分や行き先は変えず、成立するよう時間を約${free}分に自動調整しました。</p>`;
  }else{
    summary.innerHTML=`<h2>そのエリアでできることを${top.length}案見つけました</h2><p><strong>${routeSummary}</strong><br>指定エリアは変えず、時間調整しやすい候補を提案しています。</p>`;
  }

@@ -2386,7 +2386,7 @@ function mergeManualTimelyEvents(rows=[]){
 let EVENTS=[], RESTAURANTS=[], TRAIN={up:[],down:[]}, SHINANO={up:[],down:[]}, BUS={trips:[]}, BUS_MAIN={weekday:{},holiday:{}}, BUS_EXT={routes:[]}, PLACES={}, MOBILITY=[], origin='上越妙高', destinationArea='any', returnTarget='same', timingMode='now', planningDate=new Date(), mood='any', foodKind='ラーメン', onsenKind='温泉', sightseeingKind='歴史・文化', activeKind='散歩・ウォーキング', eventKind='お祭り・催し', transport='auto', budget='any', companion='any', currentPos=null, weather=null, weatherForecast=null, mobilityMap=null, mobilityMarkers=[], currentPosMarker=null, nearestService=null;
 
 // v128: 王道ルートマスタ。外部JSONを優先し、取得できない場合は従来提案へフォールバック。
-const NEXITAIME_CLASSIC_ROUTES_URL='./nexitaime_classic_routes_v1.json';
+const NEXITAIME_CLASSIC_ROUTES_URL='./nexitaime_classic_routes.json';
 let CLASSIC_ROUTES_MASTER=null;
 let LAST_CLASSIC_ROUTE=null;
 
@@ -2462,8 +2462,6 @@ function resolveAutoFreeMinutes(){
   }
   const d=planningDate||new Date();
   const hm=d.getHours()*60+d.getMinutes();
-  const until2100=Math.max(60,21*60-hm);
-  minutes=Math.min(minutes,until2100);
   return Math.max(60,Math.min(360,Math.round(minutes/30)*30));
 }
 
