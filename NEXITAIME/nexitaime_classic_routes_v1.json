@@ -1,0 +1,413 @@
+{
+  "version": "1.0",
+  "name": "NEXITAIME 王道ルートマスタ",
+  "description": "NEXITAIMEのおまかせ提案用の初期テンプレート。実運用では営業時間・天気・イベント・交通・現在地・帰着先に応じて差し替え・短縮・延長する。",
+  "routes": [
+    {
+      "id": "R01",
+      "name": "上越妙高駅ショート王道",
+      "origin_area": "joetsumyoko",
+      "return_area": "joetsumyoko",
+      "recommended_minutes": [
+        60,
+        90
+      ],
+      "stops": [
+        "上越妙高駅",
+        "フルサット",
+        "釜蓋遺跡公園・釜蓋遺跡ガイダンス",
+        "上越妙高駅"
+      ],
+      "tags": [
+        "first_visit",
+        "short",
+        "sightseeing",
+        "family",
+        "solo",
+        "couple",
+        "public_transport",
+        "walk",
+        "rain_ok"
+      ],
+      "priority_event_insert": [
+        "フルサット"
+      ]
+    },
+    {
+      "id": "R02",
+      "name": "フルサット＋食事",
+      "origin_area": "joetsumyoko",
+      "return_area": "joetsumyoko",
+      "recommended_minutes": [
+        90,
+        120
+      ],
+      "stops": [
+        "上越妙高駅",
+        "フルサット",
+        "食事",
+        "上越妙高駅"
+      ],
+      "tags": [
+        "food",
+        "event",
+        "short",
+        "family",
+        "solo",
+        "couple",
+        "public_transport",
+        "rain_ok"
+      ],
+      "priority_event_insert": [
+        "フルサット"
+      ]
+    },
+    {
+      "id": "R03",
+      "name": "高田王道歴史",
+      "origin_area": "takada",
+      "return_area": "takada",
+      "recommended_minutes": [
+        120,
+        150
+      ],
+      "stops": [
+        "高田駅",
+        "高田城址公園",
+        "高田城三重櫓",
+        "上越市立歴史博物館"
+      ],
+      "tags": [
+        "history",
+        "sightseeing",
+        "family",
+        "solo",
+        "couple",
+        "public_transport",
+        "walk"
+      ]
+    },
+    {
+      "id": "R04",
+      "name": "高田レトロ街歩き",
+      "origin_area": "takada",
+      "return_area": "takada",
+      "recommended_minutes": [
+        120,
+        180
+      ],
+      "stops": [
+        "高田駅",
+        "高田世界館",
+        "大町まち歩き",
+        "食事"
+      ],
+      "tags": [
+        "culture",
+        "town_walk",
+        "food",
+        "solo",
+        "couple",
+        "public_transport",
+        "walk",
+        "rain_ok"
+      ]
+    },
+    {
+      "id": "R05",
+      "name": "高田アート＆カフェ",
+      "origin_area": "takada",
+      "return_area": "takada",
+      "recommended_minutes": [
+        150,
+        180
+      ],
+      "stops": [
+        "高田駅",
+        "小林古径記念美術館",
+        "高田城址公園",
+        "カフェ"
+      ],
+      "tags": [
+        "culture",
+        "art",
+        "cafe",
+        "rain_ok",
+        "solo",
+        "couple",
+        "public_transport"
+      ]
+    },
+    {
+      "id": "R06",
+      "name": "春日山・謙信王道",
+      "origin_area": "kasugayama",
+      "return_area": "kasugayama",
+      "recommended_minutes": [
+        180,
+        240
+      ],
+      "stops": [
+        "春日山神社",
+        "春日山城跡",
+        "林泉寺"
+      ],
+      "tags": [
+        "history",
+        "sightseeing",
+        "active",
+        "walk",
+        "couple",
+        "solo",
+        "car",
+        "public_transport",
+        "fair_weather"
+      ]
+    },
+    {
+      "id": "R07",
+      "name": "春日山雨天歴史",
+      "origin_area": "kasugayama",
+      "return_area": "kasugayama",
+      "recommended_minutes": [
+        120,
+        180
+      ],
+      "stops": [
+        "上越市埋蔵文化財センター",
+        "謙信公戦国絵巻館",
+        "春日山神社"
+      ],
+      "tags": [
+        "history",
+        "culture",
+        "rain_ok",
+        "family",
+        "solo",
+        "couple",
+        "car",
+        "public_transport"
+      ]
+    },
+    {
+      "id": "R08",
+      "name": "直江津ファミリー海側",
+      "origin_area": "naoetsu",
+      "return_area": "naoetsu",
+      "recommended_minutes": [
+        120,
+        180
+      ],
+      "stops": [
+        "直江津駅",
+        "うみがたり周辺",
+        "海浜公園",
+        "直江津まち歩き"
+      ],
+      "tags": [
+        "family",
+        "sea",
+        "sightseeing",
+        "walk",
+        "public_transport",
+        "couple"
+      ]
+    },
+    {
+      "id": "R09",
+      "name": "直江津五智散歩",
+      "origin_area": "naoetsu",
+      "return_area": "naoetsu",
+      "recommended_minutes": [
+        150,
+        180
+      ],
+      "stops": [
+        "直江津駅",
+        "五智国分寺",
+        "五智公園",
+        "船見公園"
+      ],
+      "tags": [
+        "walk",
+        "history",
+        "nature",
+        "sea",
+        "solo",
+        "couple",
+        "public_transport",
+        "fair_weather"
+      ]
+    },
+    {
+      "id": "R10",
+      "name": "妙高高原ショート王道",
+      "origin_area": "myoko",
+      "return_area": "myoko",
+      "recommended_minutes": [
+        90,
+        120
+      ],
+      "stops": [
+        "妙高高原駅",
+        "いもり池",
+        "妙高高原ビジターセンター"
+      ],
+      "tags": [
+        "nature",
+        "sightseeing",
+        "family",
+        "solo",
+        "couple",
+        "public_transport",
+        "rain_ok"
+      ]
+    },
+    {
+      "id": "R11",
+      "name": "妙高高原＋赤倉温泉",
+      "origin_area": "myoko",
+      "return_area": "myoko",
+      "recommended_minutes": [
+        180,
+        240
+      ],
+      "stops": [
+        "妙高高原駅",
+        "いもり池",
+        "赤倉温泉街",
+        "温泉"
+      ],
+      "tags": [
+        "nature",
+        "onsen",
+        "couple",
+        "solo",
+        "car",
+        "public_transport"
+      ]
+    },
+    {
+      "id": "R12",
+      "name": "上越妙高から高田バランス",
+      "origin_area": "joetsumyoko",
+      "return_area": "joetsumyoko",
+      "recommended_minutes": [
+        180,
+        240
+      ],
+      "stops": [
+        "上越妙高駅",
+        "高田エリア",
+        "食事",
+        "温泉"
+      ],
+      "tags": [
+        "balanced",
+        "food",
+        "onsen",
+        "sightseeing",
+        "couple",
+        "solo",
+        "car",
+        "public_transport"
+      ]
+    },
+    {
+      "id": "R13",
+      "name": "直江津 海・食・温泉",
+      "origin_area": "naoetsu",
+      "return_area": "naoetsu",
+      "recommended_minutes": [
+        180,
+        240
+      ],
+      "stops": [
+        "直江津",
+        "海側観光",
+        "海鮮・寿司",
+        "温泉"
+      ],
+      "tags": [
+        "sea",
+        "food",
+        "onsen",
+        "couple",
+        "family",
+        "car",
+        "public_transport"
+      ]
+    },
+    {
+      "id": "R14",
+      "name": "大潟・柿崎ドライブ王道",
+      "origin_area": "ogata_kakizaki",
+      "return_area": "ogata_kakizaki",
+      "recommended_minutes": [
+        180,
+        240
+      ],
+      "stops": [
+        "新潟県立大潟水と森公園",
+        "温泉",
+        "夕日スポット"
+      ],
+      "tags": [
+        "car",
+        "nature",
+        "onsen",
+        "sunset",
+        "family",
+        "couple",
+        "fair_weather"
+      ]
+    },
+    {
+      "id": "R15",
+      "name": "東部・山側半日",
+      "origin_area": "east_mountain",
+      "return_area": "east_mountain",
+      "recommended_minutes": [
+        240,
+        360
+      ],
+      "stops": [
+        "地域スポット",
+        "物産館",
+        "温泉"
+      ],
+      "tags": [
+        "car",
+        "half_day",
+        "nature",
+        "local",
+        "onsen",
+        "food",
+        "family",
+        "couple"
+      ]
+    }
+  ],
+  "selection_rules": {
+    "auto_duration": {
+      "enabled": true,
+      "description": "現在地・帰着先・営業時間・イベント・交通・天気を見て、収まる王道ルートを選び、スポット数を増減する。"
+    },
+    "weather": {
+      "rain": "rain_okタグを優先し、屋外比率を下げる",
+      "fair": "fair_weather/nature/walkを許可"
+    },
+    "events": {
+      "today_event_priority": true,
+      "description": "同一エリアで当日イベントが開催中なら、王道ルートの1スポットとして優先挿入する"
+    },
+    "transport": {
+      "public": "public_transportタグを優先",
+      "car": "carタグを許可"
+    },
+    "duration_fit": {
+      "shorten": "最後尾または滞在時間の長いスポットから削る",
+      "extend": "近隣の食事・カフェ・温泉・イベントを追加する"
+    }
+  }
+}
