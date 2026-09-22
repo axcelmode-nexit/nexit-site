@@ -1921,7 +1921,6 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
 }
 </style>
 
-
 <style id="exact-timing-free-match">
 @media (max-width:700px){
   #timing, #freeModeRow{
@@ -6124,6 +6123,186 @@ function itineraryProgressFlowBonus(plan,ctx){
   return Math.max(-45,Math.min(45,bonus));
 }
 
+
+function dynamicDriveMode(plan){
+  return ['privatecar','carshare','rentalcar'].includes(plan?.mode);
+}
+
+function normalizedRouteText(value){
+  return String(value||'').normalize('NFKC').replace(/\s+/g,'').toLowerCase();
+}
+
+function classicStopMatchesEvent(ev,stop){
+  const stopKey=normalizedRouteText(stop);
+  if(!stopKey || stopKey.length<2)return false;
+  const fields=[ev?.title,ev?.venue,ev?.area_name].map(normalizedRouteText).filter(Boolean);
+  return fields.some(v=>v.includes(stopKey)||stopKey.includes(v));
+}
+
+function classicAdjacencyBonus(prevEv,nextEv){
+  const routes=CLASSIC_ROUTES_MASTER?.routes||[];
+  let best=0;
+  for(const route of routes){
+    const stops=Array.isArray(route?.stops)?route.stops:[];
+    for(let i=0;i<stops.length-1;i++){
+      if(classicStopMatchesEvent(prevEv,stops[i]) && classicStopMatchesEvent(nextEv,stops[i+1])) best=Math.max(best,90);
+      if(classicStopMatchesEvent(prevEv,stops[i+1]) && classicStopMatchesEvent(nextEv,stops[i])) best=Math.max(best,65);
+    }
+  }
+  return best;
+}
+
+function dynamicRouteCandidatePool(plan,candidateEvents=[]){
+  const primaryId=plan?.ev?.id||plan?.ev?.title;
+  return (candidateEvents||EVENTS).filter(ev=>{
+    if(!ev)return false;
+    const id=ev.id||ev.title;
+    if(id===primaryId)return false;
+    if(!exactPointForEvent(ev))return false;
+    if(!eventIsAvailableAt(ev,planningDate))return false;
+    if(!budgetAllows(ev)||!companionAllows(ev))return false;
+    if(destinationArea!=='any' && !destinationMatchesEvent(ev))return false;
+    if(mood!=='any' && !moodMatches(ev,mood))return false;
+    if(!foodKindMatches(ev)||!secondaryMoodMatches(ev))return false;
+    // 飲酒前提の候補を車系周遊へ混ぜない。
+    if(dynamicDriveMode(plan) && alcoholVenueLike(ev))return false;
+    return true;
+  });
+}
+
+function dynamicRouteTargetStops(freeMinutes){
+  const m=Number(freeMinutes)||180;
+  if(m<110)return 2;
+  if(m<210)return 3;
+  return 4;
+}
+
+function dynamicRouteCandidateScore(ev,{prevEv,prevPoint,goalPoint,usedKinds,rows,move,stay,freeMinutes}){
+  const kind=itineraryCategory(ev);
+  let score=0;
+  if(!usedKinds.has(kind))score+=68;
+  if(rows.length && rows[rows.length-1]?.category===kind)score-=26;
+  if(kind==='food' && !usedKinds.has('food') && freeMinutes>=150)score+=34;
+  if(kind==='cafe' && rows.length>=2)score+=12;
+  if(['sightseeing','nature'].includes(kind) && ![...usedKinds].some(k=>['sightseeing','nature'].includes(k)))score+=28;
+  score+=joetsuLandmarkBonus(ev);
+  score+=classicRouteBoostForEvent(ev)*0.75;
+  score+=featuredRamenBoost(ev)*0.5;
+  score+=classicAdjacencyBonus(prevEv,ev);
+  score+=Math.min(24,Math.max(0,stay)/3);
+  const wa=weatherAdjustment(ev);
+  score+=Number(wa?.score||0)*0.6;
+  const timing=eventTimingMeta(ev,startDateForScoring(rows[0]?.arrive||0));
+  score+=Number(timing?.score||0)*0.5;
+  // 周遊は移動ロスが少ない方を優先。
+  score-=Math.max(0,move)*1.35;
+  if(move>45)score-=35;
+  if(prevEv?.area && ev?.area && prevEv.area!==ev.area)score+=14;
+  if(goalPoint && prevPoint){
+    const nextPoint=exactPointForEvent(ev);
+    if(nextPoint)score+=itineraryDirectionScore(prevPoint,nextPoint,goalPoint,ev)*0.55;
+  }
+  return score;
+}
+
+function buildDynamicVehicleItinerary(plan,candidateEvents=[],freeMinutes=180,ctx={}){
+  if(!dynamicDriveMode(plan) || mood!=='any')return null;
+  if(ctx?.returnTo!==ctx?.origin)return null;
+  const goalPoint=PLACES?.[ctx?.returnTo];
+  const firstPoint=exactPointForEvent(plan?.ev)||itineraryPointForEvent(plan?.ev,plan?.dest);
+  if(!goalPoint||!firstPoint||!Number.isFinite(plan?.arrive))return null;
+
+  const start=Number.isFinite(plan?.out?.dep)?Number(plan.out.dep):Math.max(0,Math.round(plan.arrive-(plan.directOneWayMinutes||0)));
+  const safetyBuffer=automaticReturnBufferMinutes(freeMinutes);
+  const deadline=start+Number(freeMinutes)-safetyBuffer;
+  const mode=plan.mode;
+  const primaryKind=itineraryCategory(plan.ev);
+  const primaryReturn=routeMinutesCoordsFast(mode,firstPoint,goalPoint);
+  if(primaryReturn==null)return null;
+  const primaryAvail=Math.max(0,deadline-plan.arrive-primaryReturn);
+  let primaryStay=Math.min(itineraryStayFor(plan.ev),primaryAvail);
+  primaryStay=Math.max(25,Math.min(primaryStay,Math.max(25,Math.floor((Number(freeMinutes)||180)*0.34))));
+  if(primaryStay>primaryAvail || primaryStay<25)return null;
+  if(!itineraryCandidateAvailable(plan.ev,plan.arrive,plan.arrive+primaryStay))return null;
+
+  const rows=[{
+    name:plan.ev?.title||plan.ev?.venue||plan.dest,
+    stay:primaryStay,arrive:plan.arrive,leave:plan.arrive+primaryStay,move:0,
+    kind:(plan.ev?.start_date||plan.ev?.source)?'event':'spot',
+    category:primaryKind,categoryLabel:itineraryCategoryLabel(primaryKind),
+    sourceEv:plan.ev,point:firstPoint
+  }];
+  const usedIds=new Set([plan.ev?.id||plan.ev?.title]);
+  const usedKinds=new Set([primaryKind]);
+  const pool=dynamicRouteCandidatePool(plan,candidateEvents);
+  const targetStops=dynamicRouteTargetStops(freeMinutes);
+  let t=rows[0].leave;
+  let currentPoint=firstPoint;
+  let prevEv=plan.ev;
+  let routeScore=0;
+
+  while(rows.length<targetStops){
+    let best=null,bestScore=-Infinity;
+    for(const ev of pool){
+      const id=ev.id||ev.title;
+      if(usedIds.has(id))continue;
+      const nextPoint=exactPointForEvent(ev);
+      if(!nextPoint)continue;
+      const move=routeMinutesCoordsFast(mode,currentPoint,nextPoint);
+      const returnMinutes=routeMinutesCoordsFast(mode,nextPoint,goalPoint);
+      if(move==null||returnMinutes==null)continue;
+      if(move>55)continue;
+      const arrive=t+Math.max(1,move);
+      const maxStay=deadline-arrive-returnMinutes;
+      if(maxStay<25)continue;
+      let stay=Math.min(itineraryStayFor(ev),maxStay);
+      if(stay<25)continue;
+      const leave=arrive+stay;
+      if(!itineraryCandidateAvailable(ev,arrive,leave))continue;
+      const kind=itineraryCategory(ev);
+      if(!itineraryCategoriesCanFollow(rows[rows.length-1]?.category||'',kind))continue;
+      const score=dynamicRouteCandidateScore(ev,{prevEv,prevPoint:currentPoint,goalPoint,usedKinds,rows,move,stay,freeMinutes});
+      if(score>bestScore){
+        bestScore=score;
+        best={ev,id,nextPoint,move:Math.max(1,move),returnMinutes,arrive,stay,leave,kind,score};
+      }
+    }
+    if(!best)break;
+    rows.push({
+      name:best.ev.title||best.ev.venue,stay:best.stay,arrive:best.arrive,leave:best.leave,move:best.move,
+      kind:best.kind==='event'?'event':'spot',category:best.kind,categoryLabel:itineraryCategoryLabel(best.kind),
+      sourceEv:best.ev,point:best.nextPoint
+    });
+    usedIds.add(best.id);usedKinds.add(best.kind);
+    routeScore+=best.score;
+    t=best.leave;currentPoint=best.nextPoint;prevEv=best.ev;
+  }
+
+  if(rows.length<2)return null;
+  const returnMinutes=routeMinutesCoordsFast(mode,currentPoint,goalPoint);
+  if(returnMinutes==null)return null;
+  const finish=t+returnMinutes;
+  if(finish>deadline)return null;
+
+  // 周遊の最後の地点から実際の帰着先までを再計算する。
+  plan.back={...(plan.back||{}),kind:mode,n:'周遊ルート',lineName:'周遊ルート',dep:t,arr:finish,[ctx.returnTo]:fmt(finish)};
+  plan.finish=finish;
+  plan.venueLeave=t;
+  plan.spare=Math.max(0,deadline-finish);
+  plan.planMinutes=Math.max(1,finish-start);
+  plan.stay=rows.reduce((sum,r)=>sum+Number(r.stay||0),0);
+  plan.dynamicRoute=true;
+  plan.dynamicRouteScore=Math.round(routeScore + rows.length*34 - plan.spare*0.8);
+  plan.reason=`${rows.length}か所を移動効率・営業時間・王道度で組み合わせた周遊案`;
+  return rows;
+}
+
+function buildOptimizedItinerary(plan,candidateEvents=[],freeMinutes=180,ctx={}){
+  const dynamic=buildDynamicVehicleItinerary(plan,candidateEvents,freeMinutes,ctx);
+  if(dynamic?.length)return dynamic;
+  return buildSimpleItinerary(plan,candidateEvents,freeMinutes);
+}
+
 function buildSimpleItinerary(plan,candidateEvents=[],freeMinutes=180){
   const area=plan.ev?.area;
   const legacyPool=ITINERARY_SPOTS.filter(s=>s.area===area);
@@ -7307,8 +7486,8 @@ function returnSpareFitBonus(plan){
 
 function sortCandidates(rows){
   return rows.sort((a,b)=>{
-    const bp=(b.preferenceScore||0)+(b.multiStopPreferenceBonus||0)+Number(b.routeProgressFlowBonus||0)+returnSpareFitBonus(b)+joetsuLandmarkBonus(b.ev);
-    const ap=(a.preferenceScore||0)+(a.multiStopPreferenceBonus||0)+Number(a.routeProgressFlowBonus||0)+returnSpareFitBonus(a)+joetsuLandmarkBonus(a.ev);
+    const bp=(b.preferenceScore||0)+(b.multiStopPreferenceBonus||0)+Number(b.routeProgressFlowBonus||0)+Number(b.dynamicRouteScore||0)+returnSpareFitBonus(b)+joetsuLandmarkBonus(b.ev);
+    const ap=(a.preferenceScore||0)+(a.multiStopPreferenceBonus||0)+Number(a.routeProgressFlowBonus||0)+Number(a.dynamicRouteScore||0)+returnSpareFitBonus(a)+joetsuLandmarkBonus(a.ev);
     if(bp!==ap)return bp-ap;
     if((b.timeFitScore||0)!==(a.timeFitScore||0))return (b.timeFitScore||0)-(a.timeFitScore||0);
     if((b.planMinutes||0)!==(a.planMinutes||0))return (b.planMinutes||0)-(a.planMinutes||0);
@@ -7409,6 +7588,7 @@ function selectDiverseTopPlans(rows,freeMinutes,count=3){
         Number(row.preferenceScore||0)
         + Number(row.multiStopPreferenceBonus||0)
         + Number(row.routeProgressFlowBonus||0)
+        + Number(row.dynamicRouteScore||0)
         + Number(row.timeFitScore||0)*0.2
         + joetsuLandmarkBonus(row.ev);
       const value=baseScore-diversityPenalty(row,selected,freeMinutes);
@@ -8956,7 +9136,7 @@ async function buildPlans(){
  }
  const guardedPlans=[];
  for(const row of uniquePlans){
-   row.itinerary=buildSimpleItinerary(row,candidateEvents,free);
+   row.itinerary=buildOptimizedItinerary(row,candidateEvents,free,searchCtx);
    if(Array.isArray(row.itinerary) && row.itinerary.length<2){
      row.itinerary=null;
    }
@@ -9024,7 +9204,7 @@ async function buildPlans(){
        const key=row.ev.id||`${row.ev.title}|${row.ev.venue||''}`;
        if(localSeen.has(key))continue;
        localSeen.add(key);
-       row.itinerary=buildSimpleItinerary(row,candidateEvents,duration);
+       row.itinerary=buildOptimizedItinerary(row,candidateEvents,duration,searchCtx);
        if(Array.isArray(row.itinerary)&&row.itinerary.length<2)row.itinerary=null;
        row.multiStopPreferenceBonus=multiStopPreferenceBonus(row,duration);
        row.routeProgressFlowBonus=itineraryProgressFlowBonus(row,searchCtx);
