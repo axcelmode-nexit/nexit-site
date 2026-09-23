@@ -9561,15 +9561,16 @@ function automaticReturnBufferMinutes(freeMinutes=180){
 
 
 async function scoreEventSetFast(events,modes,start,deadline,ctx,timeoutMs=2500){
-  // 候補全体を1つのPromiseでタイムアウトさせると、
-  // 9件まで評価済みでも最後の1件待ちで全結果が [] になる。
-  // 候補ごとに独立して評価し、時間内に終わった結果だけを回収する。
+  // 外部ルートAPIを候補全件で一斉に叩かない。
+  // 3件ずつ評価し、成功した候補は保持。遅い候補だけ捨てる。
   const list=Array.isArray(events)?events.filter(Boolean):[];
   if(!list.length)return [];
 
-  const perEventTimeout=Math.max(900,Math.min(2200,Number(timeoutMs)||2200));
+  const batchSize=3;
+  const perEventTimeout=Math.max(1200,Math.min(2600,Number(timeoutMs)||2500));
+  const collected=[];
 
-  const tasks=list.map(ev=>new Promise(resolve=>{
+  const scoreOne=ev=>new Promise(resolve=>{
     let settled=false;
     const timer=setTimeout(()=>{
       if(settled)return;
@@ -9588,17 +9589,23 @@ async function scoreEventSetFast(events,modes,start,deadline,ctx,timeoutMs=2500)
         if(settled)return;
         settled=true;
         clearTimeout(timer);
-        try{
-          console.warn('[NEXITAIME] candidate scoring skipped',ev?.title||ev?.venue||ev?.id,err);
-        }catch(_){}
+        try{ console.warn('[NEXITAIME] candidate scoring skipped',ev?.title||ev?.venue||ev?.id,err); }catch(_){}
         resolve([]);
       });
-  }));
+  });
 
-  const batches=await Promise.all(tasks);
-  return dedupeCandidates(batches.flat());
+  for(let i=0;i<list.length;i+=batchSize){
+    const batch=list.slice(i,i+batchSize);
+    const results=await Promise.all(batch.map(scoreOne));
+    collected.push(...results.flat());
+
+    // 3案表示に十分な別施設が取れたら、残りの外部API待ちはしない。
+    const unique=new Set(collected.map(p=>p?.ev?.id||`${p?.ev?.title||''}|${p?.ev?.venue||''}`));
+    if(unique.size>=5)break;
+  }
+
+  return dedupeCandidates(collected);
 }
-
 function fastAutoCandidatePool(events,ctx,limit=20){
   const staged=stagedAutoCandidates(events,ctx);
   const merged=[...(staged.first||[]),...(staged.rest||[])];
@@ -9607,9 +9614,11 @@ function fastAutoCandidatePool(events,ctx,limit=20){
   // near the front of the provider response can occupy the only food slot.
   const ranked=merged.map((ev,index)=>{
     let pre=0;
-    if(mood==='any' || mood==='food')pre+=localFoodPriorityScore(ev);
-    pre+=featuredRamenBoost(ev);
+    if(mood==='any' || mood==='food')pre+=Math.max(-45,Math.min(55,localFoodPriorityScore(ev)));
+    pre+=Math.max(0,Math.min(55,featuredRamenBoost(ev)));
     if(isUrgentTimelyEvent(ev,planningDate))pre+=140;
+    // 元の候補順も残す。地元店優先だけで先頭8件を総入れ替えしない。
+    pre+=Math.max(0,30-index);
     return {ev,index,pre};
   }).sort((a,b)=>b.pre-a.pre || a.index-b.index);
 
