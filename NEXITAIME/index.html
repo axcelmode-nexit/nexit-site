@@ -9459,6 +9459,39 @@ function automaticReturnBufferMinutes(freeMinutes=180){
 }
 
 
+
+async function scoreMoreUniqueDestinations(events,modes,start,deadline,ctx,existing=[],target=3){
+  const out=[...(existing||[])];
+  const keyOf=row=>String(row?.ev?.id||row?.ev?.catalog_id||row?.ev?.hotpepper_id||`${row?.ev?.title||''}|${row?.ev?.venue||''}`);
+  const used=new Set(out.map(keyOf).filter(Boolean));
+  const list=(events||[]).filter(ev=>{
+    const key=String(ev?.id||ev?.catalog_id||ev?.hotpepper_id||`${ev?.title||''}|${ev?.venue||''}`);
+    return key && !used.has(key);
+  });
+
+  // 少数ずつ評価。既存の scoreEventSet を1候補単位で使うので、
+  // 営業時間・帰着・安全判定は従来のまま。
+  for(let i=0;i<list.length && used.size<target;i+=3){
+    const batch=list.slice(i,i+3);
+    const results=await Promise.all(batch.map(ev=>new Promise(resolve=>{
+      let done=false;
+      const timer=setTimeout(()=>{ if(!done){done=true;resolve([]);} },900);
+      Promise.resolve(scoreEventSet([ev],modes,start,deadline,ctx))
+        .then(rows=>{ if(done)return; done=true; clearTimeout(timer); resolve(Array.isArray(rows)?rows:[]); })
+        .catch(()=>{ if(done)return; done=true; clearTimeout(timer); resolve([]); });
+    })));
+
+    for(const row of dedupeCandidates(results.flat())){
+      const key=keyOf(row);
+      if(!key || used.has(key))continue;
+      used.add(key);
+      out.push(row);
+      if(used.size>=target)break;
+    }
+  }
+  return dedupeCandidates(out);
+}
+
 async function scoreEventSetFast(events,modes,start,deadline,ctx,timeoutMs=1400){
   // External routing/timetable services can be slow. Never keep the result screen waiting forever.
   let timer;
@@ -9603,6 +9636,13 @@ async function buildPlans(){
    if(scored.length<5 && staged.rest.length){
      const extra=await scoreEventSetFast(staged.rest.slice(0,14),requestedModes,start,deadline,searchCtx);
      scored=dedupeCandidates([...scored,...extra]);
+   }
+
+   // 全体タイムアウトで追加候補が落ちても、1店舗だけで終わらせない。
+   // 既存候補が3店舗未満の時だけ、残りを小分けで追加評価する。
+   const scoredPlaceKeys=new Set(scored.map(r=>String(r?.ev?.id||r?.ev?.catalog_id||r?.ev?.hotpepper_id||`${r?.ev?.title||''}|${r?.ev?.venue||''}`)));
+   if(scoredPlaceKeys.size<3 && staged.rest.length){
+     scored=await scoreMoreUniqueDestinations(staged.rest.slice(0,12),requestedModes,start,deadline,searchCtx,scored,3);
    }
  }else{
    scored=await scoreEventSetFast(events,requestedModes,start,deadline,searchCtx);
@@ -9749,6 +9789,7 @@ async function buildPlans(){
    }
  }
  let multiDurationAuto=false;
+ const baseTopBeforeAuto=[...top];
 
  // 時間がおまかせなら、単一の時間に決め打ちせず、成立する「短・中・長」のプランを1案ずつ作る。
  // 明示された気分・行き先・飲酒時の安全な移動手段など、既存の厳格条件はそのまま維持する。
@@ -9960,6 +10001,21 @@ async function buildPlans(){
    }catch(err){
      console.warn('[NEXITAIME] role reorder skipped',err);
      // 失敗しても従来topをそのまま使う
+   }
+
+   // 時間別評価が1案しか作れなかった場合でも、通常検索で成立済みの別店舗を捨てない。
+   if(baseTopBeforeAuto.length){
+     const keyOf=p=>String(p?.ev?.id||p?.ev?.catalog_id||p?.ev?.hotpepper_id||`${p?.ev?.title||''}|${p?.ev?.venue||''}`);
+     const merged=[];
+     const seen=new Set();
+     for(const p of [...top,...baseTopBeforeAuto]){
+       const key=keyOf(p);
+       if(!key || seen.has(key))continue;
+       seen.add(key);
+       merged.push(p);
+       if(merged.length>=3)break;
+     }
+     top=merged;
    }
  }
  clearTimeout(searchWatchdog);
