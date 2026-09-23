@@ -3977,9 +3977,22 @@ function mobilityBucket(km){
   return 'far';
 }
 function mobilityBasePoint(){
+  // 地図を手で動かした場合は表示用としてその地点を使う。
   if(mobilityMapBrowsePoint && Number.isFinite(mobilityMapBrowsePoint.lat) && Number.isFinite(mobilityMapBrowsePoint.lon)) return mobilityMapBrowsePoint;
-  if(currentPos && Number.isFinite(currentPos.lat) && Number.isFinite(currentPos.lon)) return currentPos;
-  return PLACES?.[origin] || null;
+
+  const originName=String(origin||'');
+  const originUsesCurrentLocation=
+    originName==='current' ||
+    originName==='現在地' ||
+    originName==='今いる場所' ||
+    originName==='今いる場所に戻る';
+
+  if(originUsesCurrentLocation && currentPos && Number.isFinite(currentPos.lat) && Number.isFinite(currentPos.lon)) return currentPos;
+  if(PLACES?.[origin]) return PLACES[origin];
+
+  return (currentPos && Number.isFinite(currentPos.lat) && Number.isFinite(currentPos.lon))
+    ? currentPos
+    : null;
 }
 function mobilityDistanceKm(service){
   const p=mobilityBasePoint();
@@ -4000,9 +4013,29 @@ function mobilityRowsForMode(mode,{includeExtended=false}={}){
   if(!['carshare','rentalcar','taxi','bike'].includes(mode)) return [];
   const cats=serviceCategoryForMode(mode);
   const maxKm=includeExtended?MOBILITY_EXTENDED_KM:MOBILITY_NEAR_KM;
+
+  // ルート計算用の移動サービス検索は、地図閲覧位置やGPSではなく
+  // 「検索条件として選択した出発地」を基準にする。
+  const originName=String(origin||'');
+  const originUsesCurrentLocation=
+    originName==='current' ||
+    originName==='現在地' ||
+    originName==='今いる場所' ||
+    originName==='今いる場所に戻る';
+
+  const routeBase=(originUsesCurrentLocation && currentPos)
+    ? currentPos
+    : (PLACES?.[origin] || currentPos || null);
+
   return MOBILITY
     .filter(s=>cats.includes(s.category) && isLikelyOpen(s,planningDate||new Date()))
-    .map(s=>({...s,distanceKm:mobilityDistanceKm(s)}))
+    .map(s=>{
+      const lat=Number(s?.lat),lon=Number(s?.lon);
+      const distanceKm=(routeBase && Number.isFinite(lat) && Number.isFinite(lon))
+        ? haversine(routeBase.lat,routeBase.lon,lat,lon)
+        : Infinity;
+      return {...s,distanceKm};
+    })
     .filter(s=>Number.isFinite(s.distanceKm) && s.distanceKm<=maxKm)
     .sort((a,b)=>a.distanceKm-b.distanceKm);
 }
