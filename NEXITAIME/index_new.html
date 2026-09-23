@@ -2583,7 +2583,7 @@ async function ensureClassicRoutesLoaded(){
   if(CLASSIC_ROUTES_MASTER)return CLASSIC_ROUTES_MASTER;
   try{
     const controller=new AbortController();
-    const timer=setTimeout(()=>controller.abort(),1200);
+    const timer=setTimeout(()=>controller.abort(),2000);
     const r=await fetch(NEXITAIME_CLASSIC_ROUTES_URL,{cache:'no-store',signal:controller.signal});
     if(!r.ok)throw new Error(`HTTP ${r.status}`);
     const data=await r.json();
@@ -9654,7 +9654,7 @@ function automaticReturnBufferMinutes(freeMinutes=180){
 }
 
 
-async function scoreEventSetFast(events,modes,start,deadline,ctx,timeoutMs=1400){
+async function scoreEventSetFast(events,modes,start,deadline,ctx,timeoutMs=2500){
   // External routing/timetable services can be slow. Never keep the result screen waiting forever.
   let timer;
   try{
@@ -9935,7 +9935,7 @@ async function buildPlans(){
    const durationCandidates=await Promise.all(autoDurationChoices().map(async duration=>{
      const dBuffer=automaticReturnBufferMinutes(duration);
      const dDeadline=start+duration-dBuffer;
-     let rows=await scoreEventSetFast(durationPool,requestedModes,start,dDeadline,searchCtx,1100);
+     let rows=await scoreEventSetFast(durationPool,requestedModes,start,dDeadline,searchCtx,3000);
      rows=sortCandidates(rows);
      if(budget!=='any'){
        const maxBudget=Number(budget);
