@@ -6839,6 +6839,7 @@ function nearbyAreasForOrigin(name){
 function stagedAutoCandidates(events, ctx){
   const nearby=new Set(nearbyAreasForOrigin(ctx?.origin||origin));
   const preferredKinds=new Set(['food','cafe','sightseeing','nature','onsen','active','event']);
+  const when=planningDate||new Date();
 
   const ranked=(events||[]).map((ev,i)=>{
     const kind=itineraryCategory(ev);
@@ -6848,11 +6849,28 @@ function stagedAutoCandidates(events, ctx){
     if(ev?.provider==='hotpepper') score+=8;
     if(ev?.always_open) score+=4;
     score+=joetsuLandmarkBonus(ev);
-    return {ev,i,score};
-  }).sort((a,b)=>b.score-a.score || a.i-b.i);
 
-  const first=ranked.slice(0,28).map(x=>x.ev);
-  const rest=ranked.slice(28).map(x=>x.ev);
+    // 「今しかない」は候補を28件へ絞る前から強く優先する。
+    // 今日限定・今日まで・まもなく開始を、本評価に届く前に落とさない。
+    const timing=eventTimingMeta(ev,when);
+    if(timing?.score){
+      score+=Number(timing.score)*2.2;
+      if(Number(timing.score)>=65) score+=120;
+    }
+
+    return {ev,i,score,timingScore:Number(timing?.score||0)};
+  }).sort((a,b)=>{
+    if((b.timingScore>=65)!==(a.timingScore>=65)) return (b.timingScore>=65)-(a.timingScore>=65);
+    return b.score-a.score || a.i-b.i;
+  });
+
+  // 緊急性の高いイベントは必ずfirstへ残し、その後を通常ランキングで埋める。
+  const urgent=ranked.filter(x=>x.timingScore>=65);
+  const urgentIds=new Set(urgent.map(x=>x.ev?.id||x.ev?.title));
+  const normal=ranked.filter(x=>!urgentIds.has(x.ev?.id||x.ev?.title));
+  const first=[...urgent,...normal].slice(0,28).map(x=>x.ev);
+  const firstIds=new Set(first.map(x=>x?.id||x?.title));
+  const rest=ranked.filter(x=>!firstIds.has(x.ev?.id||x.ev?.title)).map(x=>x.ev);
   return {first,rest};
 }
 
@@ -7116,6 +7134,7 @@ async function scoreEventSet(events, modes, start, deadline, ctx){
       c.weatherReason=wa.reason;
       const timing=eventTimingMeta(ev,startDateForScoring(start));
       c.eventTiming=timing;
+      if(timing?.score>=65)c.timelyPriorityBonus=Number(timing.score)+45;
 
       // Nearby venues should naturally favor walking in auto mode.
       const originPoint=PLACES?.[ctx?.origin];
