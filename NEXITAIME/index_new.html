@@ -6151,6 +6151,12 @@ function companionReason(ev){
   return '';
 }
 
+
+function isUrgentTimelyEvent(ev, when=planningDate||new Date()){
+  const timing=eventTimingMeta(ev,when);
+  return Number(timing?.score||0) >= 65;
+}
+
 function eventTimingMeta(ev, when=planningDate||new Date()){
   if(!ev || !ev.start_date) return null;
   const y=when.getFullYear(), mo=String(when.getMonth()+1).padStart(2,'0'), d=String(when.getDate()).padStart(2,'0');
@@ -9541,6 +9547,21 @@ async function buildPlans(){
  }
 
  let top=selectDiverseTopPlans(topPool,free,3);
+
+ // 時間指定時も、明示カテゴリが「おまかせ/イベント」で今しかないイベントが成立しているなら
+ // 上位3案から完全に消さない。
+ if((mood==='any' || mood==='event') && topPool.length){
+   const urgentFeasible=topPool
+     .filter(p=>isUrgentTimelyEvent(p?.ev,planningDate))
+     .sort((a,b)=>{
+       const bt=Number(eventTimingMeta(b.ev,planningDate)?.score||0);
+       const at=Number(eventTimingMeta(a.ev,planningDate)?.score||0);
+       return bt-at || Number(b.preferenceScore||0)-Number(a.preferenceScore||0);
+     })[0];
+   if(urgentFeasible && !top.some(p=>(p.ev?.id||p.ev?.title)===(urgentFeasible.ev?.id||urgentFeasible.ev?.title))){
+     top=[urgentFeasible,...top.filter(p=>(p.ev?.id||p.ev?.title)!==(urgentFeasible.ev?.id||urgentFeasible.ev?.title))].slice(0,3);
+   }
+ }
  let multiDurationAuto=false;
 
  // 時間がおまかせなら、単一の時間に決め打ちせず、成立する「短・中・長」のプランを1案ずつ作る。
@@ -9596,12 +9617,48 @@ async function buildPlans(){
      return {duration,dBuffer,wellFilled};
    }));
 
-   // 短→中→長の順で、同じ主候補ばかりにならないよう最大3案を選ぶ。
+   // 今日限定・今日まで・まもなく開始など「今しかない」イベントが成立するなら、
+   // おまかせ3案のうち最低1案には必ず残す。
+   // 周遊スポット数の多さだけで期間限定イベントが押し出されないようにする。
+   if(mood==='any' || mood==='event'){
+     const urgentCandidates=[];
+     for(const {duration,dBuffer,wellFilled} of durationCandidates){
+       for(const row of (wellFilled||[])){
+         if(!isUrgentTimelyEvent(row?.ev,planningDate)) continue;
+         urgentCandidates.push({row,duration,dBuffer});
+       }
+     }
+     urgentCandidates.sort((a,b)=>{
+       const bt=Number(eventTimingMeta(b.row?.ev,planningDate)?.score||0);
+       const at=Number(eventTimingMeta(a.row?.ev,planningDate)?.score||0);
+       if(bt!==at) return bt-at;
+       return Number(b.row?.preferenceScore||0)-Number(a.row?.preferenceScore||0);
+     });
+
+     const urgent=urgentCandidates[0];
+     if(urgent?.row){
+       const pick=urgent.row;
+       const key=pick.ev.id||`${pick.ev.title}|${pick.ev.venue||''}`;
+       usedKeys.add(key);
+       const derivedMinutes=derivedAutoOfferMinutes(pick,start) || urgent.duration;
+       pick.offerFreeMinutes=derivedMinutes;
+       pick.offerBuffer=Math.max(0,derivedMinutes-Math.max(0,Math.round(pick.finish-start)));
+       pick.offerDurationLabel=autoDurationLabel(derivedMinutes);
+       pick.forcedTimelyEvent=true;
+       durationPlans.push(pick);
+     }
+   }
+
+   // 残りは短→中→長の順で、同じ主候補ばかりにならないよう最大3案を選ぶ。
    for(const {duration,dBuffer,wellFilled} of durationCandidates){
+     if(durationPlans.length>=3) break;
      let pick=wellFilled.find(row=>{
        const key=row.ev.id||`${row.ev.title}|${row.ev.venue||''}`;
        return !usedKeys.has(key);
-     }) || wellFilled[0];
+     }) || wellFilled.find(row=>{
+       const key=row.ev.id||`${row.ev.title}|${row.ev.venue||''}`;
+       return !usedKeys.has(key);
+     });
      if(!pick)continue;
      const key=pick.ev.id||`${pick.ev.title}|${pick.ev.venue||''}`;
      usedKeys.add(key);
