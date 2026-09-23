@@ -3192,10 +3192,38 @@ document.getElementById('go').onclick=async()=>{
     await buildPlans();
   }catch(err){
     console.error('[NEXITAIME] search failed',err);
+
     const summary=document.getElementById('summary');
     const box=document.getElementById('plans');
-    if(summary)summary.innerHTML='<h2>検索を完了できませんでした</h2><p>外部サービスの応答または候補計算でエラーが発生しました。もう一度お試しください。</p>';
-    if(box)box.innerHTML='';
+
+    const errName=String(err?.name||'Error');
+    const errMessage=String(err?.message||err||'unknown error');
+    const errStack=String(err?.stack||'')
+      .split('\n')
+      .slice(0,6)
+      .join('\n');
+
+    const safe=v=>String(v||'')
+      .replaceAll('&','&amp;')
+      .replaceAll('<','&lt;')
+      .replaceAll('>','&gt;')
+      .replaceAll('"','&quot;');
+
+    if(summary){
+      summary.innerHTML=`<h2>検索を完了できませんでした</h2>
+        <p>原因を確認するため、今回だけデバッグ情報を表示しています。</p>`;
+    }
+
+    if(box){
+      box.innerHTML=`<div class="plan">
+        <h3>デバッグ情報</h3>
+        <div class="note" style="font-size:12px;line-height:1.7">
+          <strong>${safe(errName)}:</strong> ${safe(errMessage)}
+        </div>
+        ${errStack?`<pre style="white-space:pre-wrap;word-break:break-word;background:#f7f9fb;border:1px solid #e4e9ee;border-radius:12px;padding:12px;font-size:11px;line-height:1.55;margin-top:10px">${safe(errStack)}</pre>`:''}
+        <div class="note" style="margin-top:10px">この画面のスクリーンショットを送れば、落ちている箇所を特定できます。</div>
+      </div>`;
+    }
   }
 };
 
