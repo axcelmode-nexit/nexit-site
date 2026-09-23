@@ -4413,11 +4413,37 @@ function isMountainOutdoorEvent(ev){
     /山|高原|渓谷|滝|登山|トレッキング|散策|自然|展望|スキー/.test(text);
 }
 
+function isGeneralOutdoorSightseeing(ev){
+  if(ev?.indoor===true)return false;
+  const text=[ev?.title,ev?.venue,ev?.summary,...(ev?.categories||[])].filter(Boolean).join(' ');
+  const kind=canonicalCategory(ev);
+  return ['sightseeing','nature','active'].includes(kind) ||
+    /公園|神社|寺|城跡|史跡|海岸|港周辺|散策|街歩き|自然|景色|展望|高原|渓谷|滝|登山|トレッキング/.test(text);
+}
+
+function explicitNightOutdoorOk(ev){
+  if(ev?.night_ok===true || ev?.nighttime_recommended===true)return true;
+  const text=[ev?.title,ev?.venue,ev?.summary,...(ev?.categories||[])].filter(Boolean).join(' ');
+  return /夜景|ライトアップ|イルミネーション|ナイト|夜イベント|夜祭|星空|花火/.test(text);
+}
+
 function afterDarkOutdoorRisk(ev,venueLeave,mode,lastMileMinutes=0){
-  if(!isMountainOutdoorEvent(ev) || !Number.isFinite(venueLeave))return false;
+  if(!Number.isFinite(venueLeave))return false;
+  if(explicitNightOutdoorOk(ev))return false;
+
   const daylight=seasonalDaylightEndMinutes(planningDate||new Date());
-  if(['walk','bike'].includes(mode))return venueLeave>daylight-15;
-  if(['public','train','bus'].includes(mode) && Number(lastMileMinutes||0)>5)return venueLeave>daylight-15;
+
+  // 「24時間立入可能」と「夜におすすめできる」は別。
+  // 公園・神社・城跡・自然散策などは、車移動でも日没後の自動提案から外す。
+  if(isGeneralOutdoorSightseeing(ev)){
+    return venueLeave>daylight-15;
+  }
+
+  // 山間・自然系は従来どおり、徒歩や公共交通のラストマイルも厳しく見る。
+  if(isMountainOutdoorEvent(ev)){
+    if(['walk','bike'].includes(mode))return venueLeave>daylight-15;
+    if(['public','train','bus'].includes(mode) && Number(lastMileMinutes||0)>5)return venueLeave>daylight-15;
+  }
   return false;
 }
 
