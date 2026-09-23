@@ -5766,6 +5766,21 @@ function recordExclusion(ev,code,reason){
   if(LAST_EXCLUSION_AUDIT.some(x=>x.key===key))return;
   LAST_EXCLUSION_AUDIT.push({key,title,code,reason});
 }
+function lateNightDiagnosticHtml(){
+  const d=window.__NEXIT_LATE_DIAG;
+  if(!d)return '';
+  const names=(d.hpOpenNames||[]).map(esc).join('、')||'なし';
+  return `<div class="exclusion-summary" style="margin-top:10px">
+    <strong>診断：夜間候補</strong><br>
+    Hot Pepper取得 ${Number(d.hpFetched||0)}件 /
+    営業時間解析 ${Number(d.hpVerified||0)}件 /
+    現在営業判定 ${Number(d.hpOpenNow||0)}件<br>
+    最初の28候補：飲食 ${Number(d.firstFood||0)}件 /
+    次の28候補：飲食 ${Number(d.restFood||0)}件<br>
+    現在営業判定：${names}
+  </div>`;
+}
+
 function exclusionSummaryHtml(limit=4){
   if(!LAST_EXCLUSION_AUDIT.length)return '';
   const counts=new Map();
@@ -5808,6 +5823,82 @@ function eventIsAvailableAt(ev, when=new Date()){
     const e=ev.end_time?mins(ev.end_time):null;
     if(e!=null && n>e)return false;
   }
+
+  return true;
+}
+
+
+const REGIONAL_CHAIN_KEEP_PATTERNS=[
+  /船栄/i,
+  /富寿し/i,
+  /きときと寿し/i,
+  /馬喰ろう/i,
+  /あごすけ/i,
+  /麺屋しょうじ/i,
+  /ニューミサ/i,
+  /食堂ニューミサ/i,
+  /春紀/i,
+  /\bGITA\b/i
+];
+
+const NATIONAL_CHAIN_EXCLUDE_PATTERNS=[
+  /かっぱ寿司/i,
+  /スシロー/i,
+  /くら寿司/i,
+  /はま寿司/i,
+  /ラーメン山岡家/i,
+  /山岡家/i,
+  /魚民/i,
+  /白木屋/i,
+  /笑笑/i,
+  /目利きの銀次/i,
+  /千年の宴/i,
+  /吉野家/i,
+  /すき家/i,
+  /松屋/i,
+  /なか卯/i,
+  /ガスト/i,
+  /バーミヤン/i,
+  /ジョナサン/i,
+  /サイゼリヤ/i,
+  /ココス/i,
+  /デニーズ/i,
+  /マクドナルド/i,
+  /モスバーガー/i,
+  /ケンタッキー/i,
+  /丸亀製麺/i,
+  /はなまるうどん/i,
+  /幸楽苑/i,
+  /餃子の王将/i,
+  /大阪王将/i,
+  /コメダ珈琲/i,
+  /スターバックス/i,
+  /ドトール/i,
+  /ミスタードーナツ/i,
+  /びっくりドンキー/i,
+  /しゃぶ葉/i,
+  /焼肉きんぐ/i,
+  /牛角/i,
+  /大戸屋/i,
+  /やよい軒/i,
+  /てんや/i
+];
+
+function recommendationChainAllowed(ev){
+  if(!ev)return true;
+  const kind=canonicalCategory(ev);
+  if(!['food','cafe'].includes(kind))return true;
+
+  const text=[
+    ev?.title,ev?.venue,ev?.name,ev?.summary,
+    ev?.genre,ev?.genre_name,ev?.catch
+  ].filter(Boolean).join(' ').normalize('NFKC');
+
+  // 地域チェーン・地元店は明示的に残す。
+  if(REGIONAL_CHAIN_KEEP_PATTERNS.some(re=>re.test(text)))return true;
+
+  // 全国チェーンはNEXITAIMEの「上越を満喫する」提案から外す。
+  if(NATIONAL_CHAIN_EXCLUDE_PATTERNS.some(re=>re.test(text)))return false;
 
   return true;
 }
@@ -7526,7 +7617,9 @@ function alcoholVenueLike(ev){
 }
 
 function alcoholSafeModes(modes){
-  const safe=new Set(['public','train','bus','taxi','multimodal']);
+  // 飲酒系店舗では運転・自転車を避ける。
+  // 徒歩は安全な移動手段なので除外しない。
+  const safe=new Set(['walk','public','train','bus','taxi','multimodal']);
   return (modes||[]).filter(m=>safe.has(m));
 }
 function autoModesForEvent(ev,dest,modes,ctx,start,deadline){
@@ -9827,6 +9920,50 @@ function fastAutoCandidatePool(events,ctx,limit=12){
   return out;
 }
 
+
+function setTomorrowSearch(hour){
+  const now=new Date();
+  const next=new Date(now);
+  next.setDate(now.getDate()+1);
+  next.setHours(hour,0,0,0);
+
+  // Switch to explicit datetime mode and update available controls when present.
+  try{
+    timingMode='datetime';
+  }catch(_){}
+
+  const dateInput=document.getElementById('date') || document.querySelector('input[type="date"]');
+  const timeInput=document.getElementById('time') || document.querySelector('input[type="time"]');
+
+  if(dateInput){
+    const y=next.getFullYear();
+    const m=String(next.getMonth()+1).padStart(2,'0');
+    const d=String(next.getDate()).padStart(2,'0');
+    dateInput.value=`${y}-${m}-${d}`;
+    dateInput.dispatchEvent(new Event('change',{bubbles:true}));
+  }
+
+  if(timeInput){
+    timeInput.value=`${String(hour).padStart(2,'0')}:00`;
+    timeInput.dispatchEvent(new Event('change',{bubbles:true}));
+  }
+
+  // If the page has a timing toggle, prefer the explicit-date option.
+  const datetimeBtn=document.querySelector('[data-timing="datetime"], [data-time-mode="datetime"]');
+  if(datetimeBtn) datetimeBtn.click();
+
+  try{
+    planningDate=next;
+  }catch(_){}
+
+  buildPlans();
+}
+
+function bindTomorrowSearchButtons(){
+  document.getElementById('tomorrowMorningBtn')?.addEventListener('click',()=>setTomorrowSearch(9));
+  document.getElementById('tomorrowNoonBtn')?.addEventListener('click',()=>setTomorrowSearch(12));
+}
+
 async function buildPlans(){
  syncSearchStateFromControls();
  await ensureClassicRoutesLoaded();
@@ -9890,6 +10027,50 @@ async function buildPlans(){
 
  resetExclusionAudit();
  const hotpepperEvents=await fetchHotPepperRestaurants();
+
+ // Diagnostic only: no search/filter/scoring behavior is changed.
+ // Keep enough information to see whether late-night restaurants disappear
+ // at fetch, hours parsing, or candidate staging.
+ try{
+   const nowMin=planningDate.getHours()*60+planningDate.getMinutes();
+   const hpHourRows=hotpepperEvents.map(ev=>{
+     const w=availabilityWindow(ev,planningDate);
+     const ranges=Array.isArray(w?.ranges)?w.ranges:[];
+     const openNow=w?.verified===true && w?.closed!==true &&
+       (
+         ranges.length
+           ? ranges.some(r=>nowMin>=r.open && nowMin<r.close)
+           : ((w?.open==null || nowMin>=w.open) && (w?.close==null || nowMin<w.close))
+       );
+     return {
+       title:ev?.title||ev?.venue||'',
+       verified:w?.verified===true,
+       openNow,
+       label:w?.label||'',
+       provider:ev?.provider||''
+     };
+   });
+   window.__NEXIT_LATE_DIAG={
+     hpFetched:hotpepperEvents.length,
+     hpVerified:hpHourRows.filter(x=>x.verified).length,
+     hpOpenNow:hpHourRows.filter(x=>x.openNow).length,
+     hpOpenNames:hpHourRows.filter(x=>x.openNow).slice(0,8).map(x=>x.title),
+     hpOpenRecommended:hotpepperEvents.filter(ev=>{
+       const w=availabilityWindow(ev,planningDate);
+       const ranges=Array.isArray(w?.ranges)?w.ranges:[];
+       const nowMin=planningDate.getHours()*60+planningDate.getMinutes();
+       const openNow=w?.verified===true && w?.closed!==true &&
+         (ranges.length
+           ? ranges.some(r=>nowMin>=r.open && nowMin<r.close)
+           : ((w?.open==null || nowMin>=w.open) && (w?.close==null || nowMin<w.close)));
+       return openNow && recommendationChainAllowed(ev);
+     }).length,
+     hpUnverifiedNames:hpHourRows.filter(x=>!x.verified).slice(0,5).map(x=>x.title)
+   };
+ }catch(_){
+   window.__NEXIT_LATE_DIAG={hpFetched:hotpepperEvents.length,error:'hours diagnostic failed'};
+ }
+
  const candidateEvents=hotpepperEvents.length
    ? mergeCandidateEvents(EVENTS,hotpepperEvents)
    : EVENTS;
@@ -9897,6 +10078,9 @@ async function buildPlans(){
  if(destinationArea!=='any')events=events.filter(destinationMatchesEvent);
  if(mood!=='any')events=events.filter(ev=>moodMatches(ev,mood));
  events=events.filter(foodKindMatches).filter(secondaryMoodMatches);
+ // NEXITAIMEは「上越を満喫する」提案を優先。
+ // 全国チェーンは候補から外し、地域チェーン・地元店は残す。
+ events=events.filter(recommendationChainAllowed);
 
  // Food/cafe can contain many API + static shops. Keep the transport comparison
  // responsive by scoring the most relevant subset first.
@@ -9930,6 +10114,19 @@ async function buildPlans(){
  // 1) Exact requested conditions
  if(isAllAutoSearch()){
    const staged=stagedAutoCandidates(events,searchCtx);
+   try{
+     const d=window.__NEXIT_LATE_DIAG||(window.__NEXIT_LATE_DIAG={});
+     const inspect=(rows)=>rows.map(ev=>({
+       title:ev?.title||ev?.venue||'',
+       kind:itineraryCategory(ev),
+       provider:ev?.provider||'',
+       verified:availabilityWindow(ev,planningDate)?.verified===true
+     }));
+     d.stagedFirst=inspect(staged.first);
+     d.stagedRestHead=inspect(staged.rest.slice(0,28));
+     d.firstFood=d.stagedFirst.filter(x=>['food','cafe'].includes(x.kind)).length;
+     d.restFood=d.stagedRestHead.filter(x=>['food','cafe'].includes(x.kind)).length;
+   }catch(_){}
    // 昨日まで安定して複数候補が出ていた方式に戻す。
    // 最初から8件へ切らず、成立候補をきちんと拾ってから上位案を選ぶ。
    scored=await scoreEventSet(staged.first,requestedModes,start,deadline,searchCtx);
@@ -10067,7 +10264,7 @@ async function buildPlans(){
      let rows=candidateEvents.filter(ev=>eventIsAvailableAt(ev,planningDate)).filter(budgetAllows).filter(companionAllows);
      if(searchCtx.destination!=='any') rows=rows.filter(destinationMatchesEvent);
      if(mood!=='any') rows=rows.filter(ev=>moodMatches(ev,mood));
-     return rows.filter(foodKindMatches).filter(secondaryMoodMatches);
+     return rows.filter(foodKindMatches).filter(secondaryMoodMatches).filter(recommendationChainAllowed);
    })();
    const durationPool=fastAutoCandidatePool(rawDurationPool,searchCtx,10);
 
@@ -10287,7 +10484,17 @@ async function buildPlans(){
    try{ trackNexitaime('search_result',{resultCount:0}); }catch(_){}
    if(adjustPanel) adjustPanel.hidden=true;
    const selectedModeLabel=transport==='auto'?'選択中の条件':(MODE_LABELS[transport]||transport);
-   summary.innerHTML=`<h2>この時間では、${selectedModeLabel}で行けるプランがありません</h2><p><strong>${searchCtx.origin} → ${destinationGroupLabel(searchCtx.destination)} → ${searchCtx.returnTo}</strong><br>選んだ行き先や移動手段は勝手に変更していません。</p>`;
+   summary.innerHTML=`
+      <div class="no-plan-hero">
+        <h2>🌙 今夜は無理におすすめを作りません</h2>
+        <p>この時間から「上越らしく楽しめる」候補は少なくなっています。</p>
+        <p><strong>明日の朝なら、もっと上越を楽しめます。</strong></p>
+      </div>
+      <div class="no-plan-actions">
+        <button type="button" id="tomorrowMorningBtn" class="adjust-btn">🌅 明日の朝から探す</button>
+        <button type="button" id="tomorrowNoonBtn" class="adjust-btn">☀️ 明日の昼から探す</button>
+      </div>
+    `;
    box.innerHTML=`<div class="plan no-result-actions-wrap">
      <h3>条件を少し変えて、もう一度探す</h3>
      <p>よく使う変更をワンタップで試せます。</p>
@@ -10301,6 +10508,7 @@ async function buildPlans(){
      ${exclusionSummaryHtml()}
    </div>`;
    bindNoResultActions();
+   bindTomorrowSearchButtons();
    return;
  }
 
