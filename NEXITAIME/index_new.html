@@ -2500,11 +2500,14 @@ let LAST_CLASSIC_ROUTE=null;
 async function ensureClassicRoutesLoaded(){
   if(CLASSIC_ROUTES_MASTER)return CLASSIC_ROUTES_MASTER;
   try{
-    const r=await fetch(NEXITAIME_CLASSIC_ROUTES_URL,{cache:'no-store'});
+    const controller=new AbortController();
+    const timer=setTimeout(()=>controller.abort(),1200);
+    const r=await fetch(NEXITAIME_CLASSIC_ROUTES_URL,{cache:'no-store',signal:controller.signal});
     if(!r.ok)throw new Error(`HTTP ${r.status}`);
     const data=await r.json();
     if(!Array.isArray(data?.routes))throw new Error('routes missing');
     CLASSIC_ROUTES_MASTER=data;
+    clearTimeout(timer);
   }catch(err){
     console.warn('[NEXITAIME] classic routes unavailable; fallback to normal planning',err);
     CLASSIC_ROUTES_MASTER={routes:[]};
@@ -9019,8 +9022,11 @@ async function fetchHotPepperRestaurants(){
 
   // Query the categories in parallel, dedupe, then keep a wider live pool.
   // The final recommendation engine still applies destination/time/hours/route checks.
-  const batches=await Promise.all(kinds.map(fetchOne));
-  return dedupeHotPepperRows(batches.flat()).slice(0,50);
+  const batches=await Promise.race([
+    Promise.all(kinds.map(fetchOne)),
+    new Promise(resolve=>setTimeout(()=>resolve([]),2200))
+  ]);
+  return dedupeHotPepperRows((batches||[]).flat()).slice(0,50);
 }
 
 function providerInfoHtml(ev){
@@ -9264,7 +9270,7 @@ function automaticReturnBufferMinutes(freeMinutes=180){
 }
 
 
-async function scoreEventSetFast(events,modes,start,deadline,ctx,timeoutMs=2200){
+async function scoreEventSetFast(events,modes,start,deadline,ctx,timeoutMs=1400){
   // External routing/timetable services can be slow. Never keep the result screen waiting forever.
   let timer;
   try{
@@ -9335,9 +9341,9 @@ async function buildPlans(){
  summary.innerHTML=`<h2>おすすめを探しています…</h2><p>${isAutoFree?'時間別のプランを比較しながら、':''}移動時間・営業時間・時刻表・必要な戻り余裕を判定しています。</p>`;
  const searchWatchdog=setTimeout(()=>{
    if(summary.textContent.includes('再検索中') || summary.textContent.includes('おすすめを探しています')){
-     summary.innerHTML='<h2>検索に時間がかかっています</h2><p>外部サービスの応答が遅いため、処理を継続しています。検索条件は変更していません。</p>';
+     summary.innerHTML='<h2>もう少しで結果を表示します</h2><p>応答の遅い外部サービスは待ち切らず、取得できた情報から提案します。</p>';
    }
- },5000);
+ },4000);
  const adjustPanel=document.getElementById('planAdjustPanel');
  if(adjustPanel){
    adjustPanel.hidden=true;
@@ -9525,7 +9531,7 @@ async function buildPlans(){
    const durationCandidates=await Promise.all(autoDurationChoices().map(async duration=>{
      const dBuffer=automaticReturnBufferMinutes(duration);
      const dDeadline=start+duration-dBuffer;
-     let rows=await scoreEventSetFast(durationPool,requestedModes,start,dDeadline,searchCtx,1800);
+     let rows=await scoreEventSetFast(durationPool,requestedModes,start,dDeadline,searchCtx,1100);
      rows=sortCandidates(rows);
      if(budget!=='any'){
        const maxBudget=Number(budget);
