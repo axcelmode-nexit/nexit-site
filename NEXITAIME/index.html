@@ -5450,7 +5450,6 @@ function informationConfidenceHtml(ev){
   return `<div class="info-confidence"><strong>${icon} ${esc(m.label)}</strong><div class="confidence-row">${chips}</div></div>`;
 }
 
-let SEARCH_STAGE_DIAG={};
 let LAST_EXCLUSION_AUDIT=[];
 function resetExclusionAudit(){ LAST_EXCLUSION_AUDIT=[]; }
 function recordExclusion(ev,code,reason){
@@ -7874,8 +7873,27 @@ function finalPlanGuard(plan,ctx,start,deadline){
   }
 
   if(plan?.ev && finite(arrive)){
-    const venueLeave=finite(plan?.venueLeave) ? Number(plan.venueLeave) : arrive+Math.max(0,stay||0);
-    const av=spotAvailability(plan.ev,arrive,venueLeave,planningDate);
+    // 周遊プランでは plan.venueLeave / plan.stay は「全立ち寄り終了時刻・全滞在合計」に
+    // 更新される。主目的地の営業時間判定にそれを使うと、店を出た後の観光時間まで
+    // 「店に滞在していた」と誤判定してしまう。
+    // itinerary 内の主目的地行がある場合は、その実際の leave を使う。
+    const primaryRow=Array.isArray(plan?.itinerary)
+      ? plan.itinerary.find(r=>{
+          if(r?.sourceEv===plan.ev)return true;
+          const rid=r?.sourceEv?.id||r?.sourceEv?.title||r?.name;
+          const pid=plan?.ev?.id||plan?.ev?.title||plan?.ev?.venue;
+          return rid && pid && String(rid)===String(pid);
+        })
+      : null;
+
+    const mainArrive=finite(primaryRow?.arrive) ? Number(primaryRow.arrive) : arrive;
+    const mainLeave=finite(primaryRow?.leave)
+      ? Number(primaryRow.leave)
+      : (finite(plan?.venueLeave) && !plan?.dynamicRoute
+          ? Number(plan.venueLeave)
+          : mainArrive+Math.max(0,stay||0));
+
+    const av=spotAvailability(plan.ev,mainArrive,mainLeave,planningDate);
     if(av?.ok===false) reasons.push('営業時間条件不成立');
     if(['food','cafe'].includes(itineraryCategory(plan.ev)) && av?.verified!==true){
       reasons.push('飲食店の営業時間未確認');
@@ -9197,14 +9215,7 @@ async function fetchHotPepperRestaurants(){
     Promise.all(kinds.map(fetchOne)),
     new Promise(resolve=>setTimeout(()=>resolve([]),2200))
   ]);
-  const hpRows=dedupeHotPepperRows((batches||[]).flat()).slice(0,50);
-  SEARCH_STAGE_DIAG.hotpepperFetched=hpRows.length;
-  SEARCH_STAGE_DIAG.hotpepperWithPoint=hpRows.filter(r=>!!routePointForEvent(r,r?.area)).length;
-  SEARCH_STAGE_DIAG.hotpepperWithHours=hpRows.filter(r=>{
-    const w=availabilityWindow(r,planningDate||new Date());
-    return !w.closed && (w.open!=null || w.close!=null || w.verified===true);
-  }).length;
-  return hpRows;
+  return dedupeHotPepperRows((batches||[]).flat()).slice(0,50);
 }
 
 function providerInfoHtml(ev){
@@ -9476,37 +9487,7 @@ function fastAutoCandidatePool(events,ctx,limit=12){
   return out;
 }
 
-
-function searchStageDiagnosticHtml(){
-  const d=SEARCH_STAGE_DIAG||{};
-  const rows=[
-    ['Hot Pepper取得',d.hotpepperFetched],
-    ['Hot Pepper座標あり',d.hotpepperWithPoint],
-    ['Hot Pepper営業時間情報あり',d.hotpepperWithHours],
-    ['条件通過候補',d.filteredCandidates],
-    ['条件通過＋座標あり',d.filteredWithPoint],
-    ['条件通過＋営業可',d.filteredOpenNow],
-    ['ルート成立',d.routeScored],
-    ['最終成立',d.finalGuarded]
-  ].filter(([,v])=>Number.isFinite(Number(v)));
-
-  if(!rows.length)return '';
-  const routeDetails=(d.routeCandidates||[]).map(x=>
-    `${esc(x.title)}［${esc(x.mode||'-')}］${x.hours?` / ${esc(String(x.hours))}`:''}`
-  );
-  const rejectDetails=(d.finalRejected||[]).map(x=>
-    `${esc(x.title)} → ${esc((x.reasons||[]).join('、')||'理由不明')}${x.hours?` / ${esc(String(x.hours))}`:''}`
-  );
-  return `<div class="exclusion-summary" style="margin-top:12px">
-    <strong>検索段階デバッグ</strong><br>
-    ${rows.map(([k,v])=>`${esc(k)}：${Number(v)}件`).join('<br>')}
-    ${routeDetails.length?`<div style="margin-top:10px"><strong>ルート成立候補</strong><br>${routeDetails.join('<br>')}</div>`:''}
-    ${rejectDetails.length?`<div style="margin-top:10px"><strong>最終除外の理由</strong><br>${rejectDetails.join('<br>')}</div>`:''}
-  </div>`;
-}
-
 async function buildPlans(){
- SEARCH_STAGE_DIAG={};
  syncSearchStateFromControls();
  await ensureClassicRoutesLoaded();
  const freeControl=document.getElementById('free');
@@ -9577,9 +9558,6 @@ async function buildPlans(){
  if(destinationArea!=='any')events=events.filter(destinationMatchesEvent);
  if(mood!=='any')events=events.filter(ev=>moodMatches(ev,mood));
  events=events.filter(foodKindMatches).filter(secondaryMoodMatches);
- SEARCH_STAGE_DIAG.filteredCandidates=events.length;
- SEARCH_STAGE_DIAG.filteredWithPoint=events.filter(ev=>!!routePointForEvent(ev,areaStation[ev.area])).length;
- SEARCH_STAGE_DIAG.filteredOpenNow=events.filter(ev=>!availabilityWindow(ev,planningDate||new Date()).closed).length;
 
  // 時間おまかせは、近さ・王道・現在条件で優先度の高い候補だけ先にルート判定する。
  // 全件を90/180/300分で繰り返し評価するとモバイルで待ち時間が長くなるため。
@@ -9694,12 +9672,6 @@ async function buildPlans(){
    }
  }
 
- SEARCH_STAGE_DIAG.routeScored=scored.length;
- SEARCH_STAGE_DIAG.routeCandidates=(scored||[]).slice(0,8).map(p=>({
-   title:p?.ev?.title||p?.ev?.venue||'名称不明',
-   mode:p?.mode||'',
-   hours:p?.ev?.hours_text||p?.ev?.opening_hours||p?.availability?.label||''
- }));
  scored=sortCandidates(scored);
 
  // Budget is judged against event/spot cost + estimated transport cost when both are known.
@@ -9740,24 +9712,11 @@ async function buildPlans(){
      recordExclusion(row.ev,'start_near_only_stop','出発地付近だけ立ち寄って帰着先へ向かう単独案を除外');
      continue;
    }
-   const guardCheck=finalPlanGuard(row,searchCtx,start,deadline);
-   if(guardCheck.ok){
-     guardedPlans.push(row);
-   }else{
-     if(!Array.isArray(SEARCH_STAGE_DIAG.finalRejected))SEARCH_STAGE_DIAG.finalRejected=[];
-     SEARCH_STAGE_DIAG.finalRejected.push({
-       title:row?.ev?.title||row?.ev?.venue||'名称不明',
-       mode:row?.mode||'',
-       hours:row?.ev?.hours_text||row?.ev?.opening_hours||row?.availability?.label||'',
-       reasons:guardCheck.reasons||[]
-     });
-     for(const r of guardCheck.reasons||[])recordExclusion(row?.ev,'final_guard',r);
-   }
+   const checked=filterFinalPlans([row],searchCtx,start,deadline);
+   if(checked.length) guardedPlans.push(row);
    // Keep a wider valid pool so the top 3 can be diversified intelligently.
    if(guardedPlans.length>=12) break;
  }
-
- SEARCH_STAGE_DIAG.finalGuarded=guardedPlans.length;
 
  // Re-rank after itinerary construction so, when time allows, realistic multi-stop plans
  // are preferred over spending the whole window at a single place.
@@ -10040,7 +9999,6 @@ async function buildPlans(){
      </div>
      <div class="retry-note">※ 押すと条件を変更して、そのまま再検索します。</div>
      ${exclusionSummaryHtml()}
-     ${searchStageDiagnosticHtml()}
    </div>`;
    bindNoResultActions();
    return;
