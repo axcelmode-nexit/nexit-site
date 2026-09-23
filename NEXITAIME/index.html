@@ -9552,16 +9552,42 @@ function automaticReturnBufferMinutes(freeMinutes=180){
 
 
 async function scoreEventSetFast(events,modes,start,deadline,ctx,timeoutMs=2500){
-  // External routing/timetable services can be slow. Never keep the result screen waiting forever.
-  let timer;
-  try{
-    return await Promise.race([
-      scoreEventSet(events,modes,start,deadline,ctx),
-      new Promise(resolve=>{ timer=setTimeout(()=>resolve([]),timeoutMs); })
-    ]);
-  }finally{
-    if(timer)clearTimeout(timer);
-  }
+  // 候補全体を1つのPromiseでタイムアウトさせると、
+  // 9件まで評価済みでも最後の1件待ちで全結果が [] になる。
+  // 候補ごとに独立して評価し、時間内に終わった結果だけを回収する。
+  const list=Array.isArray(events)?events.filter(Boolean):[];
+  if(!list.length)return [];
+
+  const perEventTimeout=Math.max(900,Math.min(2200,Number(timeoutMs)||2200));
+
+  const tasks=list.map(ev=>new Promise(resolve=>{
+    let settled=false;
+    const timer=setTimeout(()=>{
+      if(settled)return;
+      settled=true;
+      resolve([]);
+    },perEventTimeout);
+
+    Promise.resolve(scoreEventSet([ev],modes,start,deadline,ctx))
+      .then(rows=>{
+        if(settled)return;
+        settled=true;
+        clearTimeout(timer);
+        resolve(Array.isArray(rows)?rows:[]);
+      })
+      .catch(err=>{
+        if(settled)return;
+        settled=true;
+        clearTimeout(timer);
+        try{
+          console.warn('[NEXITAIME] candidate scoring skipped',ev?.title||ev?.venue||ev?.id,err);
+        }catch(_){}
+        resolve([]);
+      });
+  }));
+
+  const batches=await Promise.all(tasks);
+  return dedupeCandidates(batches.flat());
 }
 
 function fastAutoCandidatePool(events,ctx,limit=12){
