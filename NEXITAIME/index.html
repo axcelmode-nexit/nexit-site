@@ -9665,44 +9665,38 @@ function setTomorrowSearch(hour){
   next.setDate(now.getDate()+1);
   next.setHours(hour,0,0,0);
 
-  // Use the page's real explicit-date mode.
-  timingMode='date';
+  // This page uses timingMode "custom" and #customDateTime.
+  timingMode='custom';
 
-  const dateEl=document.getElementById('date');
-  const timeEl=document.getElementById('time');
-  if(dateEl){
-    const yyyy=next.getFullYear();
-    const mm=String(next.getMonth()+1).padStart(2,'0');
-    const dd=String(next.getDate()).padStart(2,'0');
-    dateEl.value=`${yyyy}-${mm}-${dd}`;
-  }
-  if(timeEl){
-    timeEl.value=`${String(hour).padStart(2,'0')}:00`;
-  }
-
-  document.querySelectorAll('#timings .chip').forEach(btn=>{
-    btn.classList.toggle('active',btn.dataset.timing==='date');
+  document.querySelectorAll('#timing .chip').forEach(btn=>{
+    btn.classList.toggle('active',btn.dataset.timing==='custom');
   });
 
-  const custom=document.getElementById('customTime');
-  if(custom)custom.hidden=false;
+  const customDateTime=document.getElementById('customDateTime');
+  if(customDateTime){
+    customDateTime.value=toLocalInputValue(next);
+  }
 
-  // Keep planningDate synchronized immediately instead of waiting for a change event.
+  updateTimingUI();
   planningDate=new Date(next);
+  renderWeatherForDate(planningDate);
 
-  // Reflect the chosen values through the same listeners other manual changes use.
-  dateEl?.dispatchEvent(new Event('input',{bubbles:true}));
-  dateEl?.dispatchEvent(new Event('change',{bubbles:true}));
-  timeEl?.dispatchEvent(new Event('input',{bubbles:true}));
-  timeEl?.dispatchEvent(new Event('change',{bubbles:true}));
+  // Immediate feedback, then run the same route search as the main button.
+  const summary=document.getElementById('summary');
+  const box=document.getElementById('plans');
+  if(summary){
+    const label=hour<12?'明日の朝':'明日の昼';
+    summary.innerHTML=`<h2>${label}のおすすめを探しています</h2><p>${String(hour).padStart(2,'0')}:00から、上越を楽しめるルートを組み立てています。</p>`;
+  }
+  if(box)box.innerHTML='';
 
-  // Give the UI one frame to settle, then run the search.
   requestAnimationFrame(()=>{
-    try{
-      buildPlans();
-    }catch(err){
+    Promise.resolve(buildPlans()).catch(err=>{
       console.error('[NEXITAIME] tomorrow search failed',err);
-    }
+      if(summary){
+        summary.innerHTML='<h2>おすすめの検索中にエラーが発生しました</h2><p>もう一度お試しください。</p>';
+      }
+    });
   });
 }
 
