@@ -6776,9 +6776,13 @@ function buildSimpleItinerary(plan,candidateEvents=[],freeMinutes=180){
   // then use remaining time for different categories nearby.
   if(mixedMode){
     const primaryKind=itineraryCategory(plan.ev);
+    const compactShortCourse=freeMinutes>=75 && freeMinutes<=120;
+    const primaryTarget=compactShortCourse
+      ? Math.max(25,Math.min(40,Math.floor(remain*0.46)))
+      : Math.max(30,Math.floor(remain*0.48));
     const primaryStay=Math.min(
       remain,
-      Math.max(25, Math.min(itineraryStayFor(plan.ev), Math.max(30,Math.floor(remain*0.48))))
+      Math.max(25, Math.min(itineraryStayFor(plan.ev), primaryTarget))
     );
 
     rows.push({
@@ -6809,7 +6813,7 @@ function buildSimpleItinerary(plan,candidateEvents=[],freeMinutes=180){
     const usedIds=new Set([plan.ev?.id||plan.ev?.title]);
 
     // Prefer category diversity: food + sightseeing/nature/cafe/onsen etc.
-    while(rows.length<targetStops && remain>=30){
+    while(rows.length<targetStops && remain>=(compactShortCourse?20:30)){
       let best=null, bestScore=-9999;
 
       for(const ev of candidates){
@@ -6828,7 +6832,8 @@ function buildSimpleItinerary(plan,candidateEvents=[],freeMinutes=180){
 
         let stay=itineraryStayFor(ev);
         stay=Math.min(stay,remain-move);
-        if(stay<25) continue;
+        const minStay=compactShortCourse ? 20 : 25;
+        if(stay<minStay) continue;
 
         const arrive=t+move;
         const leave=arrive+stay;
@@ -6847,8 +6852,23 @@ function buildSimpleItinerary(plan,candidateEvents=[],freeMinutes=180){
         if(['sightseeing','nature'].includes(kind) && ![...usedKinds].some(k=>['sightseeing','nature'].includes(k))) score+=30;
         if(kind===primaryKind) score-=35;
         score+=Math.min(20,stay/3);
+
+        // 90〜120分のおまかせは「近場を2か所」が基本。
+        // 徒歩圏・同一エリアの2か所目を強く優先する。
+        if(compactShortCourse){
+          if(move<=5) score+=140;
+          else if(move<=10) score+=105;
+          else if(move<=15) score+=45;
+          if(ev.area===plan.ev?.area) score+=70;
+        }
+
         // When several nearby stops are equally realistic, favor places that feel distinctly Joetsu.
         score+=joetsuLandmarkBonus(ev);
+        if(compactShortCourse &&
+           /フルサット|子ども免許証|はたらくくるま/.test(String(plan.ev?.title||plan.ev?.venue||'')) &&
+           /釜蓋遺跡/.test(String(ev?.title||ev?.venue||''))){
+          score+=160;
+        }
 
         // When start and goal differ, prefer each added stop to keep moving toward the goal.
         const goalName=plan?.returnTo || (returnTarget==='same' ? origin : returnTarget);
@@ -6885,7 +6905,7 @@ function buildSimpleItinerary(plan,candidateEvents=[],freeMinutes=180){
 
     // If real candidate data was sparse, fill with known nearby micro-stops.
     for(const s of legacyPool){
-      if(rows.length>=targetStops || remain<30) break;
+      if(rows.length>=targetStops || remain<(compactShortCourse?20:30)) break;
       if(rows.some(r=>r.name===s.name)) continue;
 
       const nextPoint=placeCoord(s.name);
@@ -7197,7 +7217,11 @@ function stagedAutoCandidates(events, ctx){
     return {ev,i,score,timingScore:Number(timing?.score||0)};
   }).sort((a,b)=>{
     if((b.timingScore>=65)!==(a.timingScore>=65)) return (b.timingScore>=65)-(a.timingScore>=65);
-    return b.score-a.score || a.i-b.i;
+    if(b.score!==a.score) return b.score-a.score;
+    const ak=String(a.ev?.title||a.ev?.id||'');
+    const bk=String(b.ev?.title||b.ev?.id||'');
+    const byName=ak.localeCompare(bk,'ja');
+    return byName || a.i-b.i;
   });
 
   // 緊急性の高いイベントは必ずfirstへ残し、その後を通常ランキングで埋める。
@@ -8953,7 +8977,7 @@ function localPlanSuggestion(plans, free, buffer){
   const spare=Math.max(0,Number(top.spare||0)+Number(buffer||0));
   const bits=[];
   if(stops>=2) bits.push(`${free}分あるので、移動が無理のない範囲で${stops}か所回れる案を優先しました。`);
-  else if(free>=120) bits.push(`${free}分の中で、移動と滞在のバランスが良い案を優先しました。`);
+  else if(free>=120) bits.push(`${(top||[]).map(p=>`約${Number(p.offerFreeMinutes)||derivedAutoOfferMinutes(p,start)}分`).join('・')}の案から、移動と滞在のバランスが良い案を優先しました。`);
   else bits.push(`短い時間でも戻りに無理が出にくい案を優先しました。`);
   if(mode) bits.push(`${mode}で動きやすい候補です。`);
   if(spare>=25) bits.push(`まだ約${spare}分余るため、近場をもう1か所追加できる可能性があります。`);
