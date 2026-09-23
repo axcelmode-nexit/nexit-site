@@ -3808,20 +3808,38 @@ async function walkingMinutesToService(s){
 
 async function getNearestService(rows){
   if(!rows.length)return null;
-  // Real nearest/walking calculations must use actual coordinates. Directory-only
-  // same-area fallbacks are intentionally excluded here.
+  // ルート検索では「ユーザーが選んだ出発地」を基準に移動サービスを探す。
+  // GPS currentPos は、出発地として「今いる場所」が選ばれている場合だけ使う。
   rows=rows.filter(s=>Number.isFinite(Number(s?.lat)) && Number.isFinite(Number(s?.lon)));
   if(!rows.length)return null;
-  let ranked=rows.map(s=>{
-    let d;
-    if(currentPos)d=haversine(currentPos.lat,currentPos.lon,s.lat,s.lon);
-    else if(PLACES[origin])d=haversine(PLACES[origin].lat,PLACES[origin].lon,s.lat,s.lon);
-    else d=999;
-    return {s,d};
-  }).sort((a,b)=>a.d-b.d);
+
+  const originName=String(origin||'');
+  const originUsesCurrentLocation=
+    originName==='current' ||
+    originName==='現在地' ||
+    originName==='今いる場所' ||
+    originName==='今いる場所に戻る';
+
+  const basePoint=(originUsesCurrentLocation && currentPos)
+    ? currentPos
+    : (PLACES?.[origin] || currentPos || null);
+
+  if(!basePoint)return null;
+
+  const ranked=rows.map(s=>({
+    s,
+    d:haversine(basePoint.lat,basePoint.lon,Number(s.lat),Number(s.lon))
+  })).sort((a,b)=>a.d-b.d);
+
   const best=ranked[0];
   if(!best)return null;
-  const walk=currentPos ? await walkingMinutesToService(best.s) : Math.max(1,Math.ceil(best.d/4.5*60));
+
+  // GPS出発時だけ実経路の徒歩アクセスを使う。
+  // 駅など明示選択時は、その地点からの距離概算を使う。
+  const walk=(originUsesCurrentLocation && currentPos)
+    ? await walkingMinutesToService(best.s)
+    : Math.max(1,Math.ceil(best.d/4.5*60));
+
   return {...best.s,distanceKm:best.d,walkMinutes:walk};
 }
 
