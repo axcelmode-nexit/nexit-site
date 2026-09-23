@@ -2857,7 +2857,17 @@ document.querySelectorAll('#transport .chip').forEach(b=>b.onclick=()=>{
 document.getElementById('budget').onchange=e=>budget=e.target.value;
 document.getElementById('companion').onchange=e=>companion=e.target.value;
 document.getElementById('locateBtn').onclick=locateMe;
-document.getElementById('go').onclick=buildPlans;
+document.getElementById('go').onclick=async()=>{
+  try{
+    await buildPlans();
+  }catch(err){
+    console.error('[NEXITAIME] search failed',err);
+    const summary=document.getElementById('summary');
+    const box=document.getElementById('plans');
+    if(summary)summary.innerHTML='<h2>検索を完了できませんでした</h2><p>外部サービスの応答または候補計算でエラーが発生しました。もう一度お試しください。</p>';
+    if(box)box.innerHTML='';
+  }
+};
 
 
 const DEST_GROUPS={
@@ -6302,11 +6312,11 @@ function dynamicRouteCandidateScore(ev,{prevEv,prevPoint,goalPoint,usedKinds,row
   score+=classicRouteBoostForEvent(ev)*0.75;
   score+=featuredRamenBoost(ev)*0.5;
   score+=classicAdjacencyBonus(prevEv,ev);
-  if(timing?.score>=65 && !usedKinds.has('event'))score+=28;
   score+=Math.min(24,Math.max(0,stay)/3);
   const wa=weatherAdjustment(ev);
   score+=Number(wa?.score||0)*0.6;
   const timing=eventTimingMeta(ev,startDateForScoring(rows[0]?.arrive||0));
+  if(timing?.score>=65 && !usedKinds.has('event'))score+=28;
   score+=Number(timing?.score||0)*0.9;
   // 周遊は移動ロスが少ない方を優先。
   score-=Math.max(0,move)*1.35;
