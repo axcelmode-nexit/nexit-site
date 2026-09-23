@@ -8006,136 +8006,227 @@ function diversityPenalty(candidate,selected,freeMinutes){
 }
 
 
-function safeClassicPlanAffinity(plan){
-  try{
-    if(!plan)return 0;
-    let best=Number(plan?.classicRouteScore||0);
+function normalizeClassicStopName(v){
+  return String(v||'').normalize('NFKC')
+    .replace(/\s+/g,'')
+    .replace(/[・･]/g,'')
+    .replace(/周辺$/,'')
+    .replace(/跡公園$/,'跡')
+    .trim();
+}
 
-    const names=[
-      plan?.ev?.title,plan?.ev?.venue,
-      ...(Array.isArray(plan?.itinerary)?plan.itinerary.flatMap(r=>[
-        r?.name,r?.sourceEv?.title,r?.sourceEv?.venue
-      ]):[])
-    ].filter(Boolean).map(v=>String(v).normalize('NFKC'));
+function findEventForClassicStop(stopName,candidateEvents=[]){
+  const needle=normalizeClassicStopName(stopName);
+  if(!needle)return null;
 
-    const ranked=rankedClassicRoutes().slice(0,6);
-    for(const entry of ranked){
-      const stops=Array.isArray(entry?.route?.stops)?entry.route.stops:[];
-      let matched=0;
-      for(const stop of stops){
-        const s=String(stop||'').normalize('NFKC').trim();
-        if(!s)continue;
-        if(names.some(n=>n.includes(s)||s.includes(n)))matched++;
+  let best=null,bestScore=-Infinity;
+  for(const ev of (candidateEvents||[])){
+    const names=[ev?.title,ev?.venue,ev?.name].filter(Boolean);
+    let score=-Infinity;
+    for(const raw of names){
+      const n=normalizeClassicStopName(raw);
+      if(!n)continue;
+      if(n===needle)score=Math.max(score,100);
+      else if(n.includes(needle)||needle.includes(n))score=Math.max(score,82);
+      else{
+        // 「高田城址公園」と「高田城三重櫓」など、主要語が一致する場合。
+        const keys=['高田城','春日山','うみがたり','釜蓋遺跡','フルサット','林泉寺','春日山神社','春日山城跡','雁木','直江津','妙高'];
+        for(const key of keys){
+          if(needle.includes(key)&&n.includes(key))score=Math.max(score,70);
+        }
       }
-      if(!matched)continue;
-      let score=Number(entry?.score||0)+matched*75;
-      if(matched>=2)score+=110;
-      if(matched>=3)score+=80;
-      best=Math.max(best,score);
     }
-    return Number.isFinite(best)?best:0;
-  }catch(_){
-    return Number(plan?.classicRouteScore||0)||0;
+    if(score>bestScore){
+      bestScore=score;
+      best=ev;
+    }
   }
+  return bestScore>=70?best:null;
 }
 
-function stablePlanKey(plan){
-  const ev=plan?.ev||{};
-  const stops=(Array.isArray(plan?.itinerary)?plan.itinerary:[])
-    .map(r=>r?.sourceEv?.id||r?.sourceEv?.catalog_id||r?.name||'')
-    .filter(Boolean).join('>');
-  return String(ev.id||ev.catalog_id||ev.hotpepper_id||`${ev.title||''}|${ev.venue||''}`)+'|'+stops;
+function vehicleLikePlan(plan){
+  return ['privatecar','carshare','rentalcar','taxi'].includes(plan?.mode) ||
+    (plan?.multimodal && ['privatecar','carshare','rentalcar','taxi'].includes(plan?.lastMode));
 }
 
-function finalizeRolePlan(plan,start,fallbackMinutes,role){
-  if(!plan)return null;
-  const mins=derivedAutoOfferMinutes(plan,start)||fallbackMinutes||120;
-  plan.offerFreeMinutes=mins;
-  plan.offerBuffer=Math.max(0,mins-Math.max(0,Math.round(Number(plan.finish||start)-start)));
-  plan.offerDurationLabel=autoDurationLabel(mins);
-  plan.diversityRole=role;
-  return plan;
+function classicLocalMoveMode(plan){
+  if(plan?.mode==='privatecar')return 'privatecar';
+  if(plan?.mode==='carshare')return 'carshare';
+  if(plan?.mode==='rentalcar')return 'rentalcar';
+  if(plan?.mode==='taxi')return 'taxi';
+  if(plan?.mode==='bike')return 'bike';
+  if(plan?.mode==='walk')return 'walk';
+  return null;
 }
 
-function chooseSafeRolePlans(durationCandidates,start){
+function cloneClassicPlanBase(plan){
+  const copy={...plan};
+  copy.out=plan?.out?{...plan.out}:plan?.out;
+  copy.back=plan?.back?{...plan.back}:plan?.back;
+  copy.transportCost=plan?.transportCost?{...plan.transportCost}:plan?.transportCost;
+  return copy;
+}
+
+function buildDirectClassicPlan(durationCandidates,candidateEvents,start,searchCtx){
   try{
-    const raw=[];
+    const ranked=rankedClassicRoutes();
+    if(!ranked.length)return null;
+
+    // 成立可能な候補をまとめる。
+    const candidatePlans=[];
     for(const group of (durationCandidates||[])){
       for(const row of (group?.wellFilled||[])){
-        raw.push({row,duration:group.duration});
+        candidatePlans.push({row,duration:group.duration,dBuffer:group.dBuffer});
       }
     }
-    if(!raw.length)return [];
+    if(!candidatePlans.length)return null;
 
-    // 同一ルートは1件だけ残す。
-    const map=new Map();
-    for(const item of raw){
-      const key=stablePlanKey(item.row);
-      const prev=map.get(key);
-      const elapsed=Number.isFinite(item.row?.finish)?item.row.finish-start:99999;
-      const prevElapsed=prev&&Number.isFinite(prev.row?.finish)?prev.row.finish-start:99999;
-      if(!prev || elapsed<prevElapsed)map.set(key,item);
+    for(const rankedEntry of ranked){
+      const route=rankedEntry?.route;
+      const stopNames=Array.isArray(route?.stops)?route.stops.filter(Boolean):[];
+      if(stopNames.length<2)continue;
+
+      const stopEvents=stopNames
+        .map(name=>({name,ev:findEventForClassicStop(name,candidateEvents)}))
+        .filter(x=>x.ev);
+
+      // 王道JSONのうち最低2スポットは実データへ解決できること。
+      if(stopEvents.length<2)continue;
+
+      // 最初のstopへ実際に行ける既存planをベースにする。
+      const firstEv=stopEvents[0].ev;
+      const firstNeedle=normalizeClassicStopName(firstEv?.title||firstEv?.venue);
+      const baseItem=candidatePlans.find(({row})=>{
+        const names=[row?.ev?.title,row?.ev?.venue].filter(Boolean).map(normalizeClassicStopName);
+        return names.some(n=>n===firstNeedle || n.includes(firstNeedle) || firstNeedle.includes(n));
+      });
+      if(!baseItem)continue;
+
+      const plan=cloneClassicPlanBase(baseItem.row);
+      const localMode=classicLocalMoveMode(plan);
+
+      // 現状は、stop間移動を確実に計算できる車系・徒歩・自転車で直接生成。
+      if(!localMode)continue;
+
+      const maxMinutes=Math.max(
+        Number(baseItem.duration)||180,
+        Number(classicTransportRange(route)?.[1])||180
+      );
+      const deadline=start+Math.min(360,maxMinutes)-automaticReturnBufferMinutes(maxMinutes);
+
+      let t=Number(plan.arrive);
+      if(!Number.isFinite(t))continue;
+
+      const rows=[];
+      let currentPoint=null;
+      let failed=false;
+
+      for(let idx=0;idx<stopEvents.length;idx++){
+        const {name,ev}=stopEvents[idx];
+        const point=exactPointForEvent(ev);
+        if(!point){failed=true;break;}
+
+        let move=0;
+        if(idx===0){
+          currentPoint=point;
+        }else{
+          move=routeMinutesCoordsFast(localMode,currentPoint,point);
+          if(move==null){failed=true;break;}
+          t+=move;
+        }
+
+        let stay=itineraryStayFor(ev);
+        if(isUrgentTimelyEvent?.(ev,planningDate))stay=Math.max(stay,35);
+        stay=Math.max(25,Math.min(60,stay));
+
+        // 営業時間・イベント時間内に収まるよう必要なら短縮。
+        while(stay>=20 && !itineraryCandidateAvailable(ev,t,t+stay))stay-=5;
+        if(stay<20){failed=true;break;}
+
+        rows.push({
+          name:ev?.title||ev?.venue||name,
+          stay,
+          arrive:t,
+          leave:t+stay,
+          move,
+          kind:itineraryCategory(ev)==='event'?'event':'spot',
+          category:itineraryCategory(ev),
+          categoryLabel:itineraryCategoryLabel(itineraryCategory(ev)),
+          sourceEv:ev,
+          point
+        });
+
+        t+=stay;
+        currentPoint=point;
+      }
+
+      if(failed || rows.length<2)continue;
+
+      // 最終stopから帰着地点まで。
+      const goalPoint=PLACES?.[searchCtx?.returnTo];
+      if(!goalPoint || !currentPoint)continue;
+      const returnMinutes=routeMinutesCoordsFast(localMode,currentPoint,goalPoint);
+      if(returnMinutes==null)continue;
+
+      let finish=t+returnMinutes;
+      if(finish>deadline)continue;
+
+      // 余裕が大きければ、王道各stopへ再配分。最低12分残す。
+      let extra=Math.max(0,Math.floor(deadline-finish)-12);
+      if(extra>0){
+        for(const row of rows){
+          if(extra<=0)break;
+          const room=Math.max(0,45-Number(row.stay||0));
+          const add=Math.min(room,extra);
+          if(add<=0)continue;
+          const idx=rows.indexOf(row);
+          row.stay+=add;
+          row.leave+=add;
+          for(let j=idx+1;j<rows.length;j++){
+            rows[j].arrive+=add;
+            rows[j].leave+=add;
+          }
+          t+=add;
+          finish+=add;
+          extra-=add;
+        }
+      }
+
+      plan.itinerary=rows;
+      plan.ev=rows[0].sourceEv;
+      plan.dest=plan.ev?.venue||plan.dest;
+      plan.arrive=rows[0].arrive;
+      plan.venueLeave=t;
+      plan.finish=finish;
+      plan.stay=rows.reduce((sum,r)=>sum+Number(r.stay||0),0);
+      plan.spare=Math.max(0,deadline-finish);
+      plan.planMinutes=Math.max(1,finish-start);
+      plan.back={...(plan.back||{}),kind:localMode,n:'王道周遊',lineName:'王道周遊',dep:t,arr:finish,[searchCtx.returnTo]:fmt(finish)};
+      plan.dynamicRoute=true;
+      plan.classicDirectRoute=true;
+      plan.classicRouteId=route?.id||null;
+      plan.classicRouteTitle=route?.title||route?.name||'王道ルート';
+      plan.diversityRole='王道';
+      plan.reason=`王道ルート「${plan.classicRouteTitle}」を営業時間・移動・帰着条件に合わせて組み立てた案`;
+      plan.preferenceScore=Number(plan.preferenceScore||0)+220+Number(rankedEntry.score||0);
+
+      const mins=derivedAutoOfferMinutes(plan,start)||Math.ceil(plan.planMinutes/30)*30;
+      plan.offerFreeMinutes=mins;
+      plan.offerBuffer=Math.max(0,mins-Math.max(0,Math.round(plan.finish-start)));
+      plan.offerDurationLabel=autoDurationLabel(mins);
+
+      // 予算指定時は全立ち寄り先＋交通で確認。
+      if(budget!=='any'){
+        const cost=totalPlanCost(plan);
+        if(cost!=null && cost>Number(budget))continue;
+      }
+
+      return plan;
     }
-    const pool=[...map.values()];
-    const picked=[];
-    const used=new Set();
-
-    const add=(item,role)=>{
-      if(!item?.row)return false;
-      const key=stablePlanKey(item.row);
-      if(used.has(key))return false;
-      used.add(key);
-      picked.push(finalizeRolePlan(item.row,start,item.duration,role));
-      return true;
-    };
-
-    // 1) 今しかない
-    if(mood==='any'||mood==='event'){
-      const urgent=pool.filter(x=>isUrgentTimelyEvent(x.row?.ev,planningDate))
-        .sort((a,b)=>{
-          const bs=Number(eventTimingMeta(b.row.ev,planningDate)?.score||0);
-          const as=Number(eventTimingMeta(a.row.ev,planningDate)?.score||0);
-          if(bs!==as)return bs-as;
-          return Number(b.row?.preferenceScore||0)-Number(a.row?.preferenceScore||0);
-        })[0];
-      add(urgent,'今しかない');
-    }
-
-    // 2) 王道
-    const classic=pool.filter(x=>!used.has(stablePlanKey(x.row)))
-      .map(x=>({...x,classic:safeClassicPlanAffinity(x.row)}))
-      .filter(x=>x.classic>0)
-      .sort((a,b)=>{
-        if(b.classic!==a.classic)return b.classic-a.classic;
-        return Number(b.row?.preferenceScore||0)-Number(a.row?.preferenceScore||0);
-      })[0];
-    add(classic,'王道');
-
-    // 3) 別の過ごし方
-    const alt=pool.filter(x=>!used.has(stablePlanKey(x.row)))
-      .map(x=>{
-        let value=
-          Number(x.row?.preferenceScore||0)+
-          Number(x.row?.multiStopPreferenceBonus||0)+
-          Number(x.row?.dynamicRouteScore||0)+
-          Number(x.row?.routeProgressFlowBonus||0);
-        try{ value-=diversityPenalty(x.row,picked,Number(x.duration)||180); }catch(_){}
-        return {...x,value};
-      })
-      .sort((a,b)=>b.value-a.value)[0];
-    add(alt,'別の過ごし方');
-
-    // 役割が成立しない場合だけ残りから補充。
-    for(const item of pool){
-      if(picked.length>=3)break;
-      add(item,picked.length===0?'おすすめ':'もう1つの候補');
-    }
-
-    return picked.slice(0,3);
   }catch(err){
-    console.warn('[NEXITAIME] role selection fallback',err);
-    return [];
+    console.warn('[NEXITAIME] direct classic route fallback',err);
   }
+  return null;
 }
 
 function selectDiverseTopPlans(rows,freeMinutes,count=3){
@@ -9780,19 +9871,19 @@ async function buildPlans(){
      if(mood!=='any') rows=rows.filter(ev=>moodMatches(ev,mood));
      return rows.filter(foodKindMatches).filter(secondaryMoodMatches);
    })();
-   const fastPool=fastAutoCandidatePool(rawDurationPool,searchCtx,10);
-   const classicPool=rawDurationPool
+   const fastDurationPool=fastAutoCandidatePool(rawDurationPool,searchCtx,10);
+   const classicRelated=rawDurationPool
      .filter(ev=>classicRouteBoostForEvent(ev)>0)
      .sort((a,b)=>classicRouteBoostForEvent(b)-classicRouteBoostForEvent(a))
-     .slice(0,10);
+     .slice(0,16);
    const durationPool=[];
-   const durationSeen=new Set();
-   for(const ev of [...fastPool,...classicPool]){
-     const key=ev?.id||ev?.catalog_id||ev?.hotpepper_id||`${ev?.title||''}|${ev?.venue||''}`;
-     if(!key||durationSeen.has(key))continue;
-     durationSeen.add(key);
+   const durationPoolSeen=new Set();
+   for(const ev of [...fastDurationPool,...classicRelated]){
+     const k=ev?.id||ev?.catalog_id||`${ev?.title||''}|${ev?.venue||''}`;
+     if(!k||durationPoolSeen.has(k))continue;
+     durationPoolSeen.add(k);
      durationPool.push(ev);
-     if(durationPool.length>=18)break;
+     if(durationPool.length>=22)break;
    }
 
    // 3つの時間帯は直列ではなく並列評価する。外部API待ちが積み上がらないようにする。
@@ -9907,11 +9998,26 @@ async function buildPlans(){
      }
    }
 
-   // 最終表示だけを役割ベースに並べ替える。
-   // ここで失敗しても、上で作った従来の時間別プランをそのまま返す。
-   const rolePlans=chooseSafeRolePlans(durationCandidates,start);
-   if(rolePlans.length){
-     top=rolePlans;
+   // 王道は「王道っぽい候補」ではなく、王道JSONのstop順を直接ルート化する。
+   const directClassic=buildDirectClassicPlan(durationCandidates,candidateEvents,start,searchCtx);
+   if(directClassic){
+     const directKey=directClassic.classicRouteId||directClassic.ev?.id||directClassic.ev?.title;
+     const others=top.filter(p=>{
+       const key=p.classicRouteId||p.ev?.id||p.ev?.title;
+       return key!==directKey;
+     });
+
+     // 今日限定が成立している場合は1案目、王道は2案目。
+     const urgentIndex=others.findIndex(p=>isUrgentTimelyEvent(p?.ev,planningDate));
+     if(urgentIndex>=0){
+       const urgent=others.splice(urgentIndex,1)[0];
+       urgent.diversityRole='今しかない';
+       top=[urgent,directClassic,...others].slice(0,3);
+     }else{
+       top=[directClassic,...others].slice(0,3);
+     }
+
+     if(top.length>=3 && !top[2].diversityRole)top[2].diversityRole='別の過ごし方';
      multiDurationAuto=true;
    }
  }
@@ -9952,7 +10058,7 @@ async function buildPlans(){
  const routeSummary=`${searchCtx.origin} → ${destinationGroupLabel(searchCtx.destination)} → ${searchCtx.returnTo}`;
  if(multiDurationAuto){
    const durations=top.map(p=>p.offerFreeMinutes).filter(Boolean).join('分・');
-   summary.innerHTML=`<h2>${top.length}つの過ごし方があります</h2><p><strong>${routeSummary}</strong><br>今しかない案・王道ルート・別の過ごし方を優先し、必要時間は完成したプランから算出しています。${durations?`今回は約${durations}分の案です。`:''}</p>`;
+   summary.innerHTML=`<h2>${top.length}つの過ごし方があります</h2><p><strong>${routeSummary}</strong><br>今日ならではの案・王道ルート・別の過ごし方を組み合わせています。${durations?`必要時間は約${durations}分です。`:''}</p>`;
  }else if(relaxationLevel===0){
    if(transport==='auto'){
      {
