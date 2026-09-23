@@ -7075,6 +7075,14 @@ function buildSimpleItinerary(plan,candidateEvents=[],freeMinutes=180){
         // When several nearby stops are equally realistic, favor places that feel distinctly Joetsu.
         score+=joetsuLandmarkBonus(ev);
         if(mood==='any' || mood==='food')score+=localFoodPriorityScore(ev);
+        if(mood==='any'){
+          const h=(planningDate||new Date()).getHours();
+          const ramenLike=/ラーメン|中華そば|らーめん|拉麺/.test(
+            [ev?.title,ev?.venue,...(ev?.categories||[])].filter(Boolean).join(' ')
+          );
+          if(featuredRamenMeta(ev))score+=(h>=17?90:55);
+          else if(ramenLike)score+=(h>=17?32:18);
+        }
         if(compactShortCourse &&
            /フルサット|子ども免許証|はたらくくるま/.test(String(plan.ev?.title||plan.ev?.venue||'')) &&
            /釜蓋遺跡/.test(String(ev?.title||ev?.venue||''))){
@@ -7792,6 +7800,14 @@ async function scoreEventSet(events, modes, start, deadline, ctx){
       const classicRouteScore=classicRouteBoostForEvent(ev);
       const ramenFeaturedScore=featuredRamenBoost(ev);
       const localFoodScore=(mood==='any' || mood==='food') ? localFoodPriorityScore(ev) : 0;
+
+      const ramenLike=/ラーメン|中華そば|らーめん|拉麺/.test(
+        [ev?.title,ev?.venue,...(ev?.categories||[])].filter(Boolean).join(' ')
+      );
+      const searchHour=(planningDate||new Date()).getHours();
+      const ramenGeneralScore=(mood==='any' && ramenLike)
+        ? (searchHour>=17 ? 38 : (searchHour>=11 && searchHour<14 ? 28 : 12))
+        : 0;
       c.featuredRamenScore=ramenFeaturedScore;
       c.localFoodPriorityScore=localFoodScore;
       c.reservationScore=reservationScore;
@@ -7813,6 +7829,7 @@ async function scoreEventSet(events, modes, start, deadline, ctx){
         + returnSafetyScore
         + classicRouteScore
         + ramenFeaturedScore
+        + ramenGeneralScore
         + localFoodScore
         + routeSense.score
         + directionSense.score;
@@ -9365,9 +9382,23 @@ function localFoodPriorityScore(ev){
 }
 
 function featuredRamenBoost(ev){
-  // ラーメン検索時に名店を埋もれさせない。営業時間・帰着成立性などの安全判定は従来通り優先。
-  if(mood!=='food' || foodKind!=='ラーメン') return 0;
-  return featuredRamenMeta(ev) ? 55 : 0;
+  // 上越の有名ラーメン店は、ラーメン指定時だけでなく「おまかせ」でも埋もれさせない。
+  // 営業時間・帰着成立性などの安全判定は従来通り優先。
+  const featured=featuredRamenMeta(ev);
+  if(!featured)return 0;
+
+  if(mood==='food' && foodKind==='ラーメン') return 110;
+
+  if(mood==='any'){
+    const when=planningDate||new Date();
+    const hour=when.getHours();
+    // 昼食・夕食時間、とくに夕方〜夜は強めに推す。
+    if(hour>=17) return 95;
+    if(hour>=11 && hour<14) return 80;
+    return 45;
+  }
+
+  return 0;
 }
 
 function dedupeHotPepperRows(rows=[]){
