@@ -6459,8 +6459,79 @@ function buildDynamicVehicleItinerary(plan,candidateEvents=[],freeMinutes=180,ct
   if(rows.length<2)return null;
   const returnMinutes=routeMinutesCoordsFast(mode,currentPoint,goalPoint);
   if(returnMinutes==null)return null;
-  const finish=t+returnMinutes;
+  let finish=t+returnMinutes;
   if(finish>deadline)return null;
+
+  // 90〜120分の近距離周遊は、帰着余裕を残しすぎず滞在へ戻す。
+  // 目安：最低10〜12分程度の余裕を残し、今日限定イベントは35〜40分、
+  // 近隣スポットは30分前後まで楽しめるようにする。
+  if(Number(freeMinutes)>=75 && Number(freeMinutes)<=120 && rows.length>=2){
+    let extra=Math.max(0,Math.floor(deadline-finish)-12);
+
+    const desiredStay=row=>{
+      const urgent=isUrgentTimelyEvent?.(row?.sourceEv,planningDate);
+      if(urgent)return 40;
+      return 35;
+    };
+
+    // まず全立ち寄りを最低30分程度へ。その後、今日限定イベントを長めに。
+    const order=[
+      ...rows.filter(r=>Number(r.stay||0)<30),
+      ...rows.filter(r=>Number(r.stay||0)>=30)
+    ].filter((r,i,a)=>a.indexOf(r)===i);
+
+    for(const row of order){
+      if(extra<=0)break;
+      const target=desiredStay(row);
+      const room=Math.max(0,target-Number(row.stay||0));
+      if(room<=0)continue;
+
+      const idx=rows.indexOf(row);
+      let add=Math.min(room,extra);
+
+      // 延長後も営業時間・イベント終了時刻内に収まる分だけ追加。
+      while(add>0){
+        const newLeave=Number(row.leave||0)+add;
+        if(!row.sourceEv || itineraryCandidateAvailable(row.sourceEv,Number(row.arrive||0),newLeave))break;
+        add--;
+      }
+      if(add<=0)continue;
+
+      row.stay=Number(row.stay||0)+add;
+      row.leave=Number(row.leave||0)+add;
+      for(let j=idx+1;j<rows.length;j++){
+        rows[j].arrive=Number(rows[j].arrive||0)+add;
+        rows[j].leave=Number(rows[j].leave||0)+add;
+      }
+      t+=add;
+      finish+=add;
+      extra-=add;
+    }
+
+    // まだ余裕が大きい場合は、45分を上限に1分ずつ均等配分。
+    let guard=0;
+    while(extra>0 && guard++<80){
+      let changed=false;
+      for(const row of rows){
+        if(extra<=0)break;
+        if(Number(row.stay||0)>=45)continue;
+        const idx=rows.indexOf(row);
+        const newLeave=Number(row.leave||0)+1;
+        if(row.sourceEv && !itineraryCandidateAvailable(row.sourceEv,Number(row.arrive||0),newLeave))continue;
+        row.stay=Number(row.stay||0)+1;
+        row.leave=newLeave;
+        for(let j=idx+1;j<rows.length;j++){
+          rows[j].arrive=Number(rows[j].arrive||0)+1;
+          rows[j].leave=Number(rows[j].leave||0)+1;
+        }
+        t+=1;
+        finish+=1;
+        extra-=1;
+        changed=true;
+      }
+      if(!changed)break;
+    }
+  }
 
   // 周遊の最後の地点から実際の帰着先までを再計算する。
   plan.back={...(plan.back||{}),kind:mode,n:'周遊ルート',lineName:'周遊ルート',dep:t,arr:finish,[ctx.returnTo]:fmt(finish)};
