@@ -1995,6 +1995,36 @@ window.NEXITAIME_CATALOG_TIMEOUT_MS = 3500;
 }
 </style>
 
+
+<style>
+/* ざっくり比較：時間バッジとタイトルが重ならないよう通常グリッド配置にする */
+.plan-compare-card{
+  display:grid !important;
+  grid-template-columns:minmax(0,1fr) auto !important;
+  column-gap:8px !important;
+}
+.plan-compare-rank{
+  position:static !important;
+  grid-column:2 !important;
+  grid-row:1 !important;
+  justify-self:end !important;
+  align-self:start !important;
+  white-space:nowrap !important;
+  margin:0 !important;
+}
+.plan-compare-name{
+  grid-column:1 !important;
+  grid-row:1 !important;
+  padding-right:0 !important;
+  min-width:0 !important;
+}
+.plan-compare-mode,
+.plan-compare-total,
+.plan-compare-metrics{
+  grid-column:1 / -1 !important;
+}
+</style>
+
 </head>
 <body>
 <div class="app">
@@ -2461,6 +2491,24 @@ const MANUAL_TIMELY_EVENTS=[
   }
 ];
 
+function debugTimelyEventState(rows=[]){
+  const hit=(rows||[]).find(x=>/はたらくくるま|子ども免許証/.test(String(x?.title||'')));
+  if(hit){
+    console.info('[NEXITAIME] FURUSATTO timely event', {
+      title:hit.title,
+      start_date:hit.start_date,
+      end_date:hit.end_date,
+      start_time:hit.start_time,
+      end_time:hit.end_time,
+      lat:hit.lat,
+      lon:hit.lon,
+      routing_ready:hit.routing_ready,
+      source:hit.source,
+      source_name:hit.source_name
+    });
+  }
+}
+
 function mergeManualTimelyEvents(rows=[]){
   const base=Array.isArray(rows)?rows:[];
   const sameEvent=(a,b)=>{
@@ -2481,9 +2529,43 @@ function mergeManualTimelyEvents(rows=[]){
   for(const manual of MANUAL_TIMELY_EVENTS){
     const existing=apiOrLegacy.find(x=>sameEvent(manual,x));
     if(existing){
-      // Prefer live catalog timing/source while retaining richer hand-entered fallback fields.
+      // Prefer live catalog timing/source, but never let missing catalog fields erase
+      // verified hand-entered routing/detail data.
       const merged={...manual,...existing};
       merged.categories=[...new Set([...(manual.categories||[]),...(existing.categories||[])])];
+
+      // Catalog may know the newest date/time but still lack coordinates/address.
+      // Preserve the verified manual fallback whenever the live value is missing/unusable.
+      for(const field of [
+        'address','lat','lon','stay_minutes',
+        'family_friendly','couple_friendly','solo_friendly',
+        'indoor','estimated_cost_yen'
+      ]){
+        const v=existing?.[field];
+        const missing =
+          v==null ||
+          v==='' ||
+          (['lat','lon'].includes(field) && !Number.isFinite(Number(v)));
+        if(missing && manual?.[field]!=null) merged[field]=manual[field];
+      }
+
+      // Keep live timing only when it is actually present.
+      for(const field of ['start_date','end_date','start_time','end_time']){
+        if(!existing?.[field] && manual?.[field]) merged[field]=manual[field];
+      }
+
+      // If valid coordinates exist after merge, the event is routable.
+      if(Number.isFinite(Number(merged.lat)) && Number.isFinite(Number(merged.lon))){
+        merged.routing_ready=true;
+      }else if(manual.routing_ready){
+        merged.routing_ready=true;
+        merged.lat=manual.lat;
+        merged.lon=manual.lon;
+      }
+
+      // Keep a useful official/manual URL if the catalog row has no URL.
+      if(!existing?.url && manual?.url) merged.url=manual.url;
+
       Object.assign(existing,merged);
     }else additions.push({...manual});
   }
@@ -2932,6 +3014,7 @@ Promise.all([
     return true;
   });
   EVENTS=[...(Array.isArray(e)?e:[]),...RESTAURANTS,...SPOTS,...EXTRA_SPOTS];
+  debugTimelyEventState(EVENTS);
   applyOfficialAddressOverrides(EVENTS);
   await enrichOfficialAddressCoordinates(EVENTS);
   TRAIN=t;SHINANO=shinanoData||{up:[],down:[]};BUS=b;BUS_MAIN=bm;BUS_EXT=bx;PLACES=p;

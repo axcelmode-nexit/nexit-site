@@ -1988,6 +1988,36 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
 }
 </style>
 
+
+<style>
+/* ざっくり比較：時間バッジとタイトルが重ならないよう通常グリッド配置にする */
+.plan-compare-card{
+  display:grid !important;
+  grid-template-columns:minmax(0,1fr) auto !important;
+  column-gap:8px !important;
+}
+.plan-compare-rank{
+  position:static !important;
+  grid-column:2 !important;
+  grid-row:1 !important;
+  justify-self:end !important;
+  align-self:start !important;
+  white-space:nowrap !important;
+  margin:0 !important;
+}
+.plan-compare-name{
+  grid-column:1 !important;
+  grid-row:1 !important;
+  padding-right:0 !important;
+  min-width:0 !important;
+}
+.plan-compare-mode,
+.plan-compare-total,
+.plan-compare-metrics{
+  grid-column:1 / -1 !important;
+}
+</style>
+
 </head>
 <body>
 <div class="app">
@@ -2453,6 +2483,24 @@ const MANUAL_TIMELY_EVENTS=[
     source_note:'FURUSATTO公式Instagram投稿画像を確認して手動追加。'
   }
 ];
+
+function debugTimelyEventState(rows=[]){
+  const hit=(rows||[]).find(x=>/はたらくくるま|子ども免許証/.test(String(x?.title||'')));
+  if(hit){
+    console.info('[NEXITAIME] FURUSATTO timely event', {
+      title:hit.title,
+      start_date:hit.start_date,
+      end_date:hit.end_date,
+      start_time:hit.start_time,
+      end_time:hit.end_time,
+      lat:hit.lat,
+      lon:hit.lon,
+      routing_ready:hit.routing_ready,
+      source:hit.source,
+      source_name:hit.source_name
+    });
+  }
+}
 
 function mergeManualTimelyEvents(rows=[]){
   const base=Array.isArray(rows)?rows:[];
