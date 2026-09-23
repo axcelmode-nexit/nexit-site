@@ -10232,7 +10232,7 @@ async function buildPlans(){
    const itineraryHtml=renderSimpleItinerary(p.itinerary);
    const totalCost=totalPlanCost(p);
    const costSummary=planCostSummary(p);
-   const costLabel=planCostLabel(p);
+   const totalCostLabel=planCostLabel(p);
    const transportCostHtml=p.transportCost
      ? `<div class="cost-row"><strong>🚦 ${esc(p.transportCost.label)}</strong>${p.transportCost.note?`<span>${esc(p.transportCost.note)}</span>`:''}</div>`
      : '';
@@ -10240,8 +10240,8 @@ async function buildPlans(){
      const name=ev?.title||ev?.venue||'立ち寄り先';
      return `<div class="cost-row"><strong>📍 ${esc(name)}</strong><span>${cost==null?'料金要確認':`約¥${Number(cost).toLocaleString()}`}</span></div>`;
    }).join('');
-   const totalCostDetailHtml=`${stopCostRows}<div class="cost-total">合計目安：${esc(costLabel)} <small>（全立ち寄り先＋交通）</small></div>`;
-   const totalCostHero=`<div class="plan-total-hero">合計目安：${esc(costLabel)}</div>`;
+   const totalCostDetailHtml=`${stopCostRows}<div class="cost-total">合計目安：${esc(totalCostLabel)} <small>（全立ち寄り先＋交通）</small></div>`;
+   const totalCostHero=`<div class="plan-total-hero">合計目安：${esc(totalCostLabel)}</div>`;
    const hoursHtml=availabilityBadge(p);
    const freshnessHtml=freshnessBadge(p.ev);
    const hoursNoteHtml=p.availability?.verified===false

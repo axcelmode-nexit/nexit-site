@@ -2910,10 +2910,38 @@ document.getElementById('go').onclick=async()=>{
     await buildPlans();
   }catch(err){
     console.error('[NEXITAIME] search failed',err);
+
     const summary=document.getElementById('summary');
     const box=document.getElementById('plans');
-    if(summary)summary.innerHTML='<h2>検索を完了できませんでした</h2><p>外部サービスの応答または候補計算でエラーが発生しました。もう一度お試しください。</p>';
-    if(box)box.innerHTML='';
+
+    const errName=String(err?.name||'Error');
+    const errMessage=String(err?.message||err||'unknown error');
+    const errStack=String(err?.stack||'')
+      .split('\n')
+      .slice(0,6)
+      .join('\n');
+
+    const safe=v=>String(v||'')
+      .replaceAll('&','&amp;')
+      .replaceAll('<','&lt;')
+      .replaceAll('>','&gt;')
+      .replaceAll('"','&quot;');
+
+    if(summary){
+      summary.innerHTML=`<h2>検索を完了できませんでした</h2>
+        <p>原因を確認するため、今回だけデバッグ情報を表示しています。</p>`;
+    }
+
+    if(box){
+      box.innerHTML=`<div class="plan">
+        <h3>デバッグ情報</h3>
+        <div class="note" style="font-size:12px;line-height:1.7">
+          <strong>${safe(errName)}:</strong> ${safe(errMessage)}
+        </div>
+        ${errStack?`<pre style="white-space:pre-wrap;word-break:break-word;background:#f7f9fb;border:1px solid #e4e9ee;border-radius:12px;padding:12px;font-size:11px;line-height:1.55;margin-top:10px">${safe(errStack)}</pre>`:''}
+        <div class="note" style="margin-top:10px">この画面のスクリーンショットを送れば、落ちている箇所を特定できます。</div>
+      </div>`;
+    }
   }
 };
 
@@ -9952,7 +9980,7 @@ async function buildPlans(){
    const itineraryHtml=renderSimpleItinerary(p.itinerary);
    const totalCost=totalPlanCost(p);
    const costSummary=planCostSummary(p);
-   const costLabel=planCostLabel(p);
+   const totalCostLabel=planCostLabel(p);
    const transportCostHtml=p.transportCost
      ? `<div class="cost-row"><strong>🚦 ${esc(p.transportCost.label)}</strong>${p.transportCost.note?`<span>${esc(p.transportCost.note)}</span>`:''}</div>`
      : '';
@@ -9960,8 +9988,8 @@ async function buildPlans(){
      const name=ev?.title||ev?.venue||'立ち寄り先';
      return `<div class="cost-row"><strong>📍 ${esc(name)}</strong><span>${cost==null?'料金要確認':`約¥${Number(cost).toLocaleString()}`}</span></div>`;
    }).join('');
-   const totalCostDetailHtml=`${stopCostRows}<div class="cost-total">合計目安：${esc(costLabel)} <small>（全立ち寄り先＋交通）</small></div>`;
-   const totalCostHero=`<div class="plan-total-hero">合計目安：${esc(costLabel)}</div>`;
+   const totalCostDetailHtml=`${stopCostRows}<div class="cost-total">合計目安：${esc(totalCostLabel)} <small>（全立ち寄り先＋交通）</small></div>`;
+   const totalCostHero=`<div class="plan-total-hero">合計目安：${esc(totalCostLabel)}</div>`;
    const hoursHtml=availabilityBadge(p);
    const freshnessHtml=freshnessBadge(p.ev);
    const hoursNoteHtml=p.availability?.verified===false
