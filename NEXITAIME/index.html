@@ -9491,9 +9491,17 @@ function searchStageDiagnosticHtml(){
   ].filter(([,v])=>Number.isFinite(Number(v)));
 
   if(!rows.length)return '';
+  const routeDetails=(d.routeCandidates||[]).map(x=>
+    `${esc(x.title)}［${esc(x.mode||'-')}］${x.hours?` / ${esc(String(x.hours))}`:''}`
+  );
+  const rejectDetails=(d.finalRejected||[]).map(x=>
+    `${esc(x.title)} → ${esc((x.reasons||[]).join('、')||'理由不明')}${x.hours?` / ${esc(String(x.hours))}`:''}`
+  );
   return `<div class="exclusion-summary" style="margin-top:12px">
     <strong>検索段階デバッグ</strong><br>
     ${rows.map(([k,v])=>`${esc(k)}：${Number(v)}件`).join('<br>')}
+    ${routeDetails.length?`<div style="margin-top:10px"><strong>ルート成立候補</strong><br>${routeDetails.join('<br>')}</div>`:''}
+    ${rejectDetails.length?`<div style="margin-top:10px"><strong>最終除外の理由</strong><br>${rejectDetails.join('<br>')}</div>`:''}
   </div>`;
 }
 
@@ -9687,6 +9695,11 @@ async function buildPlans(){
  }
 
  SEARCH_STAGE_DIAG.routeScored=scored.length;
+ SEARCH_STAGE_DIAG.routeCandidates=(scored||[]).slice(0,8).map(p=>({
+   title:p?.ev?.title||p?.ev?.venue||'名称不明',
+   mode:p?.mode||'',
+   hours:p?.ev?.hours_text||p?.ev?.opening_hours||p?.availability?.label||''
+ }));
  scored=sortCandidates(scored);
 
  // Budget is judged against event/spot cost + estimated transport cost when both are known.
@@ -9727,8 +9740,19 @@ async function buildPlans(){
      recordExclusion(row.ev,'start_near_only_stop','出発地付近だけ立ち寄って帰着先へ向かう単独案を除外');
      continue;
    }
-   const checked=filterFinalPlans([row],searchCtx,start,deadline);
-   if(checked.length) guardedPlans.push(row);
+   const guardCheck=finalPlanGuard(row,searchCtx,start,deadline);
+   if(guardCheck.ok){
+     guardedPlans.push(row);
+   }else{
+     if(!Array.isArray(SEARCH_STAGE_DIAG.finalRejected))SEARCH_STAGE_DIAG.finalRejected=[];
+     SEARCH_STAGE_DIAG.finalRejected.push({
+       title:row?.ev?.title||row?.ev?.venue||'名称不明',
+       mode:row?.mode||'',
+       hours:row?.ev?.hours_text||row?.ev?.opening_hours||row?.availability?.label||'',
+       reasons:guardCheck.reasons||[]
+     });
+     for(const r of guardCheck.reasons||[])recordExclusion(row?.ev,'final_guard',r);
+   }
    // Keep a wider valid pool so the top 3 can be diversified intelligently.
    if(guardedPlans.length>=12) break;
  }
