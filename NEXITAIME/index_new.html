@@ -9767,16 +9767,49 @@ function automaticReturnBufferMinutes(freeMinutes=180){
 
 
 async function scoreEventSetFast(events,modes,start,deadline,ctx,timeoutMs=1400){
-  // External routing/timetable services can be slow. Never keep the result screen waiting forever.
-  let timer;
-  try{
-    return await Promise.race([
-      scoreEventSet(events,modes,start,deadline,ctx),
-      new Promise(resolve=>{ timer=setTimeout(()=>resolve([]),timeoutMs); })
-    ]);
-  }finally{
-    if(timer)clearTimeout(timer);
+  // 候補全体を1本のPromiseで評価すると、最後の数件が遅いだけで
+  // 先に成立していた候補まで [] になってしまう。
+  // 3件ずつ小分けにして、取れた結果は保持する。
+  const list=Array.isArray(events)?events.filter(Boolean):[];
+  if(!list.length)return [];
+
+  const collected=[];
+  const batchSize=3;
+  const batchTimeout=Math.max(1200,Math.min(2200,Number(timeoutMs)||1400));
+
+  for(let i=0;i<list.length;i+=batchSize){
+    const batch=list.slice(i,i+batchSize);
+    let timer;
+    let rows=[];
+    try{
+      rows=await Promise.race([
+        scoreEventSet(batch,modes,start,deadline,ctx),
+        new Promise(resolve=>{timer=setTimeout(()=>resolve([]),batchTimeout);})
+      ]);
+    }catch(_){
+      rows=[];
+    }finally{
+      if(timer)clearTimeout(timer);
+    }
+
+    if(Array.isArray(rows) && rows.length){
+      collected.push(...rows);
+    }
+
+    // 表示3案を組むのに十分な別施設が取れたら、
+    // 残りの外部ルート待ちはしない。
+    const unique=new Set(
+      collected.map(p=>String(
+        p?.ev?.id ||
+        p?.ev?.catalog_id ||
+        p?.ev?.hotpepper_id ||
+        `${p?.ev?.title||''}|${p?.ev?.venue||''}`
+      ))
+    );
+    if(unique.size>=6)break;
   }
+
+  return dedupeCandidates(collected);
 }
 
 function fastAutoCandidatePool(events,ctx,limit=12){
