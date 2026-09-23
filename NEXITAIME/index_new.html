@@ -6841,15 +6841,25 @@ function buildSimpleItinerary(plan,candidateEvents=[],freeMinutes=180){
 
   const isTimedEvent=!!(plan.ev?.start_date || plan.ev?.source);
   const mixedMode=(mood==='any');
-  let remain=plan.stay, t=plan.arrive, rows=[];
+
+  // 徒歩・公共交通の短時間周遊でも、帰着余裕を残しすぎない。
+  // 90〜120分のおまかせでは約12分だけ安全余裕を残し、
+  // それを超える分は実際の滞在時間へ回す。
+  const compactShortCourse=freeMinutes>=75 && freeMinutes<=120;
+  const originalPlanSpare=Math.max(0,Number(plan?.spare||0));
+  const usableSpareForStay=(mixedMode && compactShortCourse)
+    ? Math.max(0,Math.floor(originalPlanSpare)-12)
+    : 0;
+
+  let remain=Math.max(0,Number(plan.stay||0))+usableSpareForStay;
+  let t=plan.arrive, rows=[];
 
   // In recommendation mode, represent the main destination explicitly,
   // then use remaining time for different categories nearby.
   if(mixedMode){
     const primaryKind=itineraryCategory(plan.ev);
-    const compactShortCourse=freeMinutes>=75 && freeMinutes<=120;
     const primaryTarget=compactShortCourse
-      ? Math.max(25,Math.min(40,Math.floor(remain*0.46)))
+      ? Math.max(30,Math.min(40,Math.floor(remain*0.48)))
       : Math.max(30,Math.floor(remain*0.48));
     const primaryStay=Math.min(
       remain,
@@ -6902,6 +6912,9 @@ function buildSimpleItinerary(plan,candidateEvents=[],freeMinutes=180){
         if(move==null) continue;
 
         let stay=itineraryStayFor(ev);
+        if(compactShortCourse && remain-move>=30){
+          stay=Math.max(30,stay);
+        }
         stay=Math.min(stay,remain-move);
         const minStay=compactShortCourse ? 20 : 25;
         if(stay<minStay) continue;
@@ -6993,6 +7006,38 @@ function buildSimpleItinerary(plan,candidateEvents=[],freeMinutes=180){
       });
       t+=s.stay;
       remain-=s.stay+move;
+    }
+
+    // 帰着余裕から滞在へ回した分だけ、実際の帰着時刻も後ろへずらす。
+    // ただし最低12分程度の余裕は維持する。
+    if(rows.length && usableSpareForStay>0){
+      const baseStay=Math.max(0,Number(plan.stay||0));
+      const itineraryUsed=Math.max(0, rows.reduce((sum,r)=>sum+Number(r.stay||0)+Number(r.move||0),0));
+      const baseItineraryUsed=Math.min(itineraryUsed, baseStay);
+      const extraActuallyUsed=Math.min(
+        usableSpareForStay,
+        Math.max(0,itineraryUsed-baseItineraryUsed)
+      );
+
+      if(extraActuallyUsed>0){
+        if(plan.back){
+          if(Number.isFinite(Number(plan.back.dep))) plan.back.dep=Number(plan.back.dep)+extraActuallyUsed;
+          if(Number.isFinite(Number(plan.back.arr))) plan.back.arr=Number(plan.back.arr)+extraActuallyUsed;
+
+          // 駅名などをキーにした表示時刻も更新。
+          for(const [k,v] of Object.entries(plan.back)){
+            if(typeof v==='string' && /^\d{1,2}:\d{2}$/.test(v)){
+              const m=mins(v);
+              if(Number.isFinite(m)) plan.back[k]=fmt(m+extraActuallyUsed);
+            }
+          }
+        }
+        if(Number.isFinite(Number(plan.finish))) plan.finish=Number(plan.finish)+extraActuallyUsed;
+        if(Number.isFinite(Number(plan.venueLeave))) plan.venueLeave=Number(plan.venueLeave)+extraActuallyUsed;
+        plan.spare=Math.max(0,originalPlanSpare-extraActuallyUsed);
+        plan.stay=Math.max(0,Number(plan.stay||0))+extraActuallyUsed;
+        plan.planMinutes=Math.max(1,Number(plan.planMinutes||0)+extraActuallyUsed);
+      }
     }
 
     return rows.length?rows:null;
