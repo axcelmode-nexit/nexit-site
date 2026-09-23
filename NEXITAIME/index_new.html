@@ -2583,7 +2583,7 @@ async function ensureClassicRoutesLoaded(){
   if(CLASSIC_ROUTES_MASTER)return CLASSIC_ROUTES_MASTER;
   try{
     const controller=new AbortController();
-    const timer=setTimeout(()=>controller.abort(),2000);
+    const timer=setTimeout(()=>controller.abort(),1200);
     const r=await fetch(NEXITAIME_CLASSIC_ROUTES_URL,{cache:'no-store',signal:controller.signal});
     if(!r.ok)throw new Error(`HTTP ${r.status}`);
     const data=await r.json();
@@ -3211,7 +3211,7 @@ document.getElementById('go').onclick=async()=>{
 
     if(summary){
       summary.innerHTML=`<h2>検索を完了できませんでした</h2>
-        <p>原因を確認するため、今回だけデバッグ情報を表示しています。</p>`;
+        <p>外部サービスの応答または候補計算でエラーが発生しました。もう一度お試しください。</p>`;
     }
 
     if(box){
@@ -3899,17 +3899,7 @@ function estimatedVenueCostYen(ev){
   if(!ev)return null;
 
   const direct=Number(ev.estimated_cost_yen);
-  if(ev.estimated_cost_yen!=null && Number.isFinite(direct)){
-    let amount=Math.max(0,Math.round(direct));
-    const kind=itineraryCategory(ev);
-    const hour=(planningDate||new Date()).getHours();
-    // For dinner planning, a provider's low-end restaurant budget can understate a
-    // realistic per-person spend. Use a conservative planning floor, not a menu price.
-    if(['food','cafe'].includes(kind) && hour>=17 && amount>0 && amount<1500){
-      amount=1500;
-    }
-    return amount;
-  }
+  if(ev.estimated_cost_yen!=null && Number.isFinite(direct))return Math.max(0,Math.round(direct));
 
   // Hot Pepper等の飲食予算フィールドがあれば、その目安を利用する。
   const numericCandidates=[
@@ -4090,38 +4080,20 @@ async function walkingMinutesToService(s){
 
 async function getNearestService(rows){
   if(!rows.length)return null;
-  // ルート検索では「ユーザーが選んだ出発地」を基準に移動サービスを探す。
-  // GPS currentPos は、出発地として「今いる場所」が選ばれている場合だけ使う。
+  // Real nearest/walking calculations must use actual coordinates. Directory-only
+  // same-area fallbacks are intentionally excluded here.
   rows=rows.filter(s=>Number.isFinite(Number(s?.lat)) && Number.isFinite(Number(s?.lon)));
   if(!rows.length)return null;
-
-  const originName=String(origin||'');
-  const originUsesCurrentLocation=
-    originName==='current' ||
-    originName==='現在地' ||
-    originName==='今いる場所' ||
-    originName==='今いる場所に戻る';
-
-  const basePoint=(originUsesCurrentLocation && currentPos)
-    ? currentPos
-    : (PLACES?.[origin] || currentPos || null);
-
-  if(!basePoint)return null;
-
-  const ranked=rows.map(s=>({
-    s,
-    d:haversine(basePoint.lat,basePoint.lon,Number(s.lat),Number(s.lon))
-  })).sort((a,b)=>a.d-b.d);
-
+  let ranked=rows.map(s=>{
+    let d;
+    if(currentPos)d=haversine(currentPos.lat,currentPos.lon,s.lat,s.lon);
+    else if(PLACES[origin])d=haversine(PLACES[origin].lat,PLACES[origin].lon,s.lat,s.lon);
+    else d=999;
+    return {s,d};
+  }).sort((a,b)=>a.d-b.d);
   const best=ranked[0];
   if(!best)return null;
-
-  // GPS出発時だけ実経路の徒歩アクセスを使う。
-  // 駅など明示選択時は、その地点からの距離概算を使う。
-  const walk=(originUsesCurrentLocation && currentPos)
-    ? await walkingMinutesToService(best.s)
-    : Math.max(1,Math.ceil(best.d/4.5*60));
-
+  const walk=currentPos ? await walkingMinutesToService(best.s) : Math.max(1,Math.ceil(best.d/4.5*60));
   return {...best.s,distanceKm:best.d,walkMinutes:walk};
 }
 
@@ -4259,22 +4231,9 @@ function mobilityBucket(km){
   return 'far';
 }
 function mobilityBasePoint(){
-  // 地図を手で動かした場合は表示用としてその地点を使う。
   if(mobilityMapBrowsePoint && Number.isFinite(mobilityMapBrowsePoint.lat) && Number.isFinite(mobilityMapBrowsePoint.lon)) return mobilityMapBrowsePoint;
-
-  const originName=String(origin||'');
-  const originUsesCurrentLocation=
-    originName==='current' ||
-    originName==='現在地' ||
-    originName==='今いる場所' ||
-    originName==='今いる場所に戻る';
-
-  if(originUsesCurrentLocation && currentPos && Number.isFinite(currentPos.lat) && Number.isFinite(currentPos.lon)) return currentPos;
-  if(PLACES?.[origin]) return PLACES[origin];
-
-  return (currentPos && Number.isFinite(currentPos.lat) && Number.isFinite(currentPos.lon))
-    ? currentPos
-    : null;
+  if(currentPos && Number.isFinite(currentPos.lat) && Number.isFinite(currentPos.lon)) return currentPos;
+  return PLACES?.[origin] || null;
 }
 function mobilityDistanceKm(service){
   const p=mobilityBasePoint();
@@ -4295,29 +4254,9 @@ function mobilityRowsForMode(mode,{includeExtended=false}={}){
   if(!['carshare','rentalcar','taxi','bike'].includes(mode)) return [];
   const cats=serviceCategoryForMode(mode);
   const maxKm=includeExtended?MOBILITY_EXTENDED_KM:MOBILITY_NEAR_KM;
-
-  // ルート計算用の移動サービス検索は、地図閲覧位置やGPSではなく
-  // 「検索条件として選択した出発地」を基準にする。
-  const originName=String(origin||'');
-  const originUsesCurrentLocation=
-    originName==='current' ||
-    originName==='現在地' ||
-    originName==='今いる場所' ||
-    originName==='今いる場所に戻る';
-
-  const routeBase=(originUsesCurrentLocation && currentPos)
-    ? currentPos
-    : (PLACES?.[origin] || currentPos || null);
-
   return MOBILITY
     .filter(s=>cats.includes(s.category) && isLikelyOpen(s,planningDate||new Date()))
-    .map(s=>{
-      const lat=Number(s?.lat),lon=Number(s?.lon);
-      const distanceKm=(routeBase && Number.isFinite(lat) && Number.isFinite(lon))
-        ? haversine(routeBase.lat,routeBase.lon,lat,lon)
-        : Infinity;
-      return {...s,distanceKm};
-    })
+    .map(s=>({...s,distanceKm:mobilityDistanceKm(s)}))
     .filter(s=>Number.isFinite(s.distanceKm) && s.distanceKm<=maxKm)
     .sort((a,b)=>a.distanceKm-b.distanceKm);
 }
@@ -4710,16 +4649,13 @@ function eventParticipationPolicy(ev){
   };
 }
 
-
 function tommySayLike(ev){
-  const text=[
-    ev?.title,ev?.venue,ev?.name,ev?.summary,ev?.genre,ev?.genre_name,ev?.catch
-  ].filter(Boolean).join(' ').normalize('NFKC');
-  return /TOMMY\s*SAY|トミセイ|トミー\s*セイ/i.test(text);
+  const text=[ev?.title,ev?.venue,ev?.name].filter(Boolean).join(' ');
+  return /TOMMY\s*SAY|トミセイ|トミーセイ/i.test(text);
 }
 
 function reservationFeasibility(ev){
-  // TOMMY SAYのディナーは完全予約制。今から行く自動プランには出さない。
+  // TOMMY SAY は完全予約制。今から行く自動提案には出さない。
   if(tommySayLike(ev)){
     return {ok:false,penalty:-100,label:'完全予約制'};
   }
@@ -4759,11 +4695,37 @@ function isMountainOutdoorEvent(ev){
     /山|高原|渓谷|滝|登山|トレッキング|散策|自然|展望|スキー/.test(text);
 }
 
+function isGeneralOutdoorSightseeing(ev){
+  if(ev?.indoor===true)return false;
+  const text=[ev?.title,ev?.venue,ev?.summary,...(ev?.categories||[])].filter(Boolean).join(' ');
+  const kind=canonicalCategory(ev);
+  return ['sightseeing','nature','active'].includes(kind) ||
+    /公園|神社|寺|城跡|史跡|海岸|港周辺|散策|街歩き|自然|景色|展望|高原|渓谷|滝|登山|トレッキング/.test(text);
+}
+
+function explicitNightOutdoorOk(ev){
+  if(ev?.night_ok===true || ev?.nighttime_recommended===true)return true;
+  const text=[ev?.title,ev?.venue,ev?.summary,...(ev?.categories||[])].filter(Boolean).join(' ');
+  return /夜景|ライトアップ|イルミネーション|ナイト|夜イベント|夜祭|星空|花火/.test(text);
+}
+
 function afterDarkOutdoorRisk(ev,venueLeave,mode,lastMileMinutes=0){
-  if(!isMountainOutdoorEvent(ev) || !Number.isFinite(venueLeave))return false;
+  if(!Number.isFinite(venueLeave))return false;
+  if(explicitNightOutdoorOk(ev))return false;
+
   const daylight=seasonalDaylightEndMinutes(planningDate||new Date());
-  if(['walk','bike'].includes(mode))return venueLeave>daylight-15;
-  if(['public','train','bus'].includes(mode) && Number(lastMileMinutes||0)>5)return venueLeave>daylight-15;
+
+  // 「24時間立入可能」と「夜におすすめできる」は別。
+  // 公園・神社・城跡・自然散策などは、車移動でも日没後の自動提案から外す。
+  if(isGeneralOutdoorSightseeing(ev)){
+    return venueLeave>daylight-15;
+  }
+
+  // 山間・自然系は従来どおり、徒歩や公共交通のラストマイルも厳しく見る。
+  if(isMountainOutdoorEvent(ev)){
+    if(['walk','bike'].includes(mode))return venueLeave>daylight-15;
+    if(['public','train','bus'].includes(mode) && Number(lastMileMinutes||0)>5)return venueLeave>daylight-15;
+  }
   return false;
 }
 
@@ -6589,10 +6551,8 @@ function renderPlanSchedule(plan, ctx){
 
 
 function costLabel(ev){
-  const amount=estimatedVenueCostYen(ev);
-  if(amount==null)return '料金要確認';
-  if(amount===0)return '無料候補';
-  return `飲食・施設目安 約¥${Number(amount).toLocaleString()}`;
+  if(ev.estimated_cost_yen==null) return '料金要確認';
+  return ev.estimated_cost_yen===0?'無料候補':`目安 ¥${Number(ev.estimated_cost_yen).toLocaleString()}`;
 }
 
 
@@ -7149,15 +7109,6 @@ function buildSimpleItinerary(plan,candidateEvents=[],freeMinutes=180){
 
         // When several nearby stops are equally realistic, favor places that feel distinctly Joetsu.
         score+=joetsuLandmarkBonus(ev);
-        if(mood==='any' || mood==='food')score+=localFoodPriorityScore(ev);
-        if(mood==='any'){
-          const h=(planningDate||new Date()).getHours();
-          const ramenLike=/ラーメン|中華そば|らーめん|拉麺/.test(
-            [ev?.title,ev?.venue,...(ev?.categories||[])].filter(Boolean).join(' ')
-          );
-          if(featuredRamenMeta(ev))score+=(h>=17?90:55);
-          else if(ramenLike)score+=(h>=17?32:18);
-        }
         if(compactShortCourse &&
            /フルサット|子ども免許証|はたらくくるま/.test(String(plan.ev?.title||plan.ev?.venue||'')) &&
            /釜蓋遺跡/.test(String(ev?.title||ev?.venue||''))){
@@ -7563,8 +7514,6 @@ function stagedAutoCandidates(events, ctx){
 
 
 function alcoholVenueLike(ev){
-  // TOMMY SAYは夜のダイニング・飲酒系店舗として扱う。
-  if(tommySayLike(ev)) return true;
   // 飲酒前提になりやすい店舗では、運転・自転車・徒歩単独を提案しない。
   // 公共交通（電車・バス）またはタクシーのみ。
   if(mood==='food' && foodKind==='居酒屋') return true;
@@ -7876,17 +7825,7 @@ async function scoreEventSet(events, modes, start, deadline, ctx){
       const returnSafetyScore=Number(c.returnSafety?.penalty||0);
       const classicRouteScore=classicRouteBoostForEvent(ev);
       const ramenFeaturedScore=featuredRamenBoost(ev);
-      const localFoodScore=(mood==='any' || mood==='food') ? localFoodPriorityScore(ev) : 0;
-
-      const ramenLike=/ラーメン|中華そば|らーめん|拉麺/.test(
-        [ev?.title,ev?.venue,...(ev?.categories||[])].filter(Boolean).join(' ')
-      );
-      const searchHour=(planningDate||new Date()).getHours();
-      const ramenGeneralScore=(mood==='any' && ramenLike)
-        ? (searchHour>=17 ? 38 : (searchHour>=11 && searchHour<14 ? 28 : 12))
-        : 0;
       c.featuredRamenScore=ramenFeaturedScore;
-      c.localFoodPriorityScore=localFoodScore;
       c.reservationScore=reservationScore;
       c.returnSafetyScore=returnSafetyScore;
       c.classicRouteScore=classicRouteScore;
@@ -7906,8 +7845,6 @@ async function scoreEventSet(events, modes, start, deadline, ctx){
         + returnSafetyScore
         + classicRouteScore
         + ramenFeaturedScore
-        + ramenGeneralScore
-        + localFoodScore
         + routeSense.score
         + directionSense.score;
 
@@ -8244,8 +8181,27 @@ function finalPlanGuard(plan,ctx,start,deadline){
   }
 
   if(plan?.ev && finite(arrive)){
-    const venueLeave=finite(plan?.venueLeave) ? Number(plan.venueLeave) : arrive+Math.max(0,stay||0);
-    const av=spotAvailability(plan.ev,arrive,venueLeave,planningDate);
+    // 周遊プランでは plan.venueLeave / plan.stay は「全立ち寄り終了時刻・全滞在合計」に
+    // 更新される。主目的地の営業時間判定にそれを使うと、店を出た後の観光時間まで
+    // 「店に滞在していた」と誤判定してしまう。
+    // itinerary 内の主目的地行がある場合は、その実際の leave を使う。
+    const primaryRow=Array.isArray(plan?.itinerary)
+      ? plan.itinerary.find(r=>{
+          if(r?.sourceEv===plan.ev)return true;
+          const rid=r?.sourceEv?.id||r?.sourceEv?.title||r?.name;
+          const pid=plan?.ev?.id||plan?.ev?.title||plan?.ev?.venue;
+          return rid && pid && String(rid)===String(pid);
+        })
+      : null;
+
+    const mainArrive=finite(primaryRow?.arrive) ? Number(primaryRow.arrive) : arrive;
+    const mainLeave=finite(primaryRow?.leave)
+      ? Number(primaryRow.leave)
+      : (finite(plan?.venueLeave) && !plan?.dynamicRoute
+          ? Number(plan.venueLeave)
+          : mainArrive+Math.max(0,stay||0));
+
+    const av=spotAvailability(plan.ev,mainArrive,mainLeave,planningDate);
     if(av?.ok===false) reasons.push('営業時間条件不成立');
     if(['food','cafe'].includes(itineraryCategory(plan.ev)) && av?.verified!==true){
       reasons.push('飲食店の営業時間未確認');
@@ -8411,73 +8367,6 @@ function diversityPenalty(candidate,selected,freeMinutes){
   }
 
   return penalty;
-}
-
-
-function lightweightPlanFallback(pool, top, start, maxCount=3){
-  const out=[...(top||[])];
-  const keyOf=p=>String(
-    p?.ev?.id ||
-    p?.ev?.catalog_id ||
-    p?.ev?.hotpepper_id ||
-    `${p?.ev?.title||''}|${p?.ev?.venue||''}`
-  );
-  const used=new Set(out.map(keyOf));
-
-  const ranked=[...(pool||[])]
-    .filter(Boolean)
-    .filter(p=>!used.has(keyOf(p)))
-    .sort((a,b)=>{
-      const bs=
-        Number(b?.preferenceScore||0)+
-        Number(b?.classicRouteScore||0)+
-        Number(b?.featuredRamenScore||0)+
-        Number(b?.localFoodPriorityScore||0)+
-        Number(b?.multiStopPreferenceBonus||0)+
-        Number(b?.dynamicRouteScore||0);
-      const as=
-        Number(a?.preferenceScore||0)+
-        Number(a?.classicRouteScore||0)+
-        Number(a?.featuredRamenScore||0)+
-        Number(a?.localFoodPriorityScore||0)+
-        Number(a?.multiStopPreferenceBonus||0)+
-        Number(a?.dynamicRouteScore||0);
-      return bs-as;
-    });
-
-  for(const p of ranked){
-    if(out.length>=maxCount)break;
-    const key=keyOf(p);
-    if(!key || used.has(key))continue;
-
-    // Only use candidates that already have a completed finish time and passed availability.
-    if(!Number.isFinite(Number(p?.finish)))continue;
-    if(p?.availability?.ok===false)continue;
-    if(p?.reservation?.ok===false)continue;
-
-    // 飲酒系店舗に危険な移動手段を補完で復活させない。
-    if(alcoholVenueLike(p?.ev) && !['public','train','bus','taxi','multimodal'].includes(p?.mode))continue;
-
-    if(budget!=='any'){
-      const total=totalPlanCost(p);
-      if(total!=null && total>Number(budget))continue;
-    }
-
-    const mins=derivedAutoOfferMinutes(p,start);
-    if(mins){
-      p.offerFreeMinutes=mins;
-      p.offerBuffer=Math.max(0,mins-Math.max(0,Math.round(p.finish-start)));
-      p.offerDurationLabel=autoDurationLabel(mins);
-    }
-
-    if(!p.diversityRole){
-      p.diversityRole=out.length===0?'おすすめ':out.length===1?'別の過ごし方':'もう1つの候補';
-    }
-    used.add(key);
-    out.push(p);
-  }
-
-  return out.slice(0,maxCount);
 }
 
 function selectDiverseTopPlans(rows,freeMinutes,count=3){
@@ -9383,7 +9272,7 @@ function localPlanSuggestion(plans, free, buffer){
     ? Math.max(0,Math.round(top.finish-(planningDate.getHours()*60+planningDate.getMinutes()))) : null;
   const spare=Math.max(0,Number(top.spare||0)+Number(buffer||0));
   const bits=[];
-  if(stops>=2) bits.push(`${actualCommentTimeText}移動が無理のない範囲で${stops}か所回れる案を優先しました。`);
+  if(stops>=2) bits.push(`${free}分あるので、移動が無理のない範囲で${stops}か所回れる案を優先しました。`);
   else if(free>=120) bits.push(`${(top||[]).map(p=>`約${Number(p.offerFreeMinutes)||derivedAutoOfferMinutes(p,start)}分`).join('・')}の案から、移動と滞在のバランスが良い案を優先しました。`);
   else bits.push(`短い時間でも戻りに無理が出にくい案を優先しました。`);
   if(mode) bits.push(`${mode}で動きやすい候補です。`);
@@ -9483,66 +9372,67 @@ function featuredRamenMeta(ev){
   return null;
 }
 
-
-const NATIONAL_CHAIN_PATTERNS=[
-  /かっぱ寿司/i,/スシロー/i,/くら寿司/i,/はま寿司/i,
-  /すき家/i,/吉野家/i,/松屋/i,/なか卯/i,
-  /ガスト/i,/サイゼリヤ/i,/ココス/i,/ジョイフル/i,
-  /マクドナルド/i,/モスバーガー/i,/ケンタッキー/i,
-  /丸亀製麺/i,/はなまるうどん/i,
-  /幸楽苑/i,/餃子の王将/i,/大阪王将/i,
-  /コメダ珈琲/i,/スターバックス/i,/ドトール/i
-];
-
-const LOCAL_FOOD_PRIORITY_PATTERNS=[
-  /富寿し/i,
-  /きときと寿し/i,
-  /軍ちゃん/i,
-  /あごすけ/i,
-  /麺屋しょうじ/i,
-  /春紀/i,
-  /ニューミサ/i,
-  /食堂ニューミサ/i,
-  /煮干屋/i,
-  /亀屋/i
-];
-
-function localFoodPriorityScore(ev){
-  if(!ev)return 0;
-  const kind=itineraryCategory(ev);
-  if(!['food','cafe'].includes(kind))return 0;
-
-  const hay=[ev?.title,ev?.venue,ev?.name].filter(Boolean).join(' ').normalize('NFKC');
-
-  if(LOCAL_FOOD_PRIORITY_PATTERNS.some(re=>re.test(hay)))return 95;
-
-  const cats=(ev?.categories||[]).map(String).join(' ');
-  const summary=String(ev?.summary||'');
-  if(/地産地消|地魚|郷土料理|上越産|新潟産|能生漁港|日本海/.test(`${cats} ${summary}`))return 70;
-
-  if(NATIONAL_CHAIN_PATTERNS.some(re=>re.test(hay)))return -120;
-
-  return 0;
+function featuredRamenBoost(ev){
+  // ラーメン検索時に名店を埋もれさせない。営業時間・帰着成立性などの安全判定は従来通り優先。
+  if(mood!=='food' || foodKind!=='ラーメン') return 0;
+  return featuredRamenMeta(ev) ? 55 : 0;
 }
 
-function featuredRamenBoost(ev){
-  // 上越の有名ラーメン店は、ラーメン指定時だけでなく「おまかせ」でも埋もれさせない。
-  // 営業時間・帰着成立性などの安全判定は従来通り優先。
-  const featured=featuredRamenMeta(ev);
-  if(!featured)return 0;
 
-  if(mood==='food' && foodKind==='ラーメン') return 110;
+function normalizeRestaurantCoordinates(row){
+  if(!row || typeof row!=='object') return row;
 
-  if(mood==='any'){
-    const when=planningDate||new Date();
-    const hour=when.getHours();
-    // 昼食・夕食時間、とくに夕方〜夜は強めに推す。
-    if(hour>=17) return 95;
-    if(hour>=11 && hour<14) return 80;
-    return 45;
+  const candidates=[
+    [row.lat,row.lng ?? row.lon],
+    [row.latitude,row.longitude],
+    [row.shop_lat,row.shop_lng],
+    [row.geo?.lat,row.geo?.lng ?? row.geo?.lon],
+    [row.location?.lat,row.location?.lng ?? row.location?.lon],
+    [row.coordinates?.lat,row.coordinates?.lng ?? row.coordinates?.lon]
+  ];
+
+  for(const [a,b] of candidates){
+    const lat=Number(a), lon=Number(b);
+    if(Number.isFinite(lat) && Number.isFinite(lon)){
+      row.lat=lat;
+      row.lon=lon;
+      row.routing_ready=true;
+      row.routing_point_type=row.routing_point_type||'exact';
+      return row;
+    }
   }
+  return row;
+}
 
-  return 0;
+async function enrichRestaurantCoordinates(rows=[]){
+  // まずAPIレスポンス内の座標表現を正規化。
+  for(const row of rows) normalizeRestaurantCoordinates(row);
+
+  // 座標がなく住所だけある場合は、上位候補で使えるよう住所から補完する。
+  // キャッシュ済みなら即時、未キャッシュでも1店舗ずつ処理する。
+  for(const row of rows){
+    const lat=Number(row?.lat), lon=Number(row?.lon ?? row?.lng);
+    if(Number.isFinite(lat) && Number.isFinite(lon)) continue;
+
+    const address=String(
+      row?.address ||
+      row?.shop_address ||
+      row?.address_text ||
+      row?.location?.address ||
+      ''
+    ).trim();
+    if(!address) continue;
+
+    const point=await geocodeOfficialAddress(address);
+    if(!point) continue;
+
+    row.lat=point.lat;
+    row.lon=point.lon;
+    row.routing_ready=true;
+    row.routing_point_type='address_geocoded';
+    row.routing_point_note='店舗住所から地図位置を取得';
+  }
+  return rows;
 }
 
 function dedupeHotPepperRows(rows=[]){
@@ -9619,16 +9509,20 @@ async function fetchHotPepperRestaurants(){
       clearTimeout(timer);
       if(!res.ok)return [];
       const data=await res.json();
-      return Array.isArray(data?.restaurants)?data.restaurants:[];
+      const rows=Array.isArray(data?.restaurants)?data.restaurants:[];
+      return await enrichRestaurantCoordinates(rows);
     }catch(_){
       return [];
     }
   };
 
-  // Query categories in parallel. Each category already has its own 1.8s timeout,
-  // so never throw away successful categories just because another category is slow.
+  // Query the categories in parallel, dedupe, then keep a wider live pool.
+  // The final recommendation engine still applies destination/time/hours/route checks.
+  // 各カテゴリは fetchOne 内で1.8秒タイムアウト済み。
+  // 全体を Promise.race すると、1カテゴリでも遅いだけで
+  // 先に取得できた全店舗まで [] として捨ててしまうため使わない。
   const batches=await Promise.all(kinds.map(fetchOne));
-  return dedupeHotPepperRows((batches||[]).flat()).slice(0,60);
+  return dedupeHotPepperRows((batches||[]).flat()).slice(0,50);
 }
 
 function providerInfoHtml(ev){
@@ -9739,26 +9633,6 @@ function planDisplayTitle(p){
   const base=String(p?.ev?.title||p?.ev?.venue||'候補').trim();
   const multi=Array.isArray(p?.itinerary)&&p.itinerary.length>1;
   return multi && !/他$/.test(base) ? `${base} 他` : base;
-}
-
-
-function actualPlanTimeTextForComment(plans,start){
-  const mins=(Array.isArray(plans)?plans:[])
-    .map(p=>{
-      const offered=Number(p?.offerFreeMinutes);
-      if(Number.isFinite(offered) && offered>0)return offered;
-      if(Number.isFinite(p?.finish) && Number.isFinite(start)){
-        return Math.max(30,Math.ceil((p.finish-start)/30)*30);
-      }
-      return null;
-    })
-    .filter(v=>Number.isFinite(v) && v>0);
-
-  if(!mins.length)return '';
-  const uniq=[...new Set(mins)].sort((a,b)=>a-b);
-  if(uniq.length===1)return `約${uniq[0]}分の案なので、`;
-  if(uniq.length===2)return `約${uniq[0]}分・約${uniq[1]}分の案から、`;
-  return `約${uniq[0]}分・約${uniq[1]}分・約${uniq[2]}分の案から、`;
 }
 
 function planComparisonHtml(plans,start,buffer){
@@ -9892,72 +9766,25 @@ function automaticReturnBufferMinutes(freeMinutes=180){
 }
 
 
-async function scoreEventSetFast(events,modes,start,deadline,ctx,timeoutMs=2500){
-  // 外部ルートAPIを候補全件で一斉に叩かない。
-  // 3件ずつ評価し、成功した候補は保持。遅い候補だけ捨てる。
-  const list=Array.isArray(events)?events.filter(Boolean):[];
-  if(!list.length)return [];
-
-  const batchSize=3;
-  const perEventTimeout=Math.max(1200,Math.min(2600,Number(timeoutMs)||2500));
-  const collected=[];
-
-  const scoreOne=ev=>new Promise(resolve=>{
-    let settled=false;
-    const timer=setTimeout(()=>{
-      if(settled)return;
-      settled=true;
-      resolve([]);
-    },perEventTimeout);
-
-    Promise.resolve(scoreEventSet([ev],modes,start,deadline,ctx))
-      .then(rows=>{
-        if(settled)return;
-        settled=true;
-        clearTimeout(timer);
-        resolve(Array.isArray(rows)?rows:[]);
-      })
-      .catch(err=>{
-        if(settled)return;
-        settled=true;
-        clearTimeout(timer);
-        try{ console.warn('[NEXITAIME] candidate scoring skipped',ev?.title||ev?.venue||ev?.id,err); }catch(_){}
-        resolve([]);
-      });
-  });
-
-  for(let i=0;i<list.length;i+=batchSize){
-    const batch=list.slice(i,i+batchSize);
-    const results=await Promise.all(batch.map(scoreOne));
-    collected.push(...results.flat());
-
-    // 3案表示に十分な別施設が取れたら、残りの外部API待ちはしない。
-    const unique=new Set(collected.map(p=>p?.ev?.id||`${p?.ev?.title||''}|${p?.ev?.venue||''}`));
-    if(unique.size>=5)break;
+async function scoreEventSetFast(events,modes,start,deadline,ctx,timeoutMs=1400){
+  // External routing/timetable services can be slow. Never keep the result screen waiting forever.
+  let timer;
+  try{
+    return await Promise.race([
+      scoreEventSet(events,modes,start,deadline,ctx),
+      new Promise(resolve=>{ timer=setTimeout(()=>resolve([]),timeoutMs); })
+    ]);
+  }finally{
+    if(timer)clearTimeout(timer);
   }
-
-  return dedupeCandidates(collected);
 }
-function fastAutoCandidatePool(events,ctx,limit=20){
+
+function fastAutoCandidatePool(events,ctx,limit=12){
   const staged=stagedAutoCandidates(events,ctx);
   const merged=[...(staged.first||[]),...(staged.rest||[])];
-
-  // Apply cheap/local scoring before the candidate cutoff. Otherwise a national chain
-  // near the front of the provider response can occupy the only food slot.
-  const ranked=merged.map((ev,index)=>{
-    let pre=0;
-    if(mood==='any' || mood==='food')pre+=Math.max(-45,Math.min(55,localFoodPriorityScore(ev)));
-    pre+=Math.max(0,Math.min(55,featuredRamenBoost(ev)));
-    if(isUrgentTimelyEvent(ev,planningDate))pre+=140;
-    // 元の候補順も残す。地元店優先だけで先頭8件を総入れ替えしない。
-    pre+=Math.max(0,30-index);
-    return {ev,index,pre};
-  }).sort((a,b)=>b.pre-a.pre || a.index-b.index);
-
   const out=[];
   const seen=new Set();
-  for(const row of ranked){
-    const ev=row.ev;
+  for(const ev of merged){
     const key=ev?.id||`${ev?.title||''}|${ev?.venue||''}`;
     if(!key||seen.has(key))continue;
     seen.add(key);
@@ -10038,12 +9865,6 @@ async function buildPlans(){
  if(mood!=='any')events=events.filter(ev=>moodMatches(ev,mood));
  events=events.filter(foodKindMatches).filter(secondaryMoodMatches);
 
- // 時間おまかせは、近さ・王道・現在条件で優先度の高い候補だけ先にルート判定する。
- // 全件を90/180/300分で繰り返し評価するとモバイルで待ち時間が長くなるため。
- if(isAutoFree && events.length>8){
-   events=fastAutoCandidatePool(events,searchCtx,8);
- }
-
  // Food/cafe can contain many API + static shops. Keep the transport comparison
  // responsive by scoring the most relevant subset first.
  if(['food','cafe'].includes(mood) && events.length>12){
@@ -10076,11 +9897,12 @@ async function buildPlans(){
  // 1) Exact requested conditions
  if(isAllAutoSearch()){
    const staged=stagedAutoCandidates(events,searchCtx);
-   scored=await scoreEventSetFast(staged.first,requestedModes,start,deadline,searchCtx);
+   // 昨日まで安定して複数候補が出ていた方式に戻す。
+   // 最初から8件へ切らず、成立候補をきちんと拾ってから上位案を選ぶ。
+   scored=await scoreEventSet(staged.first,requestedModes,start,deadline,searchCtx);
 
-   // If we already have enough useful candidates, do not scan the whole region.
    if(scored.length<5 && staged.rest.length){
-     const extra=await scoreEventSetFast(staged.rest.slice(0,14),requestedModes,start,deadline,searchCtx);
+     const extra=await scoreEventSet(staged.rest.slice(0,28),requestedModes,start,deadline,searchCtx);
      scored=dedupeCandidates([...scored,...extra]);
    }
  }else{
@@ -10202,7 +10024,6 @@ async function buildPlans(){
    }
  }
  let multiDurationAuto=false;
- let autoDurationCandidates=[];
 
  // 時間がおまかせなら、単一の時間に決め打ちせず、成立する「短・中・長」のプランを1案ずつ作る。
  // 明示された気分・行き先・飲酒時の安全な移動手段など、既存の厳格条件はそのまま維持する。
@@ -10215,13 +10036,13 @@ async function buildPlans(){
      if(mood!=='any') rows=rows.filter(ev=>moodMatches(ev,mood));
      return rows.filter(foodKindMatches).filter(secondaryMoodMatches);
    })();
-   const durationPool=fastAutoCandidatePool(rawDurationPool,searchCtx,20);
+   const durationPool=fastAutoCandidatePool(rawDurationPool,searchCtx,10);
 
    // 3つの時間帯は直列ではなく並列評価する。外部API待ちが積み上がらないようにする。
    const durationCandidates=await Promise.all(autoDurationChoices().map(async duration=>{
      const dBuffer=automaticReturnBufferMinutes(duration);
      const dDeadline=start+duration-dBuffer;
-     let rows=await scoreEventSetFast(durationPool,requestedModes,start,dDeadline,searchCtx,2200);
+     let rows=await scoreEventSetFast(durationPool,requestedModes,start,dDeadline,searchCtx,1100);
      rows=sortCandidates(rows);
      if(budget!=='any'){
        const maxBudget=Number(budget);
@@ -10259,9 +10080,8 @@ async function buildPlans(){
      });
 
      const wellFilled=prepared.filter(row=>autoDurationPlanFits(row,duration,dBuffer));
-     return {duration,dBuffer,prepared,wellFilled};
+     return {duration,dBuffer,wellFilled};
    }));
-   autoDurationCandidates=durationCandidates;
 
    // 今日限定・今日まで・まもなく開始など「今しかない」イベントが成立するなら、
    // おまかせ3案のうち最低1案には必ず残す。
@@ -10315,9 +10135,9 @@ async function buildPlans(){
      durationPlans.push(pick);
    }
 
-   if(durationPlans.length){
-     // Different destinations are valid alternatives even when all round to the same
-     // display duration (e.g. three different "約180分" plans).
+   if(durationPlans.length>=2 || top.length<2){
+     // 時間別検索で複数案が取れた時だけ置き換える。
+     // 1案しか取れなかった場合は、通常検索で取れた複数候補を潰さない。
      top=durationPlans.slice(0,3);
      multiDurationAuto=true;
    }
@@ -10408,7 +10228,7 @@ async function buildPlans(){
        selected.push(p);
      }
 
-     if(selected.length){
+     if(selected.length>=2 || top.length<2){
        top=selected.slice(0,3);
        multiDurationAuto=true;
      }
@@ -10417,103 +10237,6 @@ async function buildPlans(){
      // 失敗しても従来topをそのまま使う
    }
  }
-
- // 表示案が1〜2件しかない場合、すでに成立判定を通過した候補から安全に補充する。
- // 営業時間・帰着・予算などの条件を緩めて新規生成はしない。
- try{
-   if(top.length<3){
-     const keyOf=p=>String(
-       p?.ev?.id ||
-       p?.ev?.catalog_id ||
-       p?.ev?.hotpepper_id ||
-       `${p?.ev?.title||''}|${p?.ev?.venue||''}`
-     );
-
-     const used=new Set(top.map(keyOf));
-     const fallbackPool=[];
-
-     // 通常検索で成立済みの候補
-     for(const p of (topPool||[])){
-       if(!p)continue;
-       fallbackPool.push(p);
-     }
-
-     // 時間おまかせなら、各時間帯でwellFilledまで通った候補も利用
-     if(isAutoFree && autoDurationCandidates.length){
-       for(const group of autoDurationCandidates){
-         for(const p of (group?.wellFilled||[])){
-           if(p)fallbackPool.push(p);
-         }
-         for(const p of (group?.prepared||[])){
-           if(p)fallbackPool.push(p);
-         }
-       }
-     }
-
-     // 同じ店・同じ施設の重複を除き、既存スコア順で補充
-     fallbackPool.sort((a,b)=>{
-       const bs=
-         Number(b?.preferenceScore||0)+
-         Number(b?.multiStopPreferenceBonus||0)+
-         Number(b?.dynamicRouteScore||0)+
-         Number(b?.classicRouteScore||0)+
-         Number(b?.localFoodPriorityScore||0);
-       const as=
-         Number(a?.preferenceScore||0)+
-         Number(a?.multiStopPreferenceBonus||0)+
-         Number(a?.dynamicRouteScore||0)+
-         Number(a?.classicRouteScore||0)+
-         Number(a?.localFoodPriorityScore||0);
-       return bs-as;
-     });
-
-     for(const p of fallbackPool){
-       if(top.length>=3)break;
-       const key=keyOf(p);
-       if(!key || used.has(key))continue;
-
-       // 念のため最終成立判定をもう一度通す。
-       const deadlineForCheck = Number.isFinite(Number(p?.finish))
-         ? Math.max(Number(p.finish), start+30)
-         : deadline;
-       if(!filterFinalPlans([p],searchCtx,start,deadlineForCheck).length)continue;
-
-       used.add(key);
-
-       if(isAutoFree){
-         const mins=derivedAutoOfferMinutes(p,start);
-         if(mins){
-           p.offerFreeMinutes=mins;
-           p.offerBuffer=Math.max(0,mins-Math.max(0,Math.round(p.finish-start)));
-           p.offerDurationLabel=autoDurationLabel(mins);
-         }
-       }
-
-       if(!p.diversityRole){
-         p.diversityRole=top.length===0?'おすすめ':top.length===1?'別の過ごし方':'もう1つの候補';
-       }
-       top.push(p);
-     }
-   }
- }catch(err){
-   console.warn('[NEXITAIME] plan top-up skipped',err);
- }
-
- // 1案しかない場合でも、新しい外部API呼び出しはせず、
- // すでに評価済みの候補から2〜3案へ補完する。
- if(top.length<3){
-   const scoredFallback=[];
-   for(const p of (topPool||[])) scoredFallback.push(p);
-   if(isAutoFree && autoDurationCandidates.length){
-     for(const group of autoDurationCandidates){
-       // wellFilledを優先しつつ、成立判定済みpreparedも補完候補に使う。
-       for(const p of (group?.wellFilled||[])) scoredFallback.push(p);
-       for(const p of (group?.prepared||[])) scoredFallback.push(p);
-     }
-   }
-   top=lightweightPlanFallback(scoredFallback,top,start,3);
- }
-
  clearTimeout(searchWatchdog);
 
  const previousSnapshot=lastSearchSnapshot;
@@ -10551,7 +10274,7 @@ async function buildPlans(){
  const routeSummary=`${searchCtx.origin} → ${destinationGroupLabel(searchCtx.destination)} → ${searchCtx.returnTo}`;
  if(multiDurationAuto){
    const durations=top.map(p=>p.offerFreeMinutes).filter(Boolean).join('分・');
-   summary.innerHTML=`<h2>${top.length}案あります</h2><p><strong>${routeSummary}</strong><br>時間はおまかせなので、実際に成立するプランから必要時間を算出しています。${durations?`今回は約${durations}分の案です。`:''}長めの案ほど複数スポットの周遊を優先します。</p>`;
+   summary.innerHTML=`<h2>時間別に${top.length}案あります</h2><p><strong>${routeSummary}</strong><br>時間はおまかせなので、実際に成立するプランから必要時間を算出しています。${durations?`今回は約${durations}分の案です。`:''}長めの案ほど複数スポットの周遊を優先します。</p>`;
  }else if(relaxationLevel===0){
    if(transport==='auto'){
      {
@@ -10593,7 +10316,6 @@ async function buildPlans(){
 
  try{ trackNexitaime('search_result',{resultCount:top.length}); }catch(_){}
 
- const actualCommentTimeText=actualPlanTimeTextForComment(top,start);
  disposePlanRouteMaps();
  box.innerHTML=renderResultQuickAdjust()+planComparisonHtml(top,start,buffer)+`<div id="aiPlanSuggestion" class="ai-suggestion-card"></div><div class="plan-picked-banner">選んだプランを詳しく見ています <button type="button" data-unpick-plan>ほかの案を見る</button></div>`+top.map((p,idx)=>{
    const rankLabel=p.offerFreeMinutes

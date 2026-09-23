@@ -9237,10 +9237,10 @@ async function fetchHotPepperRestaurants(){
 
   // Query the categories in parallel, dedupe, then keep a wider live pool.
   // The final recommendation engine still applies destination/time/hours/route checks.
-  const batches=await Promise.race([
-    Promise.all(kinds.map(fetchOne)),
-    new Promise(resolve=>setTimeout(()=>resolve([]),2200))
-  ]);
+  // 各カテゴリは fetchOne 内で1.8秒タイムアウト済み。
+  // 全体を Promise.race すると、1カテゴリでも遅いだけで
+  // 先に取得できた全店舗まで [] として捨ててしまうため使わない。
+  const batches=await Promise.all(kinds.map(fetchOne));
   return dedupeHotPepperRows((batches||[]).flat()).slice(0,50);
 }
 
