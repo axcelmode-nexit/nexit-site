@@ -5897,14 +5897,42 @@ function eventTimingMeta(ev, when=planningDate||new Date()){
   const today=`${y}-${mo}-${d}`;
   const sameDay=ev.start_date===today && (!ev.end_date || ev.end_date===today);
 
+  const dayNumber=s=>{
+    const m=String(s||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if(!m)return null;
+    return Math.floor(Date.UTC(Number(m[1]),Number(m[2])-1,Number(m[3]))/86400000);
+  };
+  const todayDay=dayNumber(today);
+  const endDay=dayNumber(ev.end_date||ev.start_date);
+  const daysLeft=(todayDay!=null && endDay!=null)?endDay-todayDay:null;
+
   let label='';
   let score=0;
-  if(ev.start_date===today){
-    label=sameDay?'今日開催':'開催中';
-    score=sameDay?20:12;
+
+  // 「今しかない」を強く優先。常設スポットより今日限定・終了間近イベントを先に見せる。
+  if(sameDay){
+    label='今日限定';
+    score=95;
+  }else if(ev.start_date===today){
+    label='今日開催';
+    score=70;
   }else if(ev.start_date<today && (!ev.end_date || ev.end_date>=today)){
-    label='期間限定';
-    score=8;
+    if(daysLeft===0){
+      label='今日まで';
+      score=90;
+    }else if(daysLeft===1){
+      label='明日まで';
+      score=65;
+    }else if(daysLeft!=null && daysLeft<=3){
+      label='まもなく終了';
+      score=48;
+    }else if(daysLeft!=null && daysLeft<=7){
+      label='期間限定';
+      score=32;
+    }else{
+      label='期間限定';
+      score=20;
+    }
   }
 
   if(ev.start_time && ev.start_date===today){
@@ -5912,14 +5940,14 @@ function eventTimingMeta(ev, when=planningDate||new Date()){
     const startMin=mins(ev.start_time);
     const diff=startMin-nowMin;
     if(diff>=0 && diff<=90){
-      label='まもなく開始';
-      score=Math.max(score,24);
+      label=sameDay?'今日限定・まもなく開始':'まもなく開始';
+      score=Math.max(score,sameDay?110:85);
     }else if(diff<0 && (!ev.end_time || nowMin<=mins(ev.end_time))){
-      label='開催中';
-      score=Math.max(score,22);
+      label=sameDay?'今日限定・開催中':'開催中';
+      score=Math.max(score,sameDay?105:80);
     }
   }
-  return label?{label,score}:null;
+  return label?{label,score,daysLeft}:null;
 }
 
 function recommendationBadges(plan, idx){
@@ -6271,11 +6299,12 @@ function dynamicRouteCandidateScore(ev,{prevEv,prevPoint,goalPoint,usedKinds,row
   score+=classicRouteBoostForEvent(ev)*0.75;
   score+=featuredRamenBoost(ev)*0.5;
   score+=classicAdjacencyBonus(prevEv,ev);
+  if(timing?.score>=65 && !usedKinds.has('event'))score+=28;
   score+=Math.min(24,Math.max(0,stay)/3);
   const wa=weatherAdjustment(ev);
   score+=Number(wa?.score||0)*0.6;
   const timing=eventTimingMeta(ev,startDateForScoring(rows[0]?.arrive||0));
-  score+=Number(timing?.score||0)*0.5;
+  score+=Number(timing?.score||0)*0.9;
   // 周遊は移動ロスが少ない方を優先。
   score-=Math.max(0,move)*1.35;
   if(move>45)score-=35;
