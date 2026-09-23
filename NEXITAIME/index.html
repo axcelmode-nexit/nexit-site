@@ -9665,44 +9665,68 @@ function setTomorrowSearch(hour){
   next.setDate(now.getDate()+1);
   next.setHours(hour,0,0,0);
 
-  // Switch to explicit datetime mode and update available controls when present.
-  try{
-    timingMode='date';
-  }catch(_){}
+  // Use the page's real explicit-date mode.
+  timingMode='date';
 
-  const dateInput=document.getElementById('date') || document.querySelector('input[type="date"]');
-  const timeInput=document.getElementById('time') || document.querySelector('input[type="time"]');
-
-  if(dateInput){
-    const y=next.getFullYear();
-    const m=String(next.getMonth()+1).padStart(2,'0');
-    const d=String(next.getDate()).padStart(2,'0');
-    dateInput.value=`${y}-${m}-${d}`;
-    dateInput.dispatchEvent(new Event('change',{bubbles:true}));
+  const dateEl=document.getElementById('date');
+  const timeEl=document.getElementById('time');
+  if(dateEl){
+    const yyyy=next.getFullYear();
+    const mm=String(next.getMonth()+1).padStart(2,'0');
+    const dd=String(next.getDate()).padStart(2,'0');
+    dateEl.value=`${yyyy}-${mm}-${dd}`;
+  }
+  if(timeEl){
+    timeEl.value=`${String(hour).padStart(2,'0')}:00`;
   }
 
-  if(timeInput){
-    timeInput.value=`${String(hour).padStart(2,'0')}:00`;
-    timeInput.dispatchEvent(new Event('change',{bubbles:true}));
-  }
-
-  // If the page has a timing toggle, prefer the explicit-date option.
   document.querySelectorAll('#timings .chip').forEach(btn=>{
     btn.classList.toggle('active',btn.dataset.timing==='date');
   });
+
   const custom=document.getElementById('customTime');
   if(custom)custom.hidden=false;
 
-  try{
-    planningDate=next;
-  }catch(_){}
+  // Keep planningDate synchronized immediately instead of waiting for a change event.
+  planningDate=new Date(next);
 
-  buildPlans();
+  // Reflect the chosen values through the same listeners other manual changes use.
+  dateEl?.dispatchEvent(new Event('input',{bubbles:true}));
+  dateEl?.dispatchEvent(new Event('change',{bubbles:true}));
+  timeEl?.dispatchEvent(new Event('input',{bubbles:true}));
+  timeEl?.dispatchEvent(new Event('change',{bubbles:true}));
+
+  // Give the UI one frame to settle, then run the search.
+  requestAnimationFrame(()=>{
+    try{
+      buildPlans();
+    }catch(err){
+      console.error('[NEXITAIME] tomorrow search failed',err);
+    }
+  });
 }
 
 function bindTomorrowSearchButtons(){
-  document.getElementById('tomorrowMorningBtn')?.addEventListener('click',()=>setTomorrowSearch(9));
-  document.getElementById('tomorrowNoonBtn')?.addEventListener('click',()=>setTomorrowSearch(12));
+  const morning=document.getElementById('tomorrowMorningBtn');
+  const noon=document.getElementById('tomorrowNoonBtn');
+
+  if(morning && morning.dataset.bound!=='1'){
+    morning.dataset.bound='1';
+    morning.addEventListener('click',e=>{
+      e.preventDefault();
+      e.stopPropagation();
+      setTomorrowSearch(9);
+    });
+  }
+
+  if(noon && noon.dataset.bound!=='1'){
+    noon.dataset.bound='1';
+    noon.addEventListener('click',e=>{
+      e.preventDefault();
+      e.stopPropagation();
+      setTomorrowSearch(12);
+    });
+  }
 }
 
 async function buildPlans(){
