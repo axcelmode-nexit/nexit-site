@@ -3621,8 +3621,6 @@ function estimatedVenueCostYen(ev){
     let amount=Math.max(0,Math.round(direct));
     const kind=itineraryCategory(ev);
     const hour=(planningDate||new Date()).getHours();
-    // For dinner planning, a provider's low-end restaurant budget can understate a
-    // realistic per-person spend. Use a conservative planning floor, not a menu price.
     if(['food','cafe'].includes(kind) && hour>=17 && amount>0 && amount<1500){
       amount=1500;
     }
@@ -3808,38 +3806,20 @@ async function walkingMinutesToService(s){
 
 async function getNearestService(rows){
   if(!rows.length)return null;
-  // ルート検索では「ユーザーが選んだ出発地」を基準に移動サービスを探す。
-  // GPS currentPos は、出発地として「今いる場所」が選ばれている場合だけ使う。
+  // Real nearest/walking calculations must use actual coordinates. Directory-only
+  // same-area fallbacks are intentionally excluded here.
   rows=rows.filter(s=>Number.isFinite(Number(s?.lat)) && Number.isFinite(Number(s?.lon)));
   if(!rows.length)return null;
-
-  const originName=String(origin||'');
-  const originUsesCurrentLocation=
-    originName==='current' ||
-    originName==='現在地' ||
-    originName==='今いる場所' ||
-    originName==='今いる場所に戻る';
-
-  const basePoint=(originUsesCurrentLocation && currentPos)
-    ? currentPos
-    : (PLACES?.[origin] || currentPos || null);
-
-  if(!basePoint)return null;
-
-  const ranked=rows.map(s=>({
-    s,
-    d:haversine(basePoint.lat,basePoint.lon,Number(s.lat),Number(s.lon))
-  })).sort((a,b)=>a.d-b.d);
-
+  let ranked=rows.map(s=>{
+    let d;
+    if(currentPos)d=haversine(currentPos.lat,currentPos.lon,s.lat,s.lon);
+    else if(PLACES[origin])d=haversine(PLACES[origin].lat,PLACES[origin].lon,s.lat,s.lon);
+    else d=999;
+    return {s,d};
+  }).sort((a,b)=>a.d-b.d);
   const best=ranked[0];
   if(!best)return null;
-
-  // GPS出発時だけ実経路の徒歩アクセスを使う。
-  // 駅など明示選択時は、その地点からの距離概算を使う。
-  const walk=(originUsesCurrentLocation && currentPos)
-    ? await walkingMinutesToService(best.s)
-    : Math.max(1,Math.ceil(best.d/4.5*60));
-
+  const walk=currentPos ? await walkingMinutesToService(best.s) : Math.max(1,Math.ceil(best.d/4.5*60));
   return {...best.s,distanceKm:best.d,walkMinutes:walk};
 }
 
@@ -3977,22 +3957,9 @@ function mobilityBucket(km){
   return 'far';
 }
 function mobilityBasePoint(){
-  // 地図を手で動かした場合は表示用としてその地点を使う。
   if(mobilityMapBrowsePoint && Number.isFinite(mobilityMapBrowsePoint.lat) && Number.isFinite(mobilityMapBrowsePoint.lon)) return mobilityMapBrowsePoint;
-
-  const originName=String(origin||'');
-  const originUsesCurrentLocation=
-    originName==='current' ||
-    originName==='現在地' ||
-    originName==='今いる場所' ||
-    originName==='今いる場所に戻る';
-
-  if(originUsesCurrentLocation && currentPos && Number.isFinite(currentPos.lat) && Number.isFinite(currentPos.lon)) return currentPos;
-  if(PLACES?.[origin]) return PLACES[origin];
-
-  return (currentPos && Number.isFinite(currentPos.lat) && Number.isFinite(currentPos.lon))
-    ? currentPos
-    : null;
+  if(currentPos && Number.isFinite(currentPos.lat) && Number.isFinite(currentPos.lon)) return currentPos;
+  return PLACES?.[origin] || null;
 }
 function mobilityDistanceKm(service){
   const p=mobilityBasePoint();
@@ -4013,29 +3980,9 @@ function mobilityRowsForMode(mode,{includeExtended=false}={}){
   if(!['carshare','rentalcar','taxi','bike'].includes(mode)) return [];
   const cats=serviceCategoryForMode(mode);
   const maxKm=includeExtended?MOBILITY_EXTENDED_KM:MOBILITY_NEAR_KM;
-
-  // ルート計算用の移動サービス検索は、地図閲覧位置やGPSではなく
-  // 「検索条件として選択した出発地」を基準にする。
-  const originName=String(origin||'');
-  const originUsesCurrentLocation=
-    originName==='current' ||
-    originName==='現在地' ||
-    originName==='今いる場所' ||
-    originName==='今いる場所に戻る';
-
-  const routeBase=(originUsesCurrentLocation && currentPos)
-    ? currentPos
-    : (PLACES?.[origin] || currentPos || null);
-
   return MOBILITY
     .filter(s=>cats.includes(s.category) && isLikelyOpen(s,planningDate||new Date()))
-    .map(s=>{
-      const lat=Number(s?.lat),lon=Number(s?.lon);
-      const distanceKm=(routeBase && Number.isFinite(lat) && Number.isFinite(lon))
-        ? haversine(routeBase.lat,routeBase.lon,lat,lon)
-        : Infinity;
-      return {...s,distanceKm};
-    })
+    .map(s=>({...s,distanceKm:mobilityDistanceKm(s)}))
     .filter(s=>Number.isFinite(s.distanceKm) && s.distanceKm<=maxKm)
     .sort((a,b)=>a.distanceKm-b.distanceKm);
 }
@@ -4764,7 +4711,7 @@ function crowdingHtml(plan){
 async function evaluateDirectMode(ev,dest,mode,start,deadline,ctx){
   const from=ctx.origin;
   const backTo=ctx.returnTo;
-  if(!returnModeAllowed(mode,ctx)){ROUTE_DIAG.push({title:ev?.title||ev?.venue,mode,reason:'return_mode_not_allowed'});return null;}
+  if(!returnModeAllowed(mode,ctx))return null;
 
   const fromPoint=PLACES[from];
   const destPoint=routePointForEvent(ev,dest);
@@ -4773,7 +4720,7 @@ async function evaluateDirectMode(ev,dest,mode,start,deadline,ctx){
   // v75: Direct-mode plans require an audited destination coordinate.
   // Never fall back to the area's station/representative route key, because that can
   // create a fake 0-minute trip such as 上越妙高 -> 上越妙高 for an unknown venue.
-  if(!destPoint){ROUTE_DIAG.push({title:ev?.title||ev?.venue,mode,reason:'destination_point_missing'});return null;}
+  if(!destPoint)return null;
   if(ev?.source==='official_catalog' && ev?.routing_ready===false && !exactPointForEvent(ev))return null;
 
   // In おまかせ, very short round trips should be walking plans.
@@ -4787,13 +4734,12 @@ async function evaluateDirectMode(ev,dest,mode,start,deadline,ctx){
     // if the venue is within 0.8 km straight-line OR roughly 10 min walking,
     // motorized/rental mobility must not be suggested in おまかせ.
     if(directKm<=0.8 || (Number.isFinite(walkMin) && walkMin<=10)){
-      ROUTE_DIAG.push({title:ev?.title||ev?.venue,mode,reason:'nearby_vehicle_rejected'});
       return null;
     }
   }
 
   const svc=await getModeService(mode);
-  if(['carshare','rentalcar','taxi','bike'].includes(mode) && !svc){ROUTE_DIAG.push({title:ev?.title||ev?.venue,mode,reason:'mobility_service_unavailable'});return null;}
+  if(['carshare','rentalcar','taxi','bike'].includes(mode) && !svc)return null;
 
   const service=svc?.service||null;
   const servicePoint=(service && Number.isFinite(Number(service.lat)) && Number.isFinite(Number(service.lon)))
@@ -4836,7 +4782,7 @@ async function evaluateDirectMode(ev,dest,mode,start,deadline,ctx){
     ? await directRoute(mode,destPoint,returnEnd)
     : await routeMinutes(mode,dest,backTo);
 
-  if(oneWay==null || backWay==null){ROUTE_DIAG.push({title:ev?.title||ev?.venue,mode,reason:'route_minutes_unavailable'});return null;}
+  if(oneWay==null || backWay==null)return null;
 
   // Rental bicycles are intended for nearby urban trips, not long mountain access.
   // Reject overly long bike legs even if the free-time window would technically fit.
@@ -4864,16 +4810,16 @@ async function evaluateDirectMode(ev,dest,mode,start,deadline,ctx){
   const eventEnd=ev.end_time?mins(ev.end_time):null;
 
   const window=availabilityWindow(ev,planningDate);
-  if(window.closed){ROUTE_DIAG.push({title:ev?.title||ev?.venue,mode,reason:'closed'});return null;}
+  if(window.closed)return null;
   const reservation=reservationFeasibility(ev);
-  if(!reservation.ok){ROUTE_DIAG.push({title:ev?.title||ev?.venue,mode,reason:'reservation_required'});return null;}
+  if(!reservation.ok)return null;
 
   let arrive=rawArrive;
   if(eventStart!=null && arrive<eventStart)arrive=eventStart;
   if(window.open!=null && arrive<window.open)arrive=window.open;
 
   const cutoffMeta=arrivalCutoffForEvent(ev,window);
-  if(cutoffMeta && arrive>=cutoffMeta.minute){ROUTE_DIAG.push({title:ev?.title||ev?.venue,mode,reason:'arrival_after_cutoff'});return null;}
+  if(cutoffMeta && arrive>=cutoffMeta.minute)return null;
 
   let latestLeave=deadline-backWay-returnSetup-returnAccess-taxiBackWait;
   if(eventEnd!=null)latestLeave=Math.min(latestLeave,eventEnd);
@@ -4881,14 +4827,14 @@ async function evaluateDirectMode(ev,dest,mode,start,deadline,ctx){
 
   const availableStay=Math.floor(latestLeave-arrive);
   const stay=choosePlannedStay(ev,availableStay);
-  if(stay==null){ROUTE_DIAG.push({title:ev?.title||ev?.venue,mode,reason:'insufficient_stay_window',availableStay});return null;}
+  if(stay==null)return null;
 
   const backDep=arrive+stay;
-  if(afterDarkOutdoorRisk(ev,backDep,mode,0)){ROUTE_DIAG.push({title:ev?.title||ev?.venue,mode,reason:'after_dark_outdoor'});return null;}
+  if(afterDarkOutdoorRisk(ev,backDep,mode,0))return null;
   const finish=backDep+taxiBackWait+backWay+returnSetup+returnAccess;
 
   const availability=spotAvailability(ev,arrive,backDep,planningDate);
-  if(!availability.ok){ROUTE_DIAG.push({title:ev?.title||ev?.venue,mode,reason:'availability_failed'});return null;}
+  if(!availability.ok)return null;
 
   let modeReason=reasonForMode(mode,service);
   if(mode==='taxi'){
@@ -5515,7 +5461,6 @@ function informationConfidenceHtml(ev){
   return `<div class="info-confidence"><strong>${icon} ${esc(m.label)}</strong><div class="confidence-row">${chips}</div></div>`;
 }
 
-let ROUTE_DIAG=[];
 let LAST_EXCLUSION_AUDIT=[];
 function resetExclusionAudit(){ LAST_EXCLUSION_AUDIT=[]; }
 function recordExclusion(ev,code,reason){
@@ -5525,31 +5470,14 @@ function recordExclusion(ev,code,reason){
   LAST_EXCLUSION_AUDIT.push({key,title,code,reason});
 }
 function exclusionSummaryHtml(limit=4){
+  if(!LAST_EXCLUSION_AUDIT.length)return '';
   const counts=new Map();
   for(const x of LAST_EXCLUSION_AUDIT){
     const k=x.reason||x.code;
     counts.set(k,(counts.get(k)||0)+1);
   }
   const rows=[...counts.entries()].sort((a,b)=>b[1]-a[1]).slice(0,limit);
-
-  const diagCounts=new Map();
-  for(const x of ROUTE_DIAG||[]){
-    const k=x.reason||'unknown';
-    diagCounts.set(k,(diagCounts.get(k)||0)+1);
-  }
-  const diagRows=[...diagCounts.entries()].sort((a,b)=>b[1]-a[1]).slice(0,8);
-
-  if(!rows.length && !diagRows.length)return '';
-
-  const main=rows.length
-    ? `<strong>今回、候補から外れた主な理由</strong><br>${rows.map(([r,n])=>`${esc(r)}${n>1?`（${n}件）`:''}`).join('<br>')}`
-    : '';
-
-  const diag=diagRows.length
-    ? `<div style="margin-top:${rows.length?'10px':'0'}"><strong>ルート判定デバッグ</strong><br>${diagRows.map(([r,n])=>`${esc(r)}（${n}件）`).join('<br>')}</div>`
-    : '';
-
-  return `<div class="exclusion-summary">${main}${diag}</div>`;
+  return `<div class="exclusion-summary"><strong>今回、候補から外れた主な理由</strong><br>${rows.map(([r,n])=>`${esc(r)}${n>1?`（${n}件）`:''}`).join('<br>')}</div>`;
 }
 
 function eventRangeStatus(ev, when=new Date()){
@@ -9363,10 +9291,13 @@ async function fetchHotPepperRestaurants(){
     }
   };
 
-  // Query categories in parallel. Each category already has its own 1.8s timeout,
-  // so never throw away successful categories just because another category is slow.
-  const batches=await Promise.all(kinds.map(fetchOne));
-  return dedupeHotPepperRows((batches||[]).flat()).slice(0,60);
+  // Query the categories in parallel, dedupe, then keep a wider live pool.
+  // The final recommendation engine still applies destination/time/hours/route checks.
+  const batches=await Promise.race([
+    Promise.all(kinds.map(fetchOne)),
+    new Promise(resolve=>setTimeout(()=>resolve([]),2200))
+  ]);
+  return dedupeHotPepperRows((batches||[]).flat()).slice(0,50);
 }
 
 function providerInfoHtml(ev){
@@ -9631,16 +9562,15 @@ function automaticReturnBufferMinutes(freeMinutes=180){
 
 
 async function scoreEventSetFast(events,modes,start,deadline,ctx,timeoutMs=2500){
-  // 外部ルートAPIを候補全件で一斉に叩かない。
-  // 3件ずつ評価し、成功した候補は保持。遅い候補だけ捨てる。
+  // 候補全体を1つのPromiseでタイムアウトさせると、
+  // 9件まで評価済みでも最後の1件待ちで全結果が [] になる。
+  // 候補ごとに独立して評価し、時間内に終わった結果だけを回収する。
   const list=Array.isArray(events)?events.filter(Boolean):[];
   if(!list.length)return [];
 
-  const batchSize=3;
-  const perEventTimeout=Math.max(1200,Math.min(2600,Number(timeoutMs)||2500));
-  const collected=[];
+  const perEventTimeout=Math.max(900,Math.min(2200,Number(timeoutMs)||2200));
 
-  const scoreOne=ev=>new Promise(resolve=>{
+  const tasks=list.map(ev=>new Promise(resolve=>{
     let settled=false;
     const timer=setTimeout(()=>{
       if(settled)return;
@@ -9659,43 +9589,23 @@ async function scoreEventSetFast(events,modes,start,deadline,ctx,timeoutMs=2500)
         if(settled)return;
         settled=true;
         clearTimeout(timer);
-        try{ console.warn('[NEXITAIME] candidate scoring skipped',ev?.title||ev?.venue||ev?.id,err); }catch(_){}
+        try{
+          console.warn('[NEXITAIME] candidate scoring skipped',ev?.title||ev?.venue||ev?.id,err);
+        }catch(_){}
         resolve([]);
       });
-  });
+  }));
 
-  for(let i=0;i<list.length;i+=batchSize){
-    const batch=list.slice(i,i+batchSize);
-    const results=await Promise.all(batch.map(scoreOne));
-    collected.push(...results.flat());
-
-    // 3案表示に十分な別施設が取れたら、残りの外部API待ちはしない。
-    const unique=new Set(collected.map(p=>p?.ev?.id||`${p?.ev?.title||''}|${p?.ev?.venue||''}`));
-    if(unique.size>=5)break;
-  }
-
-  return dedupeCandidates(collected);
+  const batches=await Promise.all(tasks);
+  return dedupeCandidates(batches.flat());
 }
-function fastAutoCandidatePool(events,ctx,limit=20){
+
+function fastAutoCandidatePool(events,ctx,limit=12){
   const staged=stagedAutoCandidates(events,ctx);
   const merged=[...(staged.first||[]),...(staged.rest||[])];
-
-  // Apply cheap/local scoring before the candidate cutoff. Otherwise a national chain
-  // near the front of the provider response can occupy the only food slot.
-  const ranked=merged.map((ev,index)=>{
-    let pre=0;
-    if(mood==='any' || mood==='food')pre+=Math.max(-45,Math.min(55,localFoodPriorityScore(ev)));
-    pre+=Math.max(0,Math.min(55,featuredRamenBoost(ev)));
-    if(isUrgentTimelyEvent(ev,planningDate))pre+=140;
-    // 元の候補順も残す。地元店優先だけで先頭8件を総入れ替えしない。
-    pre+=Math.max(0,30-index);
-    return {ev,index,pre};
-  }).sort((a,b)=>b.pre-a.pre || a.index-b.index);
-
   const out=[];
   const seen=new Set();
-  for(const row of ranked){
-    const ev=row.ev;
+  for(const ev of merged){
     const key=ev?.id||`${ev?.title||''}|${ev?.venue||''}`;
     if(!key||seen.has(key))continue;
     seen.add(key);
@@ -9706,7 +9616,6 @@ function fastAutoCandidatePool(events,ctx,limit=20){
 }
 
 async function buildPlans(){
- ROUTE_DIAG=[];
  syncSearchStateFromControls();
  await ensureClassicRoutesLoaded();
  const freeControl=document.getElementById('free');
@@ -9981,7 +9890,7 @@ async function buildPlans(){
      if(mood!=='any') rows=rows.filter(ev=>moodMatches(ev,mood));
      return rows.filter(foodKindMatches).filter(secondaryMoodMatches);
    })();
-   const durationPool=fastAutoCandidatePool(rawDurationPool,searchCtx,20);
+   const durationPool=fastAutoCandidatePool(rawDurationPool,searchCtx,10);
 
    // 3つの時間帯は直列ではなく並列評価する。外部API待ちが積み上がらないようにする。
    const durationCandidates=await Promise.all(autoDurationChoices().map(async duration=>{
@@ -10082,8 +9991,7 @@ async function buildPlans(){
    }
 
    if(durationPlans.length){
-     // Different destinations are valid alternatives even when all round to the same
-     // display duration (e.g. three different "約180分" plans).
+     // 同じ「約180分」でも行き先が違えば別案。時間だけで潰さない。
      top=durationPlans.slice(0,3);
      multiDurationAuto=true;
    }
