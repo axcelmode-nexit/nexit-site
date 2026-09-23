@@ -2200,7 +2200,7 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
 <option value="group">友人・グループ</option>
 </select></div>
 </div>
-<div class="note" style="margin-top:10px">予算は施設・イベント費と概算交通費の合計目安で判定します。料金が確認できない候補は除外せず、結果で「料金要確認」と表示します。</div>
+<div class="note" style="margin-top:10px">予算は、周遊する全立ち寄り先の施設・イベント・飲食予算と概算交通費の合計目安で判定します。料金が確認できない候補は除外せず、結果で「料金要確認」と表示します。</div>
 </div><div class="group-part group-part-divider">
 <div class="group-subtitle">移動手段</div>
 <div class="chips wrap" id="transport">
@@ -3585,11 +3585,109 @@ async function estimateTransportCost(mode,from,dest,backTo,service,outKind=null,
   return {amount:null,label:'交通費：要確認',note:''};
 }
 
+function estimatedVenueCostYen(ev){
+  if(!ev)return null;
+
+  const direct=Number(ev.estimated_cost_yen);
+  if(ev.estimated_cost_yen!=null && Number.isFinite(direct))return Math.max(0,Math.round(direct));
+
+  // Hot Pepper等の飲食予算フィールドがあれば、その目安を利用する。
+  const numericCandidates=[
+    ev.budget_average,
+    ev.average_budget,
+    ev.budget_yen,
+    ev.price_yen
+  ];
+  for(const value of numericCandidates){
+    const n=Number(value);
+    if(value!=null && Number.isFinite(n) && n>=0)return Math.round(n);
+  }
+
+  const textCandidates=[
+    ev.budget_name,
+    ev.budget?.name,
+    ev.budget,
+    ev.price,
+    ev.price_text
+  ].filter(v=>typeof v==='string' && v.trim());
+
+  for(const raw of textCandidates){
+    const s=String(raw).normalize('NFKC').replace(/,/g,'');
+    const nums=[...s.matchAll(/(\d{3,6})/g)].map(m=>Number(m[1])).filter(Number.isFinite);
+    if(nums.length>=2)return Math.round((nums[0]+nums[1])/2);
+    if(nums.length===1)return nums[0];
+  }
+  return null;
+}
+
+function planVenueCostInfo(plan){
+  const itinerary=Array.isArray(plan?.itinerary)?plan.itinerary:[];
+  const stops=itinerary.length
+    ? itinerary.map(r=>r?.sourceEv).filter(Boolean)
+    : [plan?.ev].filter(Boolean);
+
+  // 同じ施設が行程内に重複しても二重計上しない。
+  const unique=[];
+  const seen=new Set();
+  for(const ev of stops){
+    const key=String(ev?.id||ev?.catalog_id||ev?.hotpepper_id||ev?.title||ev?.venue||'');
+    if(key && seen.has(key))continue;
+    if(key)seen.add(key);
+    unique.push(ev);
+  }
+
+  let known=0, unknown=0;
+  const items=unique.map(ev=>{
+    const cost=estimatedVenueCostYen(ev);
+    if(cost==null)unknown++;
+    else known+=cost;
+    return {ev,cost};
+  });
+
+  return {known,unknown,items,count:unique.length};
+}
+
+function planCostSummary(plan){
+  const venue=planVenueCostInfo(plan);
+  const transportRaw=plan?.transportCost?.amount;
+  const transport=(transportRaw!=null && Number.isFinite(Number(transportRaw)))
+    ? Math.max(0,Math.round(Number(transportRaw)))
+    : null;
+
+  const knownTotal=venue.known+(transport??0);
+  const transportUnknown=(transport==null);
+  const incomplete=venue.unknown>0 || transportUnknown;
+  const hasAnything=venue.count>0 || transport!=null;
+
+  return {
+    venueKnown:venue.known,
+    venueUnknown:venue.unknown,
+    transport,
+    transportUnknown,
+    knownTotal,
+    incomplete,
+    hasAnything,
+    items:venue.items
+  };
+}
+
 function totalPlanCost(plan){
-  const eventCost=plan.ev?.estimated_cost_yen;
-  const transportCost=plan.transportCost?.amount;
-  if(eventCost==null && transportCost==null)return null;
-  return (Number(eventCost)||0)+(Number(transportCost)||0);
+  const info=planCostSummary(plan);
+  // 予算フィルタは「全額が分かる場合」だけ確定判定。
+  // 一部料金不明の案は従来通り除外せず「要確認」とする。
+  if(!info.hasAnything || info.incomplete)return null;
+  return info.knownTotal;
+}
+
+function planCostLabel(plan){
+  const info=planCostSummary(plan);
+  if(!info.hasAnything)return '料金要確認';
+  if(info.incomplete){
+    return info.knownTotal>0
+      ? `約¥${info.knownTotal.toLocaleString()}〜（一部料金要確認）`
+      : '料金要確認';
+  }
+  return `約¥${info.knownTotal.toLocaleString()}`;
 }
 
 
@@ -6024,7 +6122,7 @@ function recommendationBadges(plan, idx){
 
   if(idx===0) badges.push({label:'✨ おすすめ',kind:'primary'});
   if(plan.diversityRole){
-    const roleIcon=plan.diversityRole==='王道'?'🎯':plan.diversityRole==='別の過ごし方'?'🔄':'🧭';
+    const roleIcon=plan.diversityRole==='今しかない'?'⏳':plan.diversityRole==='王道'?'🎯':plan.diversityRole==='別の過ごし方'?'🔄':'🧭';
     badges.push({label:`${roleIcon} ${plan.diversityRole}`,kind:'diversity'});
   }
   if(timing) badges.push({label:`🎪 ${timing.label}`,kind:'event'});
@@ -7907,6 +8005,144 @@ function diversityPenalty(candidate,selected,freeMinutes){
   return penalty;
 }
 
+
+function classicPlanAffinity(plan){
+  if(!plan)return 0;
+  const ranked=rankedClassicRoutes().slice(0,6);
+  if(!ranked.length)return Number(plan?.classicRouteScore||0);
+
+  const planNames=[
+    plan?.ev?.title, plan?.ev?.venue,
+    ...(Array.isArray(plan?.itinerary)?plan.itinerary.flatMap(r=>[
+      r?.name,r?.sourceEv?.title,r?.sourceEv?.venue
+    ]):[])
+  ].filter(Boolean).map(v=>String(v).normalize('NFKC'));
+
+  let best=Number(plan?.classicRouteScore||0);
+  for(const entry of ranked){
+    const stops=Array.isArray(entry?.route?.stops)?entry.route.stops:[];
+    let matched=0;
+    for(const stop of stops){
+      const s=String(stop||'').normalize('NFKC').trim();
+      if(!s)continue;
+      if(planNames.some(n=>n.includes(s)||s.includes(n)))matched++;
+    }
+    if(!matched)continue;
+    let score=Number(entry.score||0)+matched*85;
+    if(matched>=2)score+=140;
+    if(matched>=3)score+=100;
+    best=Math.max(best,score);
+  }
+  return best;
+}
+
+function planStableKey(plan){
+  const ev=plan?.ev||{};
+  const itinerary=(Array.isArray(plan?.itinerary)?plan.itinerary:[])
+    .map(r=>r?.sourceEv?.id||r?.sourceEv?.catalog_id||r?.name||'')
+    .filter(Boolean)
+    .join('>');
+  return String(ev.id||ev.catalog_id||ev.hotpepper_id||`${ev.title||''}|${ev.venue||''}`)+'|'+itinerary;
+}
+
+function finalizeAutoRolePlan(plan,start,fallbackDuration,role){
+  if(!plan)return null;
+  const derivedMinutes=derivedAutoOfferMinutes(plan,start) || fallbackDuration || 120;
+  plan.offerFreeMinutes=derivedMinutes;
+  plan.offerBuffer=Math.max(0,derivedMinutes-Math.max(0,Math.round(plan.finish-start)));
+  plan.offerDurationLabel=autoDurationLabel(derivedMinutes);
+  plan.diversityRole=role;
+  return plan;
+}
+
+function chooseRoleBasedAutoPlans(durationCandidates,start){
+  const all=[];
+  for(const group of (durationCandidates||[])){
+    for(const row of (group.wellFilled||[])){
+      all.push({row,duration:group.duration,dBuffer:group.dBuffer});
+    }
+  }
+  if(!all.length)return [];
+
+  // 同一ルートが複数の探索時間枠に出た場合は、実所要が短い方を残す。
+  const bestByKey=new Map();
+  for(const item of all){
+    const key=planStableKey(item.row);
+    const prev=bestByKey.get(key);
+    const elapsed=Number.isFinite(item.row?.finish)?item.row.finish-start:99999;
+    const prevElapsed=prev&&Number.isFinite(prev.row?.finish)?prev.row.finish-start:99999;
+    if(!prev || elapsed<prevElapsed)bestByKey.set(key,item);
+  }
+  const pool=[...bestByKey.values()];
+  const picked=[];
+  const used=new Set();
+
+  const add=(item,role)=>{
+    if(!item?.row)return false;
+    const key=planStableKey(item.row);
+    if(used.has(key))return false;
+    used.add(key);
+    picked.push(finalizeAutoRolePlan(item.row,start,item.duration,role));
+    return true;
+  };
+
+  // 1. 「今しかない」: 今日限定・今日まで・開催中など。成立する場合だけ確保。
+  if(mood==='any' || mood==='event'){
+    const urgent=pool
+      .filter(x=>isUrgentTimelyEvent(x.row?.ev,planningDate))
+      .sort((a,b)=>{
+        const bt=Number(eventTimingMeta(b.row.ev,planningDate)?.score||0);
+        const at=Number(eventTimingMeta(a.row.ev,planningDate)?.score||0);
+        if(bt!==at)return bt-at;
+        const be=Number(b.row.preferenceScore||0);
+        const ae=Number(a.row.preferenceScore||0);
+        if(be!==ae)return be-ae;
+        return planStableKey(a.row).localeCompare(planStableKey(b.row),'ja');
+      })[0];
+    add(urgent,'今しかない');
+  }
+
+  // 2. 「王道」: 王道ルートマスタとの一致度を最優先。
+  const classic=pool
+    .filter(x=>!used.has(planStableKey(x.row)))
+    .map(x=>({...x,affinity:classicPlanAffinity(x.row)}))
+    .filter(x=>x.affinity>0)
+    .sort((a,b)=>{
+      if(b.affinity!==a.affinity)return b.affinity-a.affinity;
+      const bs=Number(b.row.preferenceScore||0);
+      const as=Number(a.row.preferenceScore||0);
+      if(bs!==as)return bs-as;
+      return planStableKey(a.row).localeCompare(planStableKey(b.row),'ja');
+    })[0];
+  add(classic,'王道');
+
+  // 3. 「別の過ごし方」: 上の2案とカテゴリ・エリアが被りにくい案。
+  const alternatives=pool
+    .filter(x=>!used.has(planStableKey(x.row)))
+    .map(x=>{
+      const base=
+        Number(x.row.preferenceScore||0)+
+        Number(x.row.multiStopPreferenceBonus||0)+
+        Number(x.row.dynamicRouteScore||0)+
+        Number(x.row.routeProgressFlowBonus||0);
+      const penalty=diversityPenalty(x.row,picked,Number(x.duration)||180);
+      return {...x,value:base-penalty};
+    })
+    .sort((a,b)=>{
+      if(b.value!==a.value)return b.value-a.value;
+      return planStableKey(a.row).localeCompare(planStableKey(b.row),'ja');
+    });
+  add(alternatives[0],'別の過ごし方');
+
+  // 足りない場合だけ、成立済み候補から補充。
+  for(const item of pool){
+    if(picked.length>=3)break;
+    add(item,picked.length===0?'王道':'もう1つの候補');
+  }
+
+  return picked.slice(0,3);
+}
+
 function selectDiverseTopPlans(rows,freeMinutes,count=3){
   if(!rows?.length)return [];
 
@@ -7914,8 +8150,9 @@ function selectDiverseTopPlans(rows,freeMinutes,count=3){
   const selected=[];
 
   // 1st: keep the strongest original recommendation.
+  // 「王道」は王道ルートマスタに実際に合う場合だけ付ける。
   const first=pool.shift();
-  first.diversityRole='王道';
+  first.diversityRole=classicPlanAffinity(first)>0?'王道':'おすすめ';
   selected.push(first);
 
   while(pool.length && selected.length<count){
@@ -8033,7 +8270,7 @@ function planShareText(plan, ctx){
     plan.modeLabel?`移動：${plan.modeLabel}`:'',
     plan.out?.[from] && plan.back?.[back] ? `時間：${plan.out[from]}出発 → ${plan.back[back]}帰着` : '',
     Number.isFinite(plan.stay)?`滞在：約${plan.stay}分`:'',
-    total!=null?`予算目安：約¥${Number(total).toLocaleString()}`:'',
+    `予算目安：${planCostLabel(plan)}`,
     location.href
   ].filter(Boolean);
   return lines.join('\n');
@@ -9137,7 +9374,7 @@ function planComparisonHtml(plans,start,buffer){
         <div class="plan-compare-metric"><span>↔ 移動</span><strong>${travel!=null?`約${Math.round(travel)}分`:'要確認'}</strong></div>
         <div class="plan-compare-metric"><span>☕ 滞在</span><strong>約${Number(p.stay||0)}分</strong></div>
         <div class="plan-compare-metric"><span>🕒 帰着余裕</span><strong>約${spare}分</strong></div>
-        <div class="plan-compare-metric"><span>💴 料金</span><strong>${total!=null?`約¥${Number(total).toLocaleString()}`:'要確認'}</strong></div>
+        <div class="plan-compare-metric"><span>💴 料金</span><strong>${esc(planCostLabel(p))}</strong></div>
       </div>
     </div>`;
   });
@@ -9486,6 +9723,11 @@ async function buildPlans(){
    if(Array.isArray(row.itinerary) && row.itinerary.length<2){
      row.itinerary=null;
    }
+   // 周遊確定後に、全立ち寄り先＋交通費で予算を再判定。
+   if(budget!=='any'){
+     const routeTotal=totalPlanCost(row);
+     if(routeTotal!=null && routeTotal>Number(budget))continue;
+   }
    row.multiStopPreferenceBonus=multiStopPreferenceBonus(row,free);
    row.routeProgressFlowBonus=itineraryProgressFlowBonus(row,searchCtx);
    // Different start/goal: do not recommend a single stop right beside the start
@@ -9568,6 +9810,11 @@ async function buildPlans(){
        localSeen.add(key);
        row.itinerary=buildOptimizedItinerary(row,candidateEvents,duration,searchCtx);
        if(Array.isArray(row.itinerary)&&row.itinerary.length<2)row.itinerary=null;
+       // おまかせ時間でも、周遊全体の費用で予算を再判定。
+       if(budget!=='any'){
+         const routeTotal=totalPlanCost(row);
+         if(routeTotal!=null && routeTotal>Number(budget))continue;
+       }
        row.multiStopPreferenceBonus=multiStopPreferenceBonus(row,duration);
        row.routeProgressFlowBonus=itineraryProgressFlowBonus(row,searchCtx);
        if(originOnlyStopBeforeDifferentGoal(row,searchCtx))continue;
@@ -9586,71 +9833,13 @@ async function buildPlans(){
      return {duration,dBuffer,wellFilled};
    }));
 
-   // 今日限定・今日まで・まもなく開始など「今しかない」イベントが成立するなら、
-   // おまかせ3案のうち最低1案には必ず残す。
-   // 周遊スポット数の多さだけで期間限定イベントが押し出されないようにする。
-   if(mood==='any' || mood==='event'){
-     const urgentCandidates=[];
-     for(const {duration,dBuffer,wellFilled} of durationCandidates){
-       for(const row of (wellFilled||[])){
-         if(!isUrgentTimelyEvent(row?.ev,planningDate)) continue;
-         urgentCandidates.push({row,duration,dBuffer});
-       }
-     }
-     urgentCandidates.sort((a,b)=>{
-       const bt=Number(eventTimingMeta(b.row?.ev,planningDate)?.score||0);
-       const at=Number(eventTimingMeta(a.row?.ev,planningDate)?.score||0);
-       if(bt!==at) return bt-at;
-       return Number(b.row?.preferenceScore||0)-Number(a.row?.preferenceScore||0);
-     });
-
-     const urgent=urgentCandidates[0];
-     if(urgent?.row){
-       const pick=urgent.row;
-       const key=pick.ev.id||`${pick.ev.title}|${pick.ev.venue||''}`;
-       usedKeys.add(key);
-       const derivedMinutes=derivedAutoOfferMinutes(pick,start) || urgent.duration;
-       pick.offerFreeMinutes=derivedMinutes;
-       pick.offerBuffer=Math.max(0,derivedMinutes-Math.max(0,Math.round(pick.finish-start)));
-       pick.offerDurationLabel=autoDurationLabel(derivedMinutes);
-       pick.forcedTimelyEvent=true;
-       durationPlans.push(pick);
-     }
-   }
-
-   // 残りは短→中→長の順で、同じ主候補ばかりにならないよう最大3案を選ぶ。
-   for(const {duration,dBuffer,wellFilled} of durationCandidates){
-     if(durationPlans.length>=3) break;
-     let pick=wellFilled.find(row=>{
-       const key=row.ev.id||`${row.ev.title}|${row.ev.venue||''}`;
-       return !usedKeys.has(key);
-     }) || wellFilled.find(row=>{
-       const key=row.ev.id||`${row.ev.title}|${row.ev.venue||''}`;
-       return !usedKeys.has(key);
-     });
-     if(!pick)continue;
-     const key=pick.ev.id||`${pick.ev.title}|${pick.ev.venue||''}`;
-     usedKeys.add(key);
-     const derivedMinutes=derivedAutoOfferMinutes(pick,start) || duration;
-     pick.offerFreeMinutes=derivedMinutes;
-     pick.offerBuffer=Math.max(0,derivedMinutes-Math.max(0,Math.round(pick.finish-start)));
-     pick.offerDurationLabel=autoDurationLabel(derivedMinutes);
-     durationPlans.push(pick);
-   }
-
-   if(durationPlans.length){
-     const uniqueByDuration=[];
-     const seenDurations=new Set();
-     for(const plan of durationPlans){
-       const d=Number(plan.offerFreeMinutes)||0;
-       if(seenDurations.has(d)) continue;
-       seenDurations.add(d);
-       uniqueByDuration.push(plan);
-     }
-     if(uniqueByDuration.length){
-       top=uniqueByDuration.slice(0,3);
-       multiDurationAuto=true;
-     }
+   // 時間枠の順番で3案を選ばない。
+   // 成立済み候補から「今しかない」「王道」「別の過ごし方」の役割で選び、
+   // 表示時間は完成した各プランの実所要から30分単位で算出する。
+   const rolePlans=chooseRoleBasedAutoPlans(durationCandidates,start);
+   if(rolePlans.length){
+     top=rolePlans;
+     multiDurationAuto=true;
    }
  }
  clearTimeout(searchWatchdog);
@@ -9690,7 +9879,7 @@ async function buildPlans(){
  const routeSummary=`${searchCtx.origin} → ${destinationGroupLabel(searchCtx.destination)} → ${searchCtx.returnTo}`;
  if(multiDurationAuto){
    const durations=top.map(p=>p.offerFreeMinutes).filter(Boolean).join('分・');
-   summary.innerHTML=`<h2>時間別に${top.length}案あります</h2><p><strong>${routeSummary}</strong><br>時間はおまかせなので、実際に成立するプランから必要時間を算出しています。${durations?`今回は約${durations}分の案です。`:''}長めの案ほど複数スポットの周遊を優先します。</p>`;
+   summary.innerHTML=`<h2>${top.length}つの過ごし方があります</h2><p><strong>${routeSummary}</strong><br>「今しかない」「王道」「別の過ごし方」を軸に選び、必要時間は完成したプランから算出しています。${durations?`今回は約${durations}分の案です。`:''}</p>`;
  }else if(relaxationLevel===0){
    if(transport==='auto'){
      {
@@ -9748,15 +9937,17 @@ async function buildPlans(){
    const serviceNote=p.service?`<div class="note">利用候補：${esc(p.service.name)}${p.accessMinutes?`（拠点まで徒歩 約${p.accessMinutes}分）`:''}</div>`:'';
    const itineraryHtml=renderSimpleItinerary(p.itinerary);
    const totalCost=totalPlanCost(p);
+   const costSummary=planCostSummary(p);
+   const costLabel=planCostLabel(p);
    const transportCostHtml=p.transportCost
      ? `<div class="cost-row"><strong>🚦 ${esc(p.transportCost.label)}</strong>${p.transportCost.note?`<span>${esc(p.transportCost.note)}</span>`:''}</div>`
      : '';
-   const totalCostDetailHtml=totalCost!=null
-     ? `<div class="cost-total">合計目安：約¥${Number(totalCost).toLocaleString()} <small>（施設・イベント＋交通）</small></div>`
-     : '';
-   const totalCostHero=totalCost!=null
-     ? `<div class="plan-total-hero">合計目安：約¥${Number(totalCost).toLocaleString()}</div>`
-     : `<div class="plan-total-hero">合計目安：料金要確認</div>`;
+   const stopCostRows=(costSummary.items||[]).map(({ev,cost})=>{
+     const name=ev?.title||ev?.venue||'立ち寄り先';
+     return `<div class="cost-row"><strong>📍 ${esc(name)}</strong><span>${cost==null?'料金要確認':`約¥${Number(cost).toLocaleString()}`}</span></div>`;
+   }).join('');
+   const totalCostDetailHtml=`${stopCostRows}<div class="cost-total">合計目安：${esc(costLabel)} <small>（全立ち寄り先＋交通）</small></div>`;
+   const totalCostHero=`<div class="plan-total-hero">合計目安：${esc(costLabel)}</div>`;
    const hoursHtml=availabilityBadge(p);
    const freshnessHtml=freshnessBadge(p.ev);
    const hoursNoteHtml=p.availability?.verified===false
