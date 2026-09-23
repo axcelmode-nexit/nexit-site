@@ -7074,6 +7074,7 @@ function buildSimpleItinerary(plan,candidateEvents=[],freeMinutes=180){
 
         // When several nearby stops are equally realistic, favor places that feel distinctly Joetsu.
         score+=joetsuLandmarkBonus(ev);
+        if(mood==='any' || mood==='food')score+=localFoodPriorityScore(ev);
         if(compactShortCourse &&
            /フルサット|子ども免許証|はたらくくるま/.test(String(plan.ev?.title||plan.ev?.venue||'')) &&
            /釜蓋遺跡/.test(String(ev?.title||ev?.venue||''))){
@@ -7790,7 +7791,9 @@ async function scoreEventSet(events, modes, start, deadline, ctx){
       const returnSafetyScore=Number(c.returnSafety?.penalty||0);
       const classicRouteScore=classicRouteBoostForEvent(ev);
       const ramenFeaturedScore=featuredRamenBoost(ev);
+      const localFoodScore=(mood==='any' || mood==='food') ? localFoodPriorityScore(ev) : 0;
       c.featuredRamenScore=ramenFeaturedScore;
+      c.localFoodPriorityScore=localFoodScore;
       c.reservationScore=reservationScore;
       c.returnSafetyScore=returnSafetyScore;
       c.classicRouteScore=classicRouteScore;
@@ -7810,6 +7813,7 @@ async function scoreEventSet(events, modes, start, deadline, ctx){
         + returnSafetyScore
         + classicRouteScore
         + ramenFeaturedScore
+        + localFoodScore
         + routeSense.score
         + directionSense.score;
 
@@ -9318,6 +9322,48 @@ function featuredRamenMeta(ev){
   return null;
 }
 
+
+const NATIONAL_CHAIN_PATTERNS=[
+  /かっぱ寿司/i,/スシロー/i,/くら寿司/i,/はま寿司/i,
+  /すき家/i,/吉野家/i,/松屋/i,/なか卯/i,
+  /ガスト/i,/サイゼリヤ/i,/ココス/i,/ジョイフル/i,
+  /マクドナルド/i,/モスバーガー/i,/ケンタッキー/i,
+  /丸亀製麺/i,/はなまるうどん/i,
+  /幸楽苑/i,/餃子の王将/i,/大阪王将/i,
+  /コメダ珈琲/i,/スターバックス/i,/ドトール/i
+];
+
+const LOCAL_FOOD_PRIORITY_PATTERNS=[
+  /富寿し/i,
+  /きときと寿し/i,
+  /軍ちゃん/i,
+  /あごすけ/i,
+  /麺屋しょうじ/i,
+  /春紀/i,
+  /ニューミサ/i,
+  /食堂ニューミサ/i,
+  /煮干屋/i,
+  /亀屋/i
+];
+
+function localFoodPriorityScore(ev){
+  if(!ev)return 0;
+  const kind=itineraryCategory(ev);
+  if(!['food','cafe'].includes(kind))return 0;
+
+  const hay=[ev?.title,ev?.venue,ev?.name].filter(Boolean).join(' ').normalize('NFKC');
+
+  if(LOCAL_FOOD_PRIORITY_PATTERNS.some(re=>re.test(hay)))return 95;
+
+  const cats=(ev?.categories||[]).map(String).join(' ');
+  const summary=String(ev?.summary||'');
+  if(/地産地消|地魚|郷土料理|上越産|新潟産|能生漁港|日本海/.test(`${cats} ${summary}`))return 70;
+
+  if(NATIONAL_CHAIN_PATTERNS.some(re=>re.test(hay)))return -120;
+
+  return 0;
+}
+
 function featuredRamenBoost(ev){
   // ラーメン検索時に名店を埋もれさせない。営業時間・帰着成立性などの安全判定は従来通り優先。
   if(mood!=='food' || foodKind!=='ラーメン') return 0;
@@ -10158,6 +10204,85 @@ async function buildPlans(){
      // 失敗しても従来topをそのまま使う
    }
  }
+
+ // 表示案が1〜2件しかない場合、すでに成立判定を通過した候補から安全に補充する。
+ // 営業時間・帰着・予算などの条件を緩めて新規生成はしない。
+ try{
+   if(top.length<3){
+     const keyOf=p=>String(
+       p?.ev?.id ||
+       p?.ev?.catalog_id ||
+       p?.ev?.hotpepper_id ||
+       `${p?.ev?.title||''}|${p?.ev?.venue||''}`
+     );
+
+     const used=new Set(top.map(keyOf));
+     const fallbackPool=[];
+
+     // 通常検索で成立済みの候補
+     for(const p of (topPool||[])){
+       if(!p)continue;
+       fallbackPool.push(p);
+     }
+
+     // 時間おまかせなら、各時間帯でwellFilledまで通った候補も利用
+     if(isAutoFree && typeof durationCandidates!=='undefined'){
+       for(const group of (durationCandidates||[])){
+         for(const p of (group?.wellFilled||[])){
+           if(p)fallbackPool.push(p);
+         }
+       }
+     }
+
+     // 同じ店・同じ施設の重複を除き、既存スコア順で補充
+     fallbackPool.sort((a,b)=>{
+       const bs=
+         Number(b?.preferenceScore||0)+
+         Number(b?.multiStopPreferenceBonus||0)+
+         Number(b?.dynamicRouteScore||0)+
+         Number(b?.classicRouteScore||0)+
+         Number(b?.localFoodPriorityScore||0);
+       const as=
+         Number(a?.preferenceScore||0)+
+         Number(a?.multiStopPreferenceBonus||0)+
+         Number(a?.dynamicRouteScore||0)+
+         Number(a?.classicRouteScore||0)+
+         Number(a?.localFoodPriorityScore||0);
+       return bs-as;
+     });
+
+     for(const p of fallbackPool){
+       if(top.length>=3)break;
+       const key=keyOf(p);
+       if(!key || used.has(key))continue;
+
+       // 念のため最終成立判定をもう一度通す。
+       const deadlineForCheck = Number.isFinite(Number(p?.finish))
+         ? Math.max(Number(p.finish), start+30)
+         : deadline;
+       if(!filterFinalPlans([p],searchCtx,start,deadlineForCheck).length)continue;
+
+       used.add(key);
+
+       if(isAutoFree){
+         const mins=derivedAutoOfferMinutes(p,start);
+         if(mins){
+           p.offerFreeMinutes=mins;
+           p.offerBuffer=Math.max(0,mins-Math.max(0,Math.round(p.finish-start)));
+           p.offerDurationLabel=autoDurationLabel(mins);
+         }
+       }
+
+       if(!p.diversityRole){
+         p.diversityRole=top.length===0?'おすすめ':top.length===1?'別の過ごし方':'もう1つの候補';
+       }
+       top.push(p);
+     }
+   }
+ }catch(err){
+   console.warn('[NEXITAIME] plan top-up skipped',err);
+ }
+
  clearTimeout(searchWatchdog);
 
  const previousSnapshot=lastSearchSnapshot;
@@ -10195,7 +10320,7 @@ async function buildPlans(){
  const routeSummary=`${searchCtx.origin} → ${destinationGroupLabel(searchCtx.destination)} → ${searchCtx.returnTo}`;
  if(multiDurationAuto){
    const durations=top.map(p=>p.offerFreeMinutes).filter(Boolean).join('分・');
-   summary.innerHTML=`<h2>時間別に${top.length}案あります</h2><p><strong>${routeSummary}</strong><br>時間はおまかせなので、実際に成立するプランから必要時間を算出しています。${durations?`今回は約${durations}分の案です。`:''}長めの案ほど複数スポットの周遊を優先します。</p>`;
+   summary.innerHTML=`<h2>${top.length}案あります</h2><p><strong>${routeSummary}</strong><br>時間はおまかせなので、実際に成立するプランから必要時間を算出しています。${durations?`今回は約${durations}分の案です。`:''}長めの案ほど複数スポットの周遊を優先します。</p>`;
  }else if(relaxationLevel===0){
    if(transport==='auto'){
      {
