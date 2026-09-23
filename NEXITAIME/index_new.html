@@ -8390,6 +8390,15 @@ function lightweightPlanFallback(pool, top, start, maxCount=3){
     // Only use candidates that already have a completed finish time and passed availability.
     if(!Number.isFinite(Number(p?.finish)))continue;
     if(p?.availability?.ok===false)continue;
+    if(p?.reservation?.ok===false)continue;
+
+    // 飲酒系店舗に危険な移動手段を補完で復活させない。
+    if(alcoholVenueLike(p?.ev) && !['public','train','bus','taxi','multimodal'].includes(p?.mode))continue;
+
+    if(budget!=='any'){
+      const total=totalPlanCost(p);
+      if(total!=null && total>Number(budget))continue;
+    }
 
     const mins=derivedAutoOfferMinutes(p,start);
     if(mins){
@@ -10086,6 +10095,7 @@ async function buildPlans(){
    }
  }
  let multiDurationAuto=false;
+ let autoDurationCandidates=[];
 
  // 時間がおまかせなら、単一の時間に決め打ちせず、成立する「短・中・長」のプランを1案ずつ作る。
  // 明示された気分・行き先・飲酒時の安全な移動手段など、既存の厳格条件はそのまま維持する。
@@ -10142,8 +10152,9 @@ async function buildPlans(){
      });
 
      const wellFilled=prepared.filter(row=>autoDurationPlanFits(row,duration,dBuffer));
-     return {duration,dBuffer,wellFilled};
+     return {duration,dBuffer,prepared,wellFilled};
    }));
+   autoDurationCandidates=durationCandidates;
 
    // 今日限定・今日まで・まもなく開始など「今しかない」イベントが成立するなら、
    // おまかせ3案のうち最低1案には必ず残す。
@@ -10329,9 +10340,12 @@ async function buildPlans(){
      }
 
      // 時間おまかせなら、各時間帯でwellFilledまで通った候補も利用
-     if(isAutoFree && typeof durationCandidates!=='undefined'){
-       for(const group of (durationCandidates||[])){
+     if(isAutoFree && autoDurationCandidates.length){
+       for(const group of autoDurationCandidates){
          for(const p of (group?.wellFilled||[])){
+           if(p)fallbackPool.push(p);
+         }
+         for(const p of (group?.prepared||[])){
            if(p)fallbackPool.push(p);
          }
        }
@@ -10391,9 +10405,11 @@ async function buildPlans(){
  if(top.length<3){
    const scoredFallback=[];
    for(const p of (topPool||[])) scoredFallback.push(p);
-   if(isAutoFree && typeof durationCandidates!=='undefined'){
-     for(const group of (durationCandidates||[])){
+   if(isAutoFree && autoDurationCandidates.length){
+     for(const group of autoDurationCandidates){
+       // wellFilledを優先しつつ、成立判定済みpreparedも補完候補に使う。
        for(const p of (group?.wellFilled||[])) scoredFallback.push(p);
+       for(const p of (group?.prepared||[])) scoredFallback.push(p);
      }
    }
    top=lightweightPlanFallback(scoredFallback,top,start,3);
