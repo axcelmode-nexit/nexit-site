@@ -3899,7 +3899,17 @@ function estimatedVenueCostYen(ev){
   if(!ev)return null;
 
   const direct=Number(ev.estimated_cost_yen);
-  if(ev.estimated_cost_yen!=null && Number.isFinite(direct))return Math.max(0,Math.round(direct));
+  if(ev.estimated_cost_yen!=null && Number.isFinite(direct)){
+    let amount=Math.max(0,Math.round(direct));
+    const kind=itineraryCategory(ev);
+    const hour=(planningDate||new Date()).getHours();
+    // For dinner planning, a provider's low-end restaurant budget can understate a
+    // realistic per-person spend. Use a conservative planning floor, not a menu price.
+    if(['food','cafe'].includes(kind) && hour>=17 && amount>0 && amount<1500){
+      amount=1500;
+    }
+    return amount;
+  }
 
   // Hot Pepper等の飲食予算フィールドがあれば、その目安を利用する。
   const numericCandidates=[
@@ -6528,8 +6538,10 @@ function renderPlanSchedule(plan, ctx){
 
 
 function costLabel(ev){
-  if(ev.estimated_cost_yen==null) return '料金要確認';
-  return ev.estimated_cost_yen===0?'無料候補':`目安 ¥${Number(ev.estimated_cost_yen).toLocaleString()}`;
+  const amount=estimatedVenueCostYen(ev);
+  if(amount==null)return '料金要確認';
+  if(amount===0)return '無料候補';
+  return `飲食・施設目安 約¥${Number(amount).toLocaleString()}`;
 }
 
 
@@ -9562,13 +9574,10 @@ async function fetchHotPepperRestaurants(){
     }
   };
 
-  // Query the categories in parallel, dedupe, then keep a wider live pool.
-  // The final recommendation engine still applies destination/time/hours/route checks.
-  const batches=await Promise.race([
-    Promise.all(kinds.map(fetchOne)),
-    new Promise(resolve=>setTimeout(()=>resolve([]),2200))
-  ]);
-  return dedupeHotPepperRows((batches||[]).flat()).slice(0,50);
+  // Query categories in parallel. Each category already has its own 1.8s timeout,
+  // so never throw away successful categories just because another category is slow.
+  const batches=await Promise.all(kinds.map(fetchOne));
+  return dedupeHotPepperRows((batches||[]).flat()).slice(0,60);
 }
 
 function providerInfoHtml(ev){
@@ -9871,12 +9880,24 @@ async function scoreEventSetFast(events,modes,start,deadline,ctx,timeoutMs=2500)
   return dedupeCandidates(batches.flat());
 }
 
-function fastAutoCandidatePool(events,ctx,limit=12){
+function fastAutoCandidatePool(events,ctx,limit=20){
   const staged=stagedAutoCandidates(events,ctx);
   const merged=[...(staged.first||[]),...(staged.rest||[])];
+
+  // Apply cheap/local scoring before the candidate cutoff. Otherwise a national chain
+  // near the front of the provider response can occupy the only food slot.
+  const ranked=merged.map((ev,index)=>{
+    let pre=0;
+    if(mood==='any' || mood==='food')pre+=localFoodPriorityScore(ev);
+    pre+=featuredRamenBoost(ev);
+    if(isUrgentTimelyEvent(ev,planningDate))pre+=140;
+    return {ev,index,pre};
+  }).sort((a,b)=>b.pre-a.pre || a.index-b.index);
+
   const out=[];
   const seen=new Set();
-  for(const ev of merged){
+  for(const row of ranked){
+    const ev=row.ev;
     const key=ev?.id||`${ev?.title||''}|${ev?.venue||''}`;
     if(!key||seen.has(key))continue;
     seen.add(key);
@@ -10134,7 +10155,7 @@ async function buildPlans(){
      if(mood!=='any') rows=rows.filter(ev=>moodMatches(ev,mood));
      return rows.filter(foodKindMatches).filter(secondaryMoodMatches);
    })();
-   const durationPool=fastAutoCandidatePool(rawDurationPool,searchCtx,10);
+   const durationPool=fastAutoCandidatePool(rawDurationPool,searchCtx,20);
 
    // 3つの時間帯は直列ではなく並列評価する。外部API待ちが積み上がらないようにする。
    const durationCandidates=await Promise.all(autoDurationChoices().map(async duration=>{
@@ -10235,18 +10256,10 @@ async function buildPlans(){
    }
 
    if(durationPlans.length){
-     const uniqueByDuration=[];
-     const seenDurations=new Set();
-     for(const plan of durationPlans){
-       const d=Number(plan.offerFreeMinutes)||0;
-       if(seenDurations.has(d)) continue;
-       seenDurations.add(d);
-       uniqueByDuration.push(plan);
-     }
-     if(uniqueByDuration.length){
-       top=uniqueByDuration.slice(0,3);
-       multiDurationAuto=true;
-     }
+     // Different destinations are valid alternatives even when all round to the same
+     // display duration (e.g. three different "約180分" plans).
+     top=durationPlans.slice(0,3);
+     multiDurationAuto=true;
    }
 
    // 安全な後処理だけで「今しかない / 王道 / 別案」を並べる。
