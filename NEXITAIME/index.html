@@ -9052,6 +9052,63 @@ function featuredRamenBoost(ev){
   return featuredRamenMeta(ev) ? 55 : 0;
 }
 
+
+function normalizeRestaurantCoordinates(row){
+  if(!row || typeof row!=='object') return row;
+
+  const candidates=[
+    [row.lat,row.lng ?? row.lon],
+    [row.latitude,row.longitude],
+    [row.shop_lat,row.shop_lng],
+    [row.geo?.lat,row.geo?.lng ?? row.geo?.lon],
+    [row.location?.lat,row.location?.lng ?? row.location?.lon],
+    [row.coordinates?.lat,row.coordinates?.lng ?? row.coordinates?.lon]
+  ];
+
+  for(const [a,b] of candidates){
+    const lat=Number(a), lon=Number(b);
+    if(Number.isFinite(lat) && Number.isFinite(lon)){
+      row.lat=lat;
+      row.lon=lon;
+      row.routing_ready=true;
+      row.routing_point_type=row.routing_point_type||'exact';
+      return row;
+    }
+  }
+  return row;
+}
+
+async function enrichRestaurantCoordinates(rows=[]){
+  // まずAPIレスポンス内の座標表現を正規化。
+  for(const row of rows) normalizeRestaurantCoordinates(row);
+
+  // 座標がなく住所だけある場合は、上位候補で使えるよう住所から補完する。
+  // キャッシュ済みなら即時、未キャッシュでも1店舗ずつ処理する。
+  for(const row of rows){
+    const lat=Number(row?.lat), lon=Number(row?.lon ?? row?.lng);
+    if(Number.isFinite(lat) && Number.isFinite(lon)) continue;
+
+    const address=String(
+      row?.address ||
+      row?.shop_address ||
+      row?.address_text ||
+      row?.location?.address ||
+      ''
+    ).trim();
+    if(!address) continue;
+
+    const point=await geocodeOfficialAddress(address);
+    if(!point) continue;
+
+    row.lat=point.lat;
+    row.lon=point.lon;
+    row.routing_ready=true;
+    row.routing_point_type='address_geocoded';
+    row.routing_point_note='店舗住所から地図位置を取得';
+  }
+  return rows;
+}
+
 function dedupeHotPepperRows(rows=[]){
   const seen=new Set();
   return rows.filter(row=>{
@@ -9126,7 +9183,8 @@ async function fetchHotPepperRestaurants(){
       clearTimeout(timer);
       if(!res.ok)return [];
       const data=await res.json();
-      return Array.isArray(data?.restaurants)?data.restaurants:[];
+      const rows=Array.isArray(data?.restaurants)?data.restaurants:[];
+      return await enrichRestaurantCoordinates(rows);
     }catch(_){
       return [];
     }
