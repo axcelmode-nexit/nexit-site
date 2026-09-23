@@ -4764,7 +4764,7 @@ function crowdingHtml(plan){
 async function evaluateDirectMode(ev,dest,mode,start,deadline,ctx){
   const from=ctx.origin;
   const backTo=ctx.returnTo;
-  if(!returnModeAllowed(mode,ctx))return null;
+  if(!returnModeAllowed(mode,ctx)){ROUTE_DIAG.push({title:ev?.title||ev?.venue,mode,reason:'return_mode_not_allowed'});return null;}
 
   const fromPoint=PLACES[from];
   const destPoint=routePointForEvent(ev,dest);
@@ -4773,7 +4773,7 @@ async function evaluateDirectMode(ev,dest,mode,start,deadline,ctx){
   // v75: Direct-mode plans require an audited destination coordinate.
   // Never fall back to the area's station/representative route key, because that can
   // create a fake 0-minute trip such as 上越妙高 -> 上越妙高 for an unknown venue.
-  if(!destPoint)return null;
+  if(!destPoint){ROUTE_DIAG.push({title:ev?.title||ev?.venue,mode,reason:'destination_point_missing'});return null;}
   if(ev?.source==='official_catalog' && ev?.routing_ready===false && !exactPointForEvent(ev))return null;
 
   // In おまかせ, very short round trips should be walking plans.
@@ -4787,12 +4787,13 @@ async function evaluateDirectMode(ev,dest,mode,start,deadline,ctx){
     // if the venue is within 0.8 km straight-line OR roughly 10 min walking,
     // motorized/rental mobility must not be suggested in おまかせ.
     if(directKm<=0.8 || (Number.isFinite(walkMin) && walkMin<=10)){
+      ROUTE_DIAG.push({title:ev?.title||ev?.venue,mode,reason:'nearby_vehicle_rejected'});
       return null;
     }
   }
 
   const svc=await getModeService(mode);
-  if(['carshare','rentalcar','taxi','bike'].includes(mode) && !svc)return null;
+  if(['carshare','rentalcar','taxi','bike'].includes(mode) && !svc){ROUTE_DIAG.push({title:ev?.title||ev?.venue,mode,reason:'mobility_service_unavailable'});return null;}
 
   const service=svc?.service||null;
   const servicePoint=(service && Number.isFinite(Number(service.lat)) && Number.isFinite(Number(service.lon)))
@@ -4835,7 +4836,7 @@ async function evaluateDirectMode(ev,dest,mode,start,deadline,ctx){
     ? await directRoute(mode,destPoint,returnEnd)
     : await routeMinutes(mode,dest,backTo);
 
-  if(oneWay==null || backWay==null)return null;
+  if(oneWay==null || backWay==null){ROUTE_DIAG.push({title:ev?.title||ev?.venue,mode,reason:'route_minutes_unavailable'});return null;}
 
   // Rental bicycles are intended for nearby urban trips, not long mountain access.
   // Reject overly long bike legs even if the free-time window would technically fit.
@@ -4863,16 +4864,16 @@ async function evaluateDirectMode(ev,dest,mode,start,deadline,ctx){
   const eventEnd=ev.end_time?mins(ev.end_time):null;
 
   const window=availabilityWindow(ev,planningDate);
-  if(window.closed)return null;
+  if(window.closed){ROUTE_DIAG.push({title:ev?.title||ev?.venue,mode,reason:'closed'});return null;}
   const reservation=reservationFeasibility(ev);
-  if(!reservation.ok)return null;
+  if(!reservation.ok){ROUTE_DIAG.push({title:ev?.title||ev?.venue,mode,reason:'reservation_required'});return null;}
 
   let arrive=rawArrive;
   if(eventStart!=null && arrive<eventStart)arrive=eventStart;
   if(window.open!=null && arrive<window.open)arrive=window.open;
 
   const cutoffMeta=arrivalCutoffForEvent(ev,window);
-  if(cutoffMeta && arrive>=cutoffMeta.minute)return null;
+  if(cutoffMeta && arrive>=cutoffMeta.minute){ROUTE_DIAG.push({title:ev?.title||ev?.venue,mode,reason:'arrival_after_cutoff'});return null;}
 
   let latestLeave=deadline-backWay-returnSetup-returnAccess-taxiBackWait;
   if(eventEnd!=null)latestLeave=Math.min(latestLeave,eventEnd);
@@ -4880,14 +4881,14 @@ async function evaluateDirectMode(ev,dest,mode,start,deadline,ctx){
 
   const availableStay=Math.floor(latestLeave-arrive);
   const stay=choosePlannedStay(ev,availableStay);
-  if(stay==null)return null;
+  if(stay==null){ROUTE_DIAG.push({title:ev?.title||ev?.venue,mode,reason:'insufficient_stay_window',availableStay});return null;}
 
   const backDep=arrive+stay;
-  if(afterDarkOutdoorRisk(ev,backDep,mode,0))return null;
+  if(afterDarkOutdoorRisk(ev,backDep,mode,0)){ROUTE_DIAG.push({title:ev?.title||ev?.venue,mode,reason:'after_dark_outdoor'});return null;}
   const finish=backDep+taxiBackWait+backWay+returnSetup+returnAccess;
 
   const availability=spotAvailability(ev,arrive,backDep,planningDate);
-  if(!availability.ok)return null;
+  if(!availability.ok){ROUTE_DIAG.push({title:ev?.title||ev?.venue,mode,reason:'availability_failed'});return null;}
 
   let modeReason=reasonForMode(mode,service);
   if(mode==='taxi'){
@@ -5514,6 +5515,7 @@ function informationConfidenceHtml(ev){
   return `<div class="info-confidence"><strong>${icon} ${esc(m.label)}</strong><div class="confidence-row">${chips}</div></div>`;
 }
 
+let ROUTE_DIAG=[];
 let LAST_EXCLUSION_AUDIT=[];
 function resetExclusionAudit(){ LAST_EXCLUSION_AUDIT=[]; }
 function recordExclusion(ev,code,reason){
@@ -5523,14 +5525,31 @@ function recordExclusion(ev,code,reason){
   LAST_EXCLUSION_AUDIT.push({key,title,code,reason});
 }
 function exclusionSummaryHtml(limit=4){
-  if(!LAST_EXCLUSION_AUDIT.length)return '';
   const counts=new Map();
   for(const x of LAST_EXCLUSION_AUDIT){
     const k=x.reason||x.code;
     counts.set(k,(counts.get(k)||0)+1);
   }
   const rows=[...counts.entries()].sort((a,b)=>b[1]-a[1]).slice(0,limit);
-  return `<div class="exclusion-summary"><strong>今回、候補から外れた主な理由</strong><br>${rows.map(([r,n])=>`${esc(r)}${n>1?`（${n}件）`:''}`).join('<br>')}</div>`;
+
+  const diagCounts=new Map();
+  for(const x of ROUTE_DIAG||[]){
+    const k=x.reason||'unknown';
+    diagCounts.set(k,(diagCounts.get(k)||0)+1);
+  }
+  const diagRows=[...diagCounts.entries()].sort((a,b)=>b[1]-a[1]).slice(0,8);
+
+  if(!rows.length && !diagRows.length)return '';
+
+  const main=rows.length
+    ? `<strong>今回、候補から外れた主な理由</strong><br>${rows.map(([r,n])=>`${esc(r)}${n>1?`（${n}件）`:''}`).join('<br>')}`
+    : '';
+
+  const diag=diagRows.length
+    ? `<div style="margin-top:${rows.length?'10px':'0'}"><strong>ルート判定デバッグ</strong><br>${diagRows.map(([r,n])=>`${esc(r)}（${n}件）`).join('<br>')}</div>`
+    : '';
+
+  return `<div class="exclusion-summary">${main}${diag}</div>`;
 }
 
 function eventRangeStatus(ev, when=new Date()){
@@ -9687,6 +9706,7 @@ function fastAutoCandidatePool(events,ctx,limit=20){
 }
 
 async function buildPlans(){
+ ROUTE_DIAG=[];
  syncSearchStateFromControls();
  await ensureClassicRoutesLoaded();
  const freeControl=document.getElementById('free');
