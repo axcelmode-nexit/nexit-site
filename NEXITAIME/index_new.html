@@ -4649,7 +4649,19 @@ function eventParticipationPolicy(ev){
   };
 }
 
+
+function tommySayLike(ev){
+  const text=[
+    ev?.title,ev?.venue,ev?.name,ev?.summary,ev?.genre,ev?.genre_name,ev?.catch
+  ].filter(Boolean).join(' ').normalize('NFKC');
+  return /TOMMY\s*SAY|トミセイ|トミー\s*セイ/i.test(text);
+}
+
 function reservationFeasibility(ev){
+  // TOMMY SAYのディナーは完全予約制。今から行く自動プランには出さない。
+  if(tommySayLike(ev)){
+    return {ok:false,penalty:-100,label:'完全予約制'};
+  }
   if(ev?.appointment_required===true){
     return {ok:false,penalty:-100,label:'事前予約が必要'};
   }
@@ -7488,6 +7500,8 @@ function stagedAutoCandidates(events, ctx){
 
 
 function alcoholVenueLike(ev){
+  // TOMMY SAYは夜のダイニング・飲酒系店舗として扱う。
+  if(tommySayLike(ev)) return true;
   // 飲酒前提になりやすい店舗では、運転・自転車・徒歩単独を提案しない。
   // 公共交通（電車・バス）またはタクシーのみ。
   if(mood==='food' && foodKind==='居酒屋') return true;
@@ -8334,6 +8348,64 @@ function diversityPenalty(candidate,selected,freeMinutes){
   }
 
   return penalty;
+}
+
+
+function lightweightPlanFallback(pool, top, start, maxCount=3){
+  const out=[...(top||[])];
+  const keyOf=p=>String(
+    p?.ev?.id ||
+    p?.ev?.catalog_id ||
+    p?.ev?.hotpepper_id ||
+    `${p?.ev?.title||''}|${p?.ev?.venue||''}`
+  );
+  const used=new Set(out.map(keyOf));
+
+  const ranked=[...(pool||[])]
+    .filter(Boolean)
+    .filter(p=>!used.has(keyOf(p)))
+    .sort((a,b)=>{
+      const bs=
+        Number(b?.preferenceScore||0)+
+        Number(b?.classicRouteScore||0)+
+        Number(b?.featuredRamenScore||0)+
+        Number(b?.localFoodPriorityScore||0)+
+        Number(b?.multiStopPreferenceBonus||0)+
+        Number(b?.dynamicRouteScore||0);
+      const as=
+        Number(a?.preferenceScore||0)+
+        Number(a?.classicRouteScore||0)+
+        Number(a?.featuredRamenScore||0)+
+        Number(a?.localFoodPriorityScore||0)+
+        Number(a?.multiStopPreferenceBonus||0)+
+        Number(a?.dynamicRouteScore||0);
+      return bs-as;
+    });
+
+  for(const p of ranked){
+    if(out.length>=maxCount)break;
+    const key=keyOf(p);
+    if(!key || used.has(key))continue;
+
+    // Only use candidates that already have a completed finish time and passed availability.
+    if(!Number.isFinite(Number(p?.finish)))continue;
+    if(p?.availability?.ok===false)continue;
+
+    const mins=derivedAutoOfferMinutes(p,start);
+    if(mins){
+      p.offerFreeMinutes=mins;
+      p.offerBuffer=Math.max(0,mins-Math.max(0,Math.round(p.finish-start)));
+      p.offerDurationLabel=autoDurationLabel(mins);
+    }
+
+    if(!p.diversityRole){
+      p.diversityRole=out.length===0?'おすすめ':out.length===1?'別の過ごし方':'もう1つの候補';
+    }
+    used.add(key);
+    out.push(p);
+  }
+
+  return out.slice(0,maxCount);
 }
 
 function selectDiverseTopPlans(rows,freeMinutes,count=3){
@@ -10032,7 +10104,7 @@ async function buildPlans(){
    const durationCandidates=await Promise.all(autoDurationChoices().map(async duration=>{
      const dBuffer=automaticReturnBufferMinutes(duration);
      const dDeadline=start+duration-dBuffer;
-     let rows=await scoreEventSetFast(durationPool,requestedModes,start,dDeadline,searchCtx,3000);
+     let rows=await scoreEventSetFast(durationPool,requestedModes,start,dDeadline,searchCtx,2200);
      rows=sortCandidates(rows);
      if(budget!=='any'){
        const maxBudget=Number(budget);
@@ -10312,6 +10384,19 @@ async function buildPlans(){
    }
  }catch(err){
    console.warn('[NEXITAIME] plan top-up skipped',err);
+ }
+
+ // 1案しかない場合でも、新しい外部API呼び出しはせず、
+ // すでに評価済みの候補から2〜3案へ補完する。
+ if(top.length<3){
+   const scoredFallback=[];
+   for(const p of (topPool||[])) scoredFallback.push(p);
+   if(isAutoFree && typeof durationCandidates!=='undefined'){
+     for(const group of (durationCandidates||[])){
+       for(const p of (group?.wellFilled||[])) scoredFallback.push(p);
+     }
+   }
+   top=lightweightPlanFallback(scoredFallback,top,start,3);
  }
 
  clearTimeout(searchWatchdog);
