@@ -9475,7 +9475,6 @@ async function buildPlans(){
    const toggle=adjustPanel.querySelector('#planAdjustToggle');
    if(toggle) toggle.setAttribute('aria-expanded','false');
  }
- const actualCommentTimeText=actualPlanTimeTextForComment(top,start);
  disposePlanRouteMaps();
  box.innerHTML='';
 
@@ -9986,6 +9985,7 @@ async function buildPlans(){
 
  try{ trackNexitaime('search_result',{resultCount:top.length}); }catch(_){}
 
+ const actualCommentTimeText=actualPlanTimeTextForComment(top,start);
  disposePlanRouteMaps();
  box.innerHTML=renderResultQuickAdjust()+planComparisonHtml(top,start,buffer)+`<div id="aiPlanSuggestion" class="ai-suggestion-card"></div><div class="plan-picked-banner">選んだプランを詳しく見ています <button type="button" data-unpick-plan>ほかの案を見る</button></div>`+top.map((p,idx)=>{
    const rankLabel=p.offerFreeMinutes
