@@ -2025,6 +2025,25 @@ window.NEXITAIME_CATALOG_TIMEOUT_MS = 3500;
 }
 </style>
 
+
+<style id="nexitaime-tomorrow-actions-style">
+.tomorrow-actions-wrap{padding:22px!important}
+.tomorrow-actions-wrap h3{margin:0 0 6px}
+.tomorrow-actions-wrap>p{margin:0 0 16px;color:#66758a}
+.tomorrow-search-actions{display:grid;gap:12px}
+.tomorrow-search-btn{
+  width:100%;min-height:72px;border:1px solid #dbe5f0;border-radius:18px;
+  background:#fff;padding:12px 16px;display:grid;grid-template-columns:42px 1fr 20px;
+  align-items:center;gap:10px;text-align:left;color:#18324d;font:inherit;
+  box-shadow:0 5px 16px rgba(29,65,101,.06)
+}
+.tomorrow-search-btn:active{transform:translateY(1px)}
+.tomorrow-search-icon{font-size:27px;line-height:1}
+.tomorrow-search-btn strong{display:block;font-size:17px;line-height:1.35}
+.tomorrow-search-btn small{display:block;margin-top:3px;color:#7b8999;font-size:12px}
+.tomorrow-search-arrow{font-size:28px;color:#7890aa;line-height:1}
+</style>
+
 </head>
 <body>
 <div class="app">
@@ -9929,7 +9948,7 @@ function setTomorrowSearch(hour){
 
   // Switch to explicit datetime mode and update available controls when present.
   try{
-    timingMode='datetime';
+    timingMode='date';
   }catch(_){}
 
   const dateInput=document.getElementById('date') || document.querySelector('input[type="date"]');
@@ -9949,8 +9968,11 @@ function setTomorrowSearch(hour){
   }
 
   // If the page has a timing toggle, prefer the explicit-date option.
-  const datetimeBtn=document.querySelector('[data-timing="datetime"], [data-time-mode="datetime"]');
-  if(datetimeBtn) datetimeBtn.click();
+  document.querySelectorAll('#timings .chip').forEach(btn=>{
+    btn.classList.toggle('active',btn.dataset.timing==='date');
+  });
+  const custom=document.getElementById('customTime');
+  if(custom)custom.hidden=false;
 
   try{
     planningDate=next;
@@ -10483,18 +10505,43 @@ async function buildPlans(){
  if(!top.length){
    try{ trackNexitaime('search_result',{resultCount:0}); }catch(_){}
    if(adjustPanel) adjustPanel.hidden=true;
+
+   const planHour=planningDate.getHours();
+   const lateNight=planHour>=21 || planHour<5;
+
+   if(lateNight){
+     summary.innerHTML=`
+       <div class="no-plan-hero">
+         <h2>🌙 今夜のおすすめが見つかりません</h2>
+         <p>この時間から「上越らしく楽しめる」候補は少なくなっています。</p>
+         <p><strong>明日の朝なら、もっと上越を楽しめます。</strong></p>
+       </div>`;
+     box.innerHTML=`
+       <div class="plan no-result-actions-wrap tomorrow-actions-wrap">
+         <h3>明日の上越を探す</h3>
+         <p>時間を少し先にすると、上越らしい選択肢がぐっと増えます。</p>
+         <div class="tomorrow-search-actions">
+           <button type="button" id="tomorrowMorningBtn" class="tomorrow-search-btn">
+             <span class="tomorrow-search-icon">🌅</span>
+             <span><strong>明日の朝から探す</strong><small>9:00から</small></span>
+             <span class="tomorrow-search-arrow">›</span>
+           </button>
+           <button type="button" id="tomorrowNoonBtn" class="tomorrow-search-btn">
+             <span class="tomorrow-search-icon">☀️</span>
+             <span><strong>明日の昼から探す</strong><small>12:00から</small></span>
+             <span class="tomorrow-search-arrow">›</span>
+           </button>
+         </div>
+       </div>`;
+     bindTomorrowSearchButtons();
+     return;
+   }
+
+   // Daytime: keep useful retry actions, but never expose internal diagnostics.
    const selectedModeLabel=transport==='auto'?'選択中の条件':(MODE_LABELS[transport]||transport);
-   summary.innerHTML=`
-      <div class="no-plan-hero">
-        <h2>🌙 今夜は無理におすすめを作りません</h2>
-        <p>この時間から「上越らしく楽しめる」候補は少なくなっています。</p>
-        <p><strong>明日の朝なら、もっと上越を楽しめます。</strong></p>
-      </div>
-      <div class="no-plan-actions">
-        <button type="button" id="tomorrowMorningBtn" class="adjust-btn">🌅 明日の朝から探す</button>
-        <button type="button" id="tomorrowNoonBtn" class="adjust-btn">☀️ 明日の昼から探す</button>
-      </div>
-    `;
+   summary.innerHTML=`<h2>この時間では、${esc(selectedModeLabel)}で行けるプランがありません</h2>
+     <p><strong>${esc(searchCtx.origin)} → ${esc(destinationGroupLabel(searchCtx.destination))} → ${esc(searchCtx.returnTo)}</strong><br>
+     選んだ行き先や移動手段は勝手に変更していません。</p>`;
    box.innerHTML=`<div class="plan no-result-actions-wrap">
      <h3>条件を少し変えて、もう一度探す</h3>
      <p>よく使う変更をワンタップで試せます。</p>
@@ -10505,13 +10552,10 @@ async function buildPlans(){
        ${searchCtx.destination!=='any'?'<button type="button" class="retry-action" data-retry-action="autoDestination">📍 行き先をおまかせ</button>':''}
      </div>
      <div class="retry-note">※ 押すと条件を変更して、そのまま再検索します。</div>
-     ${exclusionSummaryHtml()}
    </div>`;
    bindNoResultActions();
-   bindTomorrowSearchButtons();
    return;
  }
-
  const routeSummary=`${searchCtx.origin} → ${destinationGroupLabel(searchCtx.destination)} → ${searchCtx.returnTo}`;
  if(multiDurationAuto){
    const durations=top.map(p=>p.offerFreeMinutes).filter(Boolean).join('分・');
