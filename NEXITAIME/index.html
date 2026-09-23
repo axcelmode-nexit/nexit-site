@@ -8937,7 +8937,7 @@ function localPlanSuggestion(plans, free, buffer){
     ? Math.max(0,Math.round(top.finish-(planningDate.getHours()*60+planningDate.getMinutes()))) : null;
   const spare=Math.max(0,Number(top.spare||0)+Number(buffer||0));
   const bits=[];
-  if(stops>=2) bits.push(`${free}分あるので、移動が無理のない範囲で${stops}か所回れる案を優先しました。`);
+  if(stops>=2) bits.push(`${actualCommentTimeText}移動が無理のない範囲で${stops}か所回れる案を優先しました。`);
   else if(free>=120) bits.push(`${(top||[]).map(p=>`約${Number(p.offerFreeMinutes)||derivedAutoOfferMinutes(p,start)}分`).join('・')}の案から、移動と滞在のバランスが良い案を優先しました。`);
   else bits.push(`短い時間でも戻りに無理が出にくい案を優先しました。`);
   if(mode) bits.push(`${mode}で動きやすい候補です。`);
@@ -9242,6 +9242,26 @@ function planDisplayTitle(p){
   return multi && !/他$/.test(base) ? `${base} 他` : base;
 }
 
+
+function actualPlanTimeTextForComment(plans,start){
+  const mins=(Array.isArray(plans)?plans:[])
+    .map(p=>{
+      const offered=Number(p?.offerFreeMinutes);
+      if(Number.isFinite(offered) && offered>0)return offered;
+      if(Number.isFinite(p?.finish) && Number.isFinite(start)){
+        return Math.max(30,Math.ceil((p.finish-start)/30)*30);
+      }
+      return null;
+    })
+    .filter(v=>Number.isFinite(v) && v>0);
+
+  if(!mins.length)return '';
+  const uniq=[...new Set(mins)].sort((a,b)=>a-b);
+  if(uniq.length===1)return `約${uniq[0]}分の案なので、`;
+  if(uniq.length===2)return `約${uniq[0]}分・約${uniq[1]}分の案から、`;
+  return `約${uniq[0]}分・約${uniq[1]}分・約${uniq[2]}分の案から、`;
+}
+
 function planComparisonHtml(plans,start,buffer){
   if(!Array.isArray(plans)||plans.length<2)return '';
   let html=`<div class="plan-compare"><div class="plan-compare-title">ざっくり比較</div><div class="plan-compare-sub">合計時間を中心に、移動・滞在・余裕・料金を見比べられます。</div><div class="plan-compare-list">`;
@@ -9455,6 +9475,7 @@ async function buildPlans(){
    const toggle=adjustPanel.querySelector('#planAdjustToggle');
    if(toggle) toggle.setAttribute('aria-expanded','false');
  }
+ const actualCommentTimeText=actualPlanTimeTextForComment(top,start);
  disposePlanRouteMaps();
  box.innerHTML='';
 
