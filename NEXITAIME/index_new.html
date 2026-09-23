@@ -9901,7 +9901,7 @@ async function buildPlans(){
      if(mood!=='any') rows=rows.filter(ev=>moodMatches(ev,mood));
      return rows.filter(foodKindMatches).filter(secondaryMoodMatches);
    })();
-   const durationPool=fastAutoCandidatePool(rawDurationPool,searchCtx,20);
+   const durationPool=fastAutoCandidatePool(rawDurationPool,searchCtx,10);
 
    // 3つの時間帯は直列ではなく並列評価する。外部API待ちが積み上がらないようにする。
    const durationCandidates=await Promise.all(autoDurationChoices().map(async duration=>{
@@ -10015,14 +10015,13 @@ async function buildPlans(){
      }
    }
 
-   // 成立済み候補だけを使って役割を付け直す。
-   // ルート生成・外部API・王道JSONの再解釈はここでは行わないため、
-   // この処理が検索本体を壊すことはない。
+   // 安全な後処理だけで「今しかない / 王道 / 別案」を並べる。
+   // 候補生成・ルート生成・評価対象件数には一切触れない。
    try{
-     const allReady=[];
+     const ready=[];
      for(const group of durationCandidates){
        for(const row of (group?.wellFilled||[])){
-         allReady.push({row,duration:group.duration});
+         ready.push({row,duration:group.duration});
        }
      }
 
@@ -10036,7 +10035,7 @@ async function buildPlans(){
      const selected=[];
      const used=new Set();
 
-     const addRole=(item,role)=>{
+     const add=(item,role)=>{
        if(!item?.row)return false;
        const key=keyOf(item.row);
        if(!key || used.has(key))return false;
@@ -10052,57 +10051,53 @@ async function buildPlans(){
        return true;
      };
 
-     // 1案目：今日限定など「今しかない」
+     // 1. 今しかない
      if(mood==='any' || mood==='event'){
-       const urgent=allReady
+       const urgent=ready
          .filter(x=>isUrgentTimelyEvent(x.row?.ev,planningDate))
          .sort((a,b)=>{
-           const bs=Number(eventTimingMeta(b.row.ev,planningDate)?.score||0);
-           const as=Number(eventTimingMeta(a.row.ev,planningDate)?.score||0);
-           if(bs!==as)return bs-as;
+           const bt=Number(eventTimingMeta(b.row.ev,planningDate)?.score||0);
+           const at=Number(eventTimingMeta(a.row.ev,planningDate)?.score||0);
+           if(bt!==at)return bt-at;
            return Number(b.row.preferenceScore||0)-Number(a.row.preferenceScore||0);
          })[0];
-       addRole(urgent,'今しかない');
+       add(urgent,'今しかない');
      }
 
-     // 2案目：既存採点で王道ルートとの一致度が最も高い成立案
-     const classic=allReady
+     // 2. 王道
+     const classic=ready
        .filter(x=>!used.has(keyOf(x.row)))
        .filter(x=>Number(x.row?.classicRouteScore||0)>0)
        .sort((a,b)=>{
          const bc=Number(b.row.classicRouteScore||0);
          const ac=Number(a.row.classicRouteScore||0);
          if(bc!==ac)return bc-ac;
-         const bs=(Array.isArray(b.row.itinerary)?b.row.itinerary.length:1);
-         const as=(Array.isArray(a.row.itinerary)?a.row.itinerary.length:1);
-         if(bs!==as)return bs-as;
          return Number(b.row.preferenceScore||0)-Number(a.row.preferenceScore||0);
        })[0];
-     addRole(classic,'王道');
+     add(classic,'王道');
 
-     // 3案目：上の2案と違う候補
-     const alternative=allReady
+     // 3. 別の過ごし方
+     const alt=ready
        .filter(x=>!used.has(keyOf(x.row)))
        .sort((a,b)=>{
-         const bScore=
+         const bs=
            Number(b.row.preferenceScore||0)+
            Number(b.row.multiStopPreferenceBonus||0)+
            Number(b.row.dynamicRouteScore||0);
-         const aScore=
+         const as=
            Number(a.row.preferenceScore||0)+
            Number(a.row.multiStopPreferenceBonus||0)+
            Number(a.row.dynamicRouteScore||0);
-         return bScore-aScore;
+         return bs-as;
        })[0];
-     addRole(alternative,'別の過ごし方');
+     add(alt,'別の過ごし方');
 
-     // 役割が3つ揃わない場合は、従来topから補充。
+     // 足りなければ、従来topで補完。
      for(const p of top){
        if(selected.length>=3)break;
        const key=keyOf(p);
        if(!key || used.has(key))continue;
        used.add(key);
-       if(!p.diversityRole)p.diversityRole='もう1つの候補';
        selected.push(p);
      }
 
@@ -10111,8 +10106,8 @@ async function buildPlans(){
        multiDurationAuto=true;
      }
    }catch(err){
-     // 役割整理に失敗しても、直前までに作られた従来topをそのまま使う。
      console.warn('[NEXITAIME] role reorder skipped',err);
+     // 失敗しても従来topをそのまま使う
    }
  }
  clearTimeout(searchWatchdog);
@@ -10152,7 +10147,7 @@ async function buildPlans(){
  const routeSummary=`${searchCtx.origin} → ${destinationGroupLabel(searchCtx.destination)} → ${searchCtx.returnTo}`;
  if(multiDurationAuto){
    const durations=top.map(p=>p.offerFreeMinutes).filter(Boolean).join('分・');
-   summary.innerHTML=`<h2>${top.length}つの過ごし方があります</h2><p><strong>${routeSummary}</strong><br>成立した候補から「今しかない」「王道」「別の過ごし方」を優先しています。${durations?`必要時間は約${durations}分です。`:''}</p>`;
+   summary.innerHTML=`<h2>時間別に${top.length}案あります</h2><p><strong>${routeSummary}</strong><br>時間はおまかせなので、実際に成立するプランから必要時間を算出しています。${durations?`今回は約${durations}分の案です。`:''}長めの案ほど複数スポットの周遊を優先します。</p>`;
  }else if(relaxationLevel===0){
    if(transport==='auto'){
      {
