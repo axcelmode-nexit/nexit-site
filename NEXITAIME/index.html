@@ -7244,7 +7244,9 @@ function alcoholVenueLike(ev){
 }
 
 function alcoholSafeModes(modes){
-  const safe=new Set(['public','train','bus','taxi','multimodal']);
+  // 飲酒系店舗では運転・自転車を避ける。
+  // 徒歩は安全な移動手段なので除外しない。
+  const safe=new Set(['walk','public','train','bus','taxi','multimodal']);
   return (modes||[]).filter(m=>safe.has(m));
 }
 function autoModesForEvent(ev,dest,modes,ctx,start,deadline){
