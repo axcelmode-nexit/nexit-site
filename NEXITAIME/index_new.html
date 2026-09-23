@@ -9264,7 +9264,7 @@ function automaticReturnBufferMinutes(freeMinutes=180){
 }
 
 
-async function scoreEventSetFast(events,modes,start,deadline,ctx,timeoutMs=4200){
+async function scoreEventSetFast(events,modes,start,deadline,ctx,timeoutMs=2200){
   // External routing/timetable services can be slow. Never keep the result screen waiting forever.
   let timer;
   try{
@@ -9337,7 +9337,7 @@ async function buildPlans(){
    if(summary.textContent.includes('再検索中') || summary.textContent.includes('おすすめを探しています')){
      summary.innerHTML='<h2>検索に時間がかかっています</h2><p>外部サービスの応答が遅いため、処理を継続しています。検索条件は変更していません。</p>';
    }
- },8000);
+ },5000);
  const adjustPanel=document.getElementById('planAdjustPanel');
  if(adjustPanel){
    adjustPanel.hidden=true;
@@ -9365,8 +9365,8 @@ async function buildPlans(){
 
  // 時間おまかせは、近さ・王道・現在条件で優先度の高い候補だけ先にルート判定する。
  // 全件を90/180/300分で繰り返し評価するとモバイルで待ち時間が長くなるため。
- if(isAutoFree && events.length>12){
-   events=fastAutoCandidatePool(events,searchCtx,12);
+ if(isAutoFree && events.length>8){
+   events=fastAutoCandidatePool(events,searchCtx,8);
  }
 
  // Food/cafe can contain many API + static shops. Keep the transport comparison
@@ -9405,7 +9405,7 @@ async function buildPlans(){
 
    // If we already have enough useful candidates, do not scan the whole region.
    if(scored.length<5 && staged.rest.length){
-     const extra=await scoreEventSetFast(staged.rest.slice(0,28),requestedModes,start,deadline,searchCtx);
+     const extra=await scoreEventSetFast(staged.rest.slice(0,14),requestedModes,start,deadline,searchCtx);
      scored=dedupeCandidates([...scored,...extra]);
    }
  }else{
@@ -9521,10 +9521,11 @@ async function buildPlans(){
    })();
    const durationPool=fastAutoCandidatePool(rawDurationPool,searchCtx,10);
 
-   for(const duration of autoDurationChoices()){
+   // 3つの時間帯は直列ではなく並列評価する。外部API待ちが積み上がらないようにする。
+   const durationCandidates=await Promise.all(autoDurationChoices().map(async duration=>{
      const dBuffer=automaticReturnBufferMinutes(duration);
      const dDeadline=start+duration-dBuffer;
-     let rows=await scoreEventSetFast(durationPool,requestedModes,start,dDeadline,searchCtx,3500);
+     let rows=await scoreEventSetFast(durationPool,requestedModes,start,dDeadline,searchCtx,1800);
      rows=sortCandidates(rows);
      if(budget!=='any'){
        const maxBudget=Number(budget);
@@ -9546,11 +9547,9 @@ async function buildPlans(){
        row.routeProgressFlowBonus=itineraryProgressFlowBonus(row,searchCtx);
        if(originOnlyStopBeforeDifferentGoal(row,searchCtx))continue;
        if(filterFinalPlans([row],searchCtx,start,dDeadline).length)prepared.push(row);
-       if(prepared.length>=8)break;
+       if(prepared.length>=6)break;
      }
      sortCandidates(prepared);
-
-     // 長い時間ほど複数スポット案を優先。カーシェア/レンタカーは特に周遊を優先する。
      prepared.sort((a,b)=>{
        const aStops=Array.isArray(a.itinerary)?a.itinerary.length:1;
        const bStops=Array.isArray(b.itinerary)?b.itinerary.length:1;
@@ -9559,19 +9558,23 @@ async function buildPlans(){
      });
 
      const wellFilled=prepared.filter(row=>autoDurationPlanFits(row,duration,dBuffer));
+     return {duration,dBuffer,wellFilled};
+   }));
+
+   // 短→中→長の順で、同じ主候補ばかりにならないよう最大3案を選ぶ。
+   for(const {duration,dBuffer,wellFilled} of durationCandidates){
      let pick=wellFilled.find(row=>{
        const key=row.ev.id||`${row.ev.title}|${row.ev.venue||''}`;
        return !usedKeys.has(key);
      }) || wellFilled[0];
-     if(pick){
-       const key=pick.ev.id||`${pick.ev.title}|${pick.ev.venue||''}`;
-       usedKeys.add(key);
-       const derivedMinutes=derivedAutoOfferMinutes(pick,start) || duration;
-       pick.offerFreeMinutes=derivedMinutes;
-       pick.offerBuffer=Math.max(0,derivedMinutes-Math.max(0,Math.round(pick.finish-start)));
-       pick.offerDurationLabel=autoDurationLabel(derivedMinutes);
-       durationPlans.push(pick);
-     }
+     if(!pick)continue;
+     const key=pick.ev.id||`${pick.ev.title}|${pick.ev.venue||''}`;
+     usedKeys.add(key);
+     const derivedMinutes=derivedAutoOfferMinutes(pick,start) || duration;
+     pick.offerFreeMinutes=derivedMinutes;
+     pick.offerBuffer=Math.max(0,derivedMinutes-Math.max(0,Math.round(pick.finish-start)));
+     pick.offerDurationLabel=autoDurationLabel(derivedMinutes);
+     durationPlans.push(pick);
    }
 
    if(durationPlans.length){
