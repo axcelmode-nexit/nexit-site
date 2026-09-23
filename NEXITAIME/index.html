@@ -4367,7 +4367,16 @@ function eventParticipationPolicy(ev){
   };
 }
 
+function tommySayLike(ev){
+  const text=[ev?.title,ev?.venue,ev?.name].filter(Boolean).join(' ');
+  return /TOMMY\s*SAY|トミセイ|トミーセイ/i.test(text);
+}
+
 function reservationFeasibility(ev){
+  // TOMMY SAY は完全予約制。今から行く自動提案には出さない。
+  if(tommySayLike(ev)){
+    return {ok:false,penalty:-100,label:'完全予約制'};
+  }
   if(ev?.appointment_required===true){
     return {ok:false,penalty:-100,label:'事前予約が必要'};
   }
