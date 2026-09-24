@@ -6730,6 +6730,9 @@ function itineraryCategoriesCanFollow(previousKind,nextKind){
   const culinary=new Set(['food','cafe']);
   if(culinary.has(previousKind) && culinary.has(nextKind))return false;
 
+  // 温泉の連続は周遊として不自然なので禁止。
+  if(previousKind==='onsen' && nextKind==='onsen')return false;
+
   return true;
 }
 
@@ -6991,6 +6994,8 @@ function buildDynamicVehicleItinerary(plan,candidateEvents=[],freeMinutes=180,ct
       const leave=arrive+stay;
       if(!itineraryCandidateAvailable(ev,arrive,leave))continue;
       const kind=itineraryCategory(ev);
+      // 1ルート内で温泉は1か所まで。間に別スポットを挟んでも温泉ハシゴはしない。
+      if(kind==='onsen' && usedKinds.has('onsen'))continue;
       if(!itineraryCategoriesCanFollow(rows[rows.length-1]?.category||'',kind))continue;
       const score=dynamicRouteCandidateScore(ev,{prevEv,prevPoint:currentPoint,goalPoint,usedKinds,rows,move,stay,freeMinutes});
       if(score>bestScore){
@@ -7174,6 +7179,8 @@ function buildSimpleItinerary(plan,candidateEvents=[],freeMinutes=180){
 
         const kind=itineraryCategory(ev);
         const previousKind=rows[rows.length-1]?.category||'';
+        // 1ルート内で温泉は1か所まで。
+        if(kind==='onsen' && usedKinds.has('onsen')) continue;
         if(!itineraryCategoriesCanFollow(previousKind,kind)) continue;
 
         const prevPoint=rows[rows.length-1]?.point || itineraryPointForEvent(plan.ev,plan.dest);
