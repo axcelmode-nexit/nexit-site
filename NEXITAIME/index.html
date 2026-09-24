@@ -4823,7 +4823,12 @@ async function evaluateDirectMode(ev,dest,mode,start,deadline,ctx){
   }
 
   if(mode==='bike'){
-    const text=[ev?.title,ev?.venue,ev?.summary].filter(Boolean).join(' ');
+    const text=[
+    ev?.title,ev?.venue,ev?.summary,
+    ev?.genre,ev?.genre_name,ev?.catch,
+    ev?.name,ev?.category,ev?.sub_category,
+    ...(Array.isArray(ev?.categories)?ev.categories:[])
+  ].filter(Boolean).join(' ');
     const mountainLike=
       ['mountain','myoko'].includes(destinationArea) ||
       ['yasuzuka','oshima','itakura','kiyosato','maki','myoko_kogen','myoko_akakura','myoko_lotte'].includes(ev?.area) ||
@@ -5538,6 +5543,29 @@ function recordExclusion(ev,code,reason){
   if(LAST_EXCLUSION_AUDIT.some(x=>x.key===key))return;
   LAST_EXCLUSION_AUDIT.push({key,title,code,reason});
 }
+
+function debugNoResultHtml(){
+  if(new URLSearchParams(location.search).get('debug')!=='1') return '';
+  const parts=[];
+  try{ parts.push(lateNightDiagnosticHtml()); }catch(_){}
+  try{ parts.push(exclusionSummaryHtml(12)); }catch(_){}
+  try{
+    const d=window.__NEXIT_LATE_DIAG||{};
+    parts.push(`<div class="debug-card" style="margin-top:10px;padding:10px;border:1px dashed #b9c8d8;border-radius:12px;background:#f8fbff;font-size:11px;line-height:1.6">
+      <b>検索診断</b><br>
+      全候補 ${Number(d.candidateTotal||0)}件 →
+      日付/予算/同行者 ${Number(d.afterDateBudgetCompanion||0)}件 →
+      行き先 ${Number(d.afterDestination||0)}件 →
+      気分 ${Number(d.afterMood||0)}件 →
+      2段目 ${Number(d.afterSecondary||0)}件<br>
+      Hot Pepper取得 ${Number(d.hpFetched||0)}件 /
+      営業時間解析 ${Number(d.hpHoursParsed||0)}件 /
+      現在営業 ${Number(d.hpOpenNow||0)}件
+    </div>`);
+  }catch(_){}
+  return parts.filter(Boolean).join('');
+}
+
 function lateNightDiagnosticHtml(){
   const d=window.__NEXIT_LATE_DIAG;
   if(!d)return '';
@@ -5804,8 +5832,19 @@ function foodKindMatches(ev){
     '中華':['中華'],
     '洋食':['洋食'],
     '焼肉':['焼肉','ホルモン'],
-    '居酒屋':['居酒屋','酒場','炉端','焼鳥','やきとり']
+    '居酒屋':['居酒屋','酒場','炉端','炉ばた','ろばた','焼鳥','焼き鳥','やきとり','大衆酒場','ダイニングバー','バル','串焼き','串揚げ','立ち飲み','呑み処','飲み処','酒処']
   }[foodKind]||[foodKind];
+
+  if(foodKind==='居酒屋'){
+    // Hot Pepper等では「海鮮」「和食」などの主ジャンルでも、
+    // 店名・キャッチ・サブカテゴリに居酒屋系表現がある店舗を拾う。
+    const izakayaWords=[
+      '居酒屋','酒場','炉端','炉ばた','ろばた','焼鳥','焼き鳥','やきとり',
+      '大衆酒場','ダイニングバー','バル','串焼き','串揚げ','立ち飲み',
+      '呑み処','飲み処','酒処'
+    ];
+    if(izakayaWords.some(a=>cats.has(a) || text.includes(a))) return true;
+  }
 
   if(aliases.some(a=>cats.has(a)))return true;
   return aliases.some(a=>text.includes(a));
@@ -10577,7 +10616,7 @@ async function buildPlans(){
          <h2>🌙 今夜のおすすめが見つかりません</h2>
          <p>この時間から「上越らしく楽しめる」候補は少なくなっています。</p>
          <p><strong>明日の朝なら、もっと上越を楽しめます。</strong></p>
-       </div>`;
+       </div>${debugNoResultHtml()}`;
      box.innerHTML=`
        <div class="plan no-result-actions-wrap tomorrow-actions-wrap">
          <h3>明日の上越を探す</h3>
@@ -10604,9 +10643,7 @@ async function buildPlans(){
    summary.innerHTML=`<h2>この時間では、${esc(selectedModeLabel)}で行けるプランがありません</h2>
      <p><strong>${esc(searchCtx.origin)} → ${esc(destinationGroupLabel(searchCtx.destination))} → ${esc(searchCtx.returnTo)}</strong><br>
      選んだ行き先や移動手段は勝手に変更していません。</p>`;
-   const debugHtml=new URLSearchParams(location.search).get('debug')==='1'
-     ? `${lateNightDiagnosticHtml()}${exclusionSummaryHtml(8)}`
-     : '';
+   const debugHtml=debugNoResultHtml();
    box.innerHTML=`<div class="plan no-result-actions-wrap">
      <h3>条件を少し変えて、もう一度探す</h3>
      <p>よく使う変更をワンタップで試せます。</p>
