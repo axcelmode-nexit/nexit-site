@@ -7715,6 +7715,7 @@ function autoModesForEvent(ev,dest,modes,ctx,start,deadline){
 // キーは時刻・帰着先・移動手段まで完全一致にしているため、推薦条件は緩めない。
 const EVENT_MODE_EVAL_CACHE=new Map();
 const EVENT_MODE_EVAL_CACHE_MAX=320;
+const EVENT_MODE_EVAL_CACHE_TTL_MS=90*1000;
 
 function cloneEvalRows(rows){
   try{
@@ -7766,16 +7767,28 @@ async function evaluateEventModes(ev,dest,modes,start,deadline,ctx){
 
   const cacheKey=eventModeEvalCacheKey(ev,dest,selected,start,deadline,ctx);
   if(EVENT_MODE_EVAL_CACHE.has(cacheKey)){
-    return cloneEvalRows(EVENT_MODE_EVAL_CACHE.get(cacheKey));
+    const cached=EVENT_MODE_EVAL_CACHE.get(cacheKey);
+    if(cached && (Date.now()-cached.savedAt)<EVENT_MODE_EVAL_CACHE_TTL_MS){
+      return cloneEvalRows(cached.rows);
+    }
+    EVENT_MODE_EVAL_CACHE.delete(cacheKey);
   }
 
   const rows=await Promise.all(
     selected.map(mode=>evaluateMode(ev,dest,mode,start,deadline,ctx).catch(()=>null))
   );
   const valid=rows.filter(Boolean);
-  // scoreEventSet側でplanオブジェクトを書き換えるため、キャッシュ本体は複製して保持。
-  EVENT_MODE_EVAL_CACHE.set(cacheKey,cloneEvalRows(valid));
-  trimEventModeEvalCache();
+  // 失敗・0件はキャッシュしない。外部取得が一時的に失敗しても次回は必ず再評価する。
+  // 成功結果だけ短時間キャッシュし、古い結果が残り続けないようTTLを設ける。
+  if(valid.length){
+    EVENT_MODE_EVAL_CACHE.set(cacheKey,{
+      savedAt:Date.now(),
+      rows:cloneEvalRows(valid)
+    });
+    trimEventModeEvalCache();
+  }else{
+    EVENT_MODE_EVAL_CACHE.delete(cacheKey);
+  }
   return valid;
 }
 
