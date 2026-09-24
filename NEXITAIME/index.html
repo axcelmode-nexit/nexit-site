@@ -5559,8 +5559,9 @@ function debugNoResultHtml(){
       気分 ${Number(d.afterMood||0)}件 →
       2段目 ${Number(d.afterSecondary||0)}件<br>
       Hot Pepper取得 ${Number(d.hpFetched||0)}件 /
-      営業時間解析 ${Number(d.hpHoursParsed||0)}件 /
-      現在営業 ${Number(d.hpOpenNow||0)}件
+      営業時間解析 ${Number(d.hpHoursParsed||d.hpVerified||0)}件 /
+      現在営業 ${Number(d.hpOpenNow||0)}件<br>
+      API取得内訳 ${(d.requests||[]).map(x=>`${esc(x.kind)}:${Number(x.count||0)}${x.status==='error'?'(失敗)':''}`).join(' / ')||'なし'}
     </div>`);
   }catch(_){}
   return parts.filter(Boolean).join('');
@@ -5570,11 +5571,14 @@ function lateNightDiagnosticHtml(){
   const d=window.__NEXIT_LATE_DIAG;
   if(!d)return '';
   const names=(d.hpOpenNames||[]).map(esc).join('、')||'なし';
+  const hpReq=(d.requests||[]).map(x=>`${esc(x.kind)}:${Number(x.count||0)}${x.status==='error'?'(失敗)':''}`).join(' / ')||'なし';
   return `<div class="exclusion-summary" style="margin-top:10px">
     <strong>診断：夜間候補</strong><br>
     Hot Pepper取得 ${Number(d.hpFetched||0)}件 /
     営業時間解析 ${Number(d.hpVerified||0)}件 /
     現在営業判定 ${Number(d.hpOpenNow||0)}件<br>
+    API別取得：${hpReq}<br>
+    選択中：${esc(d.selectedFoodKind||'any')} / 重複除去後 ${Number(d.dedupedFetched||d.hpFetched||0)}件<br>
     全候補 ${Number(d.candidateTotal||0)}件 →
     日付/予算/同行者 ${Number(d.afterDateBudgetCompanion||0)}件 →
     行き先 ${Number(d.afterDestination||0)}件 →
@@ -5816,7 +5820,12 @@ function foodKindMatches(ev){
   if(mood!=='food' || foodKind==='any')return true;
 
   const cats=normalizedCategories(ev);
-  const text=[ev?.title,ev?.venue,ev?.summary].filter(Boolean).join(' ');
+  const text=[
+    ev?.title,ev?.venue,ev?.summary,
+    ev?.genre,ev?.genre_name,ev?.catch,
+    ev?.name,ev?.category,ev?.sub_category,
+    ...(Array.isArray(ev?.categories)?ev.categories:[])
+  ].filter(Boolean).join(' ');
 
   if(foodKind==='カフェ'){
     return canonicalCategory(ev)==='cafe' ||
@@ -9590,11 +9599,17 @@ async function fetchHotPepperRestaurants(){
   const endpoint=window.NEXITAIME_GOURMET_ENDPOINT;
   if(!endpoint)return [];
 
-  const kinds=(mood==='food' && foodKind!=='any')
-    ? [foodKind]
-    : ['ラーメン','定食','海鮮','寿司','そば','中華','洋食','焼肉','カフェ','居酒屋'];
+  // IMPORTANT:
+  // Do not narrow the API request to the selected second-level food kind.
+  // Hot Pepper's primary genre may be "和食" / "海鮮" even when the shop is
+  // clearly an izakaya. Fetch a broad pool first, then apply foodKindMatches()
+  // locally using name / categories / genre / catch text.
+  const baseKinds=['any','ラーメン','定食','海鮮','寿司','そば','中華','洋食','焼肉','カフェ','居酒屋'];
+  const kinds=[...new Set(baseKinds)];
+  const fetchDiag=[];
 
   const fetchOne=async(kind)=>{
+    const started=Date.now();
     try{
       const qs=new URLSearchParams({
         destination:destinationArea||'any',
@@ -9603,28 +9618,52 @@ async function fetchHotPepperRestaurants(){
         kind:kind||'any'
       });
       const controller=new AbortController();
-      const timer=setTimeout(()=>controller.abort(),1800);
-      const res=await fetch(`${endpoint}?${qs.toString()}`,{
-        signal:controller.signal,
-        headers:{Accept:'application/json'}
-      });
-      clearTimeout(timer);
-      if(!res.ok)return [];
+      const timer=setTimeout(()=>controller.abort(),3200);
+      let res;
+      try{
+        res=await fetch(`${endpoint}?${qs.toString()}`,{
+          signal:controller.signal,
+          headers:{Accept:'application/json'},
+          cache:'no-store'
+        });
+      }finally{
+        clearTimeout(timer);
+      }
+      if(!res.ok){
+        fetchDiag.push({kind,status:res.status,count:0,ms:Date.now()-started});
+        return [];
+      }
       const data=await res.json();
       const rows=Array.isArray(data?.restaurants)?data.restaurants:[];
+      fetchDiag.push({kind,status:res.status,count:rows.length,ms:Date.now()-started});
       return await enrichRestaurantCoordinates(rows);
-    }catch(_){
+    }catch(err){
+      fetchDiag.push({
+        kind,
+        status:'error',
+        count:0,
+        ms:Date.now()-started,
+        error:err?.name||'fetch_error'
+      });
       return [];
     }
   };
 
-  // Query the categories in parallel, dedupe, then keep a wider live pool.
-  // The final recommendation engine still applies destination/time/hours/route checks.
-  // 各カテゴリは fetchOne 内で1.8秒タイムアウト済み。
-  // 全体を Promise.race すると、1カテゴリでも遅いだけで
-  // 先に取得できた全店舗まで [] として捨ててしまうため使わない。
+  // Query broad categories in parallel. A failed category must not discard rows
+  // already returned by other categories.
   const batches=await Promise.all(kinds.map(fetchOne));
-  return dedupeHotPepperRows((batches||[]).flat()).slice(0,50);
+  const rows=dedupeHotPepperRows((batches||[]).flat()).slice(0,80);
+
+  // Debug-only information. This is read only when ?debug=1 renders diagnostics.
+  window.__NEXIT_HP_FETCH_DIAG={
+    selectedFoodKind:foodKind||'any',
+    requestedKinds:kinds,
+    requests:fetchDiag,
+    rawFetched:fetchDiag.reduce((n,x)=>n+Number(x.count||0),0),
+    dedupedFetched:rows.length
+  };
+
+  return rows;
 }
 
 function providerInfoHtml(ev){
@@ -10145,6 +10184,7 @@ async function buildPlans(){
      };
    });
    window.__NEXIT_LATE_DIAG={
+     ...(window.__NEXIT_HP_FETCH_DIAG||{}),
      hpFetched:hotpepperEvents.length,
      hpVerified:hpHourRows.filter(x=>x.verified).length,
      hpOpenNow:hpHourRows.filter(x=>x.openNow).length,
@@ -10162,7 +10202,7 @@ async function buildPlans(){
      hpUnverifiedNames:hpHourRows.filter(x=>!x.verified).slice(0,5).map(x=>x.title)
    };
  }catch(_){
-   window.__NEXIT_LATE_DIAG={hpFetched:hotpepperEvents.length,error:'hours diagnostic failed'};
+   window.__NEXIT_LATE_DIAG={...(window.__NEXIT_HP_FETCH_DIAG||{}),hpFetched:hotpepperEvents.length,error:'hours diagnostic failed'};
  }
 
  const candidateEvents=hotpepperEvents.length
