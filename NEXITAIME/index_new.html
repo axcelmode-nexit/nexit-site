@@ -1307,7 +1307,7 @@ window.NEXITAIME_GOURMET_ENDPOINT =
 // ▼ NEXITAIMEからひとこと：ここを true / false に変えるだけで即ON/OFFできます
 window.NEXITAIME_AI_SUGGESTION_ENABLED = true;
 </script>
-<script>window.NEXITAIME_BUILD="v133";</script>
+<script>window.NEXITAIME_BUILD="v135";</script>
 
 
 <style id="nexitaime-existing-ai-style">
@@ -3081,9 +3081,10 @@ Promise.all([
   try{const audit=coordinateAuditReport(); if(audit.duplicateUrls.length||audit.exactDuplicates.length) console.warn('[NEXITAIME coordinate audit]',audit);}catch(_){}});
 
 
-document.getElementById('mobilityMapReset')?.addEventListener('click',()=>{
+document.getElementById('mobilityMapReset')?.addEventListener('click',async ()=>{
   mobilityMapBrowsePoint=null;
-  renderMobility();
+  await renderMobility({preserveMapViewport:true});
+  resetMobilityMapToBase({animate:true});
 });
 
 window.addEventListener('pageshow',()=>{
@@ -4084,6 +4085,29 @@ function retryMobilityMap(){
   }
 }
 
+const MOBILITY_MAP_DEFAULT_CENTER={lat:37.122,lon:138.242};
+const MOBILITY_MAP_DEFAULT_ZOOM=12;
+const MOBILITY_MAP_BASE_ZOOM=14;
+
+function mobilityMapBaseView(){
+  if(currentPos && Number.isFinite(currentPos.lat) && Number.isFinite(currentPos.lon)){
+    return {lat:currentPos.lat,lon:currentPos.lon,zoom:MOBILITY_MAP_BASE_ZOOM};
+  }
+  const p=PLACES?.[origin];
+  if(p && Number.isFinite(p.lat) && Number.isFinite(p.lon)){
+    return {lat:p.lat,lon:p.lon,zoom:MOBILITY_MAP_BASE_ZOOM};
+  }
+  return {...MOBILITY_MAP_DEFAULT_CENTER,zoom:MOBILITY_MAP_DEFAULT_ZOOM};
+}
+
+function resetMobilityMapToBase({animate=false}={}){
+  initMobilityMap();
+  if(!mobilityMap)return;
+  const base=mobilityMapBaseView();
+  mobilityMap.setView([base.lat,base.lon],base.zoom,{animate});
+  requestAnimationFrame(()=>mobilityMap && mobilityMap.invalidateSize({pan:false}));
+}
+
 function initMobilityMap(){
   const el=document.getElementById('mobilityMap');
   if(!el) return;
@@ -4092,7 +4116,8 @@ function initMobilityMap(){
     requestAnimationFrame(()=>mobilityMap.invalidateSize({pan:false}));
     return;
   }
-  mobilityMap=L.map(el,{zoomControl:true,attributionControl:true}).setView([37.122,138.242],12);
+  const initialView=mobilityMapBaseView();
+  mobilityMap=L.map(el,{zoomControl:true,attributionControl:true}).setView([initialView.lat,initialView.lon],initialView.zoom);
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{
     maxZoom:19,
     attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'
@@ -4185,8 +4210,11 @@ function renderMapRows(rows,{preserveViewport=false}={}){
   }
 
   if(!preserveViewport){
-    if(bounds.length>1) mobilityMap.fitBounds(bounds,{padding:[30,30],maxZoom:15});
-    else if(bounds.length===1) mobilityMap.setView(bounds[0],14);
+    // v135: Keep the normal map viewport anchored to the same base view used by
+    // 「基準地点に戻す」. Do not widen the initial/refresh view to fit service markers;
+    // otherwise the first view and the reset view visibly disagree.
+    const base=mobilityMapBaseView();
+    mobilityMap.setView([base.lat,base.lon],base.zoom,{animate:false});
   }
 
   requestAnimationFrame(()=>mobilityMap.invalidateSize({pan:false}));
