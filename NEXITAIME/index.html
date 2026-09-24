@@ -10141,23 +10141,17 @@ async function buildPlans(){
  diag.afterSecondary=events.length;
  diag.explicitSecondary=explicitSecondarySelectionActive();
  diag.explicitMood=mood!=='any';
+ diag.routeScorePoolBeforeTrim=events.length;
  // NEXITAIMEは「上越を満喫する」提案を優先。
  // 全国チェーンは候補から外し、地域チェーン・地元店は残す。
  events=events.filter(recommendationChainAllowed);
 
- // Food/cafe can contain many API + static shops. Keep the transport comparison
- // responsive by scoring the most relevant subset first.
+ // Food/cafe explicit searches must not throw away valid live restaurants
+ // before route evaluation. scoreEventSetFast already evaluates in small batches and
+ // stops early once enough distinct plans are found, so keep the full filtered pool
+ // and only order it by likely usefulness.
  if(['food','cafe'].includes(mood) && events.length>12){
-   events=events
-     .map((ev,i)=>({
-       ev,i,
-       exactFood:foodKindMatches(ev)?1:0,
-       featuredRamen:featuredRamenBoost(ev)>0?1:0,
-       staticBoost:ev?.provider==='hotpepper'?0:1
-     }))
-     .sort((a,b)=>b.exactFood-a.exactFood || b.featuredRamen-a.featuredRamen || b.staticBoost-a.staticBoost || a.i-b.i)
-     .slice(0,12)
-     .map(x=>x.ev);
+   events=prioritizeExplicitSearchCandidates(events,searchCtx);
  }
 
  let scored=[];

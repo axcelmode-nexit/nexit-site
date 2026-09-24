@@ -59,6 +59,7 @@ button.danger{color:#a73434;border-color:#efd0d0;background:#fff8f8}
         <option value="90">直近90日</option>
       </select>
       <button id="reload">更新</button>
+      <button id="openDebug">診断URLを開く</button>
       <button id="logout">ログアウト</button>
     </div>
   </div>
@@ -134,6 +135,7 @@ button.danger{color:#a73434;border-color:#efd0d0;background:#fff8f8}
 <script>
 const ANALYTICS_API = "https://axcelmode-nexit-ai.pages.dev/api/nexitaime-analytics";
 const DEFAULT_SYNC_API = "https://nexitaime-data-sync.axcel-mode-nexit.workers.dev";
+const NEXITAIME_DEBUG_URL = "https://axcelmode-nexit.jp/NEXITAIME/?debug=1";
 const labels = {
   auto:"おまかせ", privatecar:"自家用車", mobilitycar:"カーシェア・レンタカー",
   public:"公共交通", taxi:"タクシー", walk:"徒歩", bike:"レンタル自転車",
@@ -157,6 +159,7 @@ $("loginBtn").onclick = async () => {
   await loadAnalytics(true);
 };
 $("reload").onclick = () => loadAll(false);
+$("openDebug").onclick = () => window.open(NEXITAIME_DEBUG_URL, "_blank", "noopener,noreferrer");
 $("days").onchange = () => loadAnalytics(false);
 $("logout").onclick = () => { sessionStorage.clear(); location.reload(); };
 $("syncReload").onclick = () => loadSync();
