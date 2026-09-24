@@ -2163,57 +2163,9 @@
 }
 
 @keyframes raceLinePassDesktop{
-  0%{
-    opacity:0;
-    transform:translateX(0) skewX(-10deg) scaleX(.86);
-  }
-  10%{
-    opacity:var(--alpha);
-  }
-  78%{
-    opacity:var(--alpha);
-  }
-  92%{
-    opacity:calc(var(--alpha) * .35);
-  }
-  100%{
-    opacity:0;
-    transform:translateX(var(--travel,220vw)) skewX(-10deg) scaleX(1.22);
-  }
-}
-
-/* Wide-screen exit variation: same motion, slightly different fade timing per line */
-@keyframes raceLinePassDesktopEarly{
-  0%{opacity:0;transform:translateX(0) skewX(-10deg) scaleX(.86);}
-  10%{opacity:var(--alpha);}
-  58%{opacity:var(--alpha);}
-  72%{opacity:calc(var(--alpha) * .62);}
-  86%{opacity:calc(var(--alpha) * .28);}
-  96%{opacity:calc(var(--alpha) * .08);}
-  100%{opacity:0;transform:translateX(var(--travel,220vw)) skewX(-10deg) scaleX(1.22);}
-}
-@keyframes raceLinePassDesktopSoft{
-  0%{opacity:0;transform:translateX(0) skewX(-10deg) scaleX(.86);}
-  10%{opacity:var(--alpha);}
-  70%{opacity:var(--alpha);}
-  82%{opacity:calc(var(--alpha) * .76);}
-  92%{opacity:calc(var(--alpha) * .38);}
-  98%{opacity:calc(var(--alpha) * .10);}
-  100%{opacity:0;transform:translateX(var(--travel,225vw)) skewX(-10deg) scaleX(1.22);}
-}
-@keyframes raceLinePassDesktopLate{
-  0%{opacity:0;transform:translateX(0) skewX(-10deg) scaleX(.86);}
-  10%{opacity:var(--alpha);}
-  90%{opacity:var(--alpha);}
-  96%{opacity:calc(var(--alpha) * .78);}
-  99%{opacity:calc(var(--alpha) * .42);}
-  100%{opacity:0;transform:translateX(var(--travel,230vw)) skewX(-10deg) scaleX(1.22);}
-}
-
-@media (min-width:1181px){
-  .race-line.fade-early{animation-name:raceLinePassDesktopEarly;}
-  .race-line.fade-soft{animation-name:raceLinePassDesktopSoft;}
-  .race-line.fade-late{animation-name:raceLinePassDesktopLate;}
+  0%{opacity:0;transform:translateX(0) skewX(-10deg) scaleX(.86)}
+  12%,80%{opacity:var(--alpha)}
+  100%{opacity:0;transform:translateX(170vw) skewX(-10deg) scaleX(1.22)}
 }
 
 @keyframes heroBgBreathDesktop{
@@ -4667,7 +4619,7 @@ aiChatForm.addEventListener("submit",async(e)=>{
         generator.appendChild(node);
       }
       const rotations=[0,18,-18,32,-32,90,-90];
-      for(let i=0;i<22;i++){
+      for(let i=0;i<18;i++){
         const edge=document.createElement("span");
         edge.className="gen-neural-edge";
         edge.style.setProperty("--x",(8+Math.random()*70).toFixed(2)+"%");
@@ -4854,14 +4806,11 @@ aiChatForm.addEventListener("submit",async(e)=>{
 
   function createLines(){
     const palette=["red","red","red","red","red","red","red","red","white","orange"];
-    for(let i=0;i<22;i++){
+    for(let i=0;i<18;i++){
       const line=document.createElement("span");
       const c=palette[Math.floor(Math.random()*palette.length)];
-      const fadeProfiles=["fade-early","fade-soft","fade-soft","fade-soft","fade-late"];
-      const fadeProfile=fadeProfiles[Math.floor(Math.random()*fadeProfiles.length)];
-      line.className="race-line"+(c==="white"?" is-white":c==="orange"?" is-orange":"")+" "+fadeProfile;
+      line.className="race-line"+(c==="white"?" is-white":c==="orange"?" is-orange":"");
       line.style.setProperty("--y",(4+Math.random()*88).toFixed(2)+"%");
-      line.style.setProperty("--travel",(190+Math.random()*85).toFixed(1)+"vw");
       const mobile = window.matchMedia("(max-width: 767px)").matches;
       line.style.setProperty("--w", mobile
         ? (120+Math.random()*90).toFixed(2)+"%"
@@ -4870,7 +4819,7 @@ aiChatForm.addEventListener("submit",async(e)=>{
       line.style.setProperty("--h",[2,2,3,3,4,5][Math.floor(Math.random()*6)]+"px");
       line.style.setProperty("--delay",(0.18+Math.random()*1.85).toFixed(3)+"s");
       line.style.setProperty("--dur", mobile
-        ? (0.65+Math.random()*0.40).toFixed(3)+"s"
+        ? (0.90+Math.random()*0.60).toFixed(3)+"s"
         : (1.35+Math.random()*0.95).toFixed(3)+"s");
       line.style.setProperty("--alpha",(0.42+Math.random()*0.48).toFixed(2));
       line.style.setProperty("--blur",Math.random()<.62?"0px":(Math.random()*1.5).toFixed(1)+"px");
