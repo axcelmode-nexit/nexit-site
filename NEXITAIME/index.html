@@ -6099,6 +6099,17 @@ function disposePlanRouteMaps(){
   }
 }
 
+function schedulePlanRouteMap(mapId,plan,ctx){
+  // 検索結果カードを先に描画し、地図はその後に非同期で作る。
+  // 地図の内容・ルート計算自体は変更しない。
+  const run=()=>{ renderPlanRouteMap(mapId,plan,ctx).catch(()=>{}); };
+  if('requestIdleCallback' in window){
+    window.requestIdleCallback(run,{timeout:700});
+  }else{
+    setTimeout(run,80);
+  }
+}
+
 async function renderPlanRouteMap(mapId,plan,ctx){
   const el=document.getElementById(mapId);
   if(!el)return;
@@ -6120,7 +6131,7 @@ async function renderPlanRouteMap(mapId,plan,ctx){
     const tries=Number(el.dataset.leafletRetries||0);
     if(tries<20){
       el.dataset.leafletRetries=String(tries+1);
-      setTimeout(()=>renderPlanRouteMap(mapId,plan,ctx),300);
+      setTimeout(()=>schedulePlanRouteMap(mapId,plan,ctx),300);
     }else{
       el.innerHTML='<div style="padding:14px;font-size:12px;color:#6f7c89">地図を読み込めませんでした。ページを再読み込みしてください。</div>';
     }
@@ -6134,7 +6145,7 @@ async function renderPlanRouteMap(mapId,plan,ctx){
     const tries=Number(el.dataset.layoutRetries||0);
     if(tries<12){
       el.dataset.layoutRetries=String(tries+1);
-      setTimeout(()=>renderPlanRouteMap(mapId,plan,ctx),120);
+      setTimeout(()=>schedulePlanRouteMap(mapId,plan,ctx),120);
     }
     return;
   }
@@ -9546,7 +9557,7 @@ function bindPlanDisclosures(plans,ctx){
         const mapEl=panel.querySelector('.plan-map');
         const plan=plans[idx];
         if(mapEl && plan){
-          setTimeout(()=>renderPlanRouteMap(mapEl.id,plan,ctx),80);
+          setTimeout(()=>schedulePlanRouteMap(mapEl.id,plan,ctx),80);
           setTimeout(()=>refreshPlanMapSize(mapEl.id),420);
         }
       }
@@ -9659,7 +9670,7 @@ function bindPlanPickButtons(plans,ctx){
       const mapEl=detail?.querySelector('.plan-map');
       const plan=plans[idx];
       if(mapEl && plan){
-        const draw=()=>renderPlanRouteMap(mapEl.id,plan,ctx);
+        const draw=()=>schedulePlanRouteMap(mapEl.id,plan,ctx);
         setTimeout(draw,120);
         setTimeout(()=>refreshPlanMapSize(mapEl.id),450);
         setTimeout(()=>{
