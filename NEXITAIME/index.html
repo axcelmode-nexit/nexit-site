@@ -2145,7 +2145,7 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
 <div class="food-subfilters" id="foodSubfilters" hidden>
   <div class="group-subtitle" style="margin-top:12px">食べたいもの</div>
   <div class="chips wrap" id="foodKinds">
-    <button class="chip active" data-food-kind="ラーメン">🍜 ラーメン</button>
+    <button class="chip" data-food-kind="ラーメン">🍜 ラーメン</button>
     <button class="chip" data-food-kind="定食">🍚 定食</button>
     <button class="chip" data-food-kind="海鮮">🐟 海鮮</button>
     <button class="chip" data-food-kind="寿司">🍣 寿司</button>
@@ -2161,7 +2161,7 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
 <div class="mood-subfilters" id="eventSubfilters" hidden>
   <div class="group-subtitle" style="margin-top:12px">イベントの種類</div>
   <div class="chips wrap" id="eventKinds">
-    <button class="chip active" data-event-kind="お祭り・催し">🎪 お祭り・催し</button>
+    <button class="chip" data-event-kind="お祭り・催し">🎪 お祭り・催し</button>
     <button class="chip" data-event-kind="音楽・ライブ">🎵 音楽・ライブ</button>
     <button class="chip" data-event-kind="グルメイベント">🍴 グルメイベント</button>
     <button class="chip" data-event-kind="スポーツ・体験">🏃 スポーツ・体験</button>
@@ -2174,7 +2174,7 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
 <div class="mood-subfilters" id="onsenSubfilters" hidden>
   <div class="group-subtitle" style="margin-top:12px">温泉・サウナの種類</div>
   <div class="chips wrap" id="onsenKinds">
-    <button class="chip active" data-onsen-kind="温泉">♨️ 温泉</button>
+    <button class="chip" data-onsen-kind="温泉">♨️ 温泉</button>
     <button class="chip" data-onsen-kind="サウナ">🧖 サウナ</button>
     <button class="chip" data-onsen-kind="日帰り風呂">🛁 日帰り風呂</button>
   </div>
@@ -2183,7 +2183,7 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
 <div class="mood-subfilters" id="sightseeingSubfilters" hidden>
   <div class="group-subtitle" style="margin-top:12px">観光の種類</div>
   <div class="chips wrap" id="sightseeingKinds">
-    <button class="chip active" data-sight-kind="歴史・文化">🏯 歴史・文化</button>
+    <button class="chip" data-sight-kind="歴史・文化">🏯 歴史・文化</button>
     <button class="chip" data-sight-kind="景色・絶景">🌄 景色・絶景</button>
     <button class="chip" data-sight-kind="博物館・展示">🏛️ 博物館・展示</button>
     <button class="chip" data-sight-kind="街歩き">🚶 街歩き</button>
@@ -2193,7 +2193,7 @@ window.NEXITAIME_ANALYTICS_ENDPOINT =
 <div class="mood-subfilters" id="activeSubfilters" hidden>
   <div class="group-subtitle" style="margin-top:12px">体を動かす種類</div>
   <div class="chips wrap" id="activeKinds">
-    <button class="chip active" data-active-kind="散歩・ウォーキング">🚶 散歩・ウォーキング</button>
+    <button class="chip" data-active-kind="散歩・ウォーキング">🚶 散歩・ウォーキング</button>
     <button class="chip" data-active-kind="公園">🌳 公園</button>
     <button class="chip" data-active-kind="トレッキング">🥾 トレッキング</button>
     <button class="chip" data-active-kind="アクティビティ">🏃 アクティビティ</button>
@@ -2530,7 +2530,7 @@ function mergeManualTimelyEvents(rows=[]){
   ];
 }
 
-let EVENTS=[], RESTAURANTS=[], TRAIN={up:[],down:[]}, SHINANO={up:[],down:[]}, BUS={trips:[]}, BUS_MAIN={weekday:{},holiday:{}}, BUS_EXT={routes:[]}, PLACES={}, MOBILITY=[], origin='上越妙高', destinationArea='any', returnTarget='same', timingMode='now', planningDate=new Date(), mood='any', foodKind='ラーメン', onsenKind='温泉', sightseeingKind='歴史・文化', activeKind='散歩・ウォーキング', eventKind='お祭り・催し', transport='auto', budget='any', companion='any', currentPos=null, weather=null, weatherForecast=null, mobilityMap=null, mobilityMarkers=[], currentPosMarker=null, nearestService=null, freeTimeMode='auto';
+let EVENTS=[], RESTAURANTS=[], TRAIN={up:[],down:[]}, SHINANO={up:[],down:[]}, BUS={trips:[]}, BUS_MAIN={weekday:{},holiday:{}}, BUS_EXT={routes:[]}, PLACES={}, MOBILITY=[], origin='上越妙高', destinationArea='any', returnTarget='same', timingMode='now', planningDate=new Date(), mood='any', foodKind='any', onsenKind='any', sightseeingKind='any', activeKind='any', eventKind='any', transport='auto', budget='any', companion='any', currentPos=null, weather=null, weatherForecast=null, mobilityMap=null, mobilityMarkers=[], currentPosMarker=null, nearestService=null, freeTimeMode='auto';
 
 // v128: 王道ルートマスタ。外部JSONを優先し、取得できない場合は従来提案へフォールバック。
 const NEXITAIME_CLASSIC_ROUTES_URL='./nexitaime_classic_routes.json';
@@ -2896,6 +2896,20 @@ document.querySelectorAll('#moods .chip').forEach(b=>b.onclick=()=>{
  if(targetId){
    const target=document.getElementById(targetId);
    if(target) target.hidden=false;
+
+   // 2段目は、親カテゴリを選んだ直後は未指定（全候補）から始める。
+   // ユーザーが2段目を押した時だけ絞り込む。
+   const secondaryConfig={
+     food:{selector:'#foodKinds .chip',reset:()=>{foodKind='any';}},
+     onsen:{selector:'#onsenKinds .chip',reset:()=>{onsenKind='any';}},
+     sightseeing:{selector:'#sightseeingKinds .chip',reset:()=>{sightseeingKind='any';}},
+     active:{selector:'#activeKinds .chip',reset:()=>{activeKind='any';}},
+     event:{selector:'#eventKinds .chip',reset:()=>{eventKind='any';}}
+   }[mood];
+   if(secondaryConfig){
+     secondaryConfig.reset();
+     document.querySelectorAll(secondaryConfig.selector).forEach(x=>x.classList.remove('active'));
+   }
  }
 });
 document.querySelectorAll('#foodKinds .chip').forEach(b=>b.onclick=()=>{
@@ -2903,8 +2917,8 @@ document.querySelectorAll('#foodKinds .chip').forEach(b=>b.onclick=()=>{
  b.classList.add('active'); foodKind=b.dataset.foodKind||'any';
 
  // 居酒屋を選んだ時は、飲酒運転・自転車利用につながる移動手段を残さない。
- // 公共交通かタクシーを比較できるよう「おまかせ」へ戻す。
- if(foodKind==='居酒屋' && !['auto','public','taxi'].includes(transport)){
+ // 徒歩・公共交通・タクシー以外が選ばれている場合だけ「おまかせ」へ戻す。
+ if(foodKind==='居酒屋' && !['auto','walk','public','taxi'].includes(transport)){
    transport='auto';
    document.querySelectorAll('#transport .chip').forEach(x=>{
      x.classList.toggle('active', x.dataset.mode==='auto');
@@ -2914,24 +2928,24 @@ document.querySelectorAll('#foodKinds .chip').forEach(b=>b.onclick=()=>{
 });
 document.querySelectorAll('#onsenKinds .chip').forEach(b=>b.onclick=()=>{
  document.querySelectorAll('#onsenKinds .chip').forEach(x=>x.classList.remove('active'));
- b.classList.add('active'); onsenKind=b.dataset.onsenKind||'温泉';
+ b.classList.add('active'); onsenKind=b.dataset.onsenKind||'any';
 });
 document.querySelectorAll('#sightseeingKinds .chip').forEach(b=>b.onclick=()=>{
  document.querySelectorAll('#sightseeingKinds .chip').forEach(x=>x.classList.remove('active'));
- b.classList.add('active'); sightseeingKind=b.dataset.sightKind||'歴史・文化';
+ b.classList.add('active'); sightseeingKind=b.dataset.sightKind||'any';
 });
 document.querySelectorAll('#activeKinds .chip').forEach(b=>b.onclick=()=>{
  document.querySelectorAll('#activeKinds .chip').forEach(x=>x.classList.remove('active'));
- b.classList.add('active'); activeKind=b.dataset.activeKind||'散歩・ウォーキング';
+ b.classList.add('active'); activeKind=b.dataset.activeKind||'any';
 });
 document.querySelectorAll('#eventKinds .chip').forEach(b=>b.onclick=()=>{
  document.querySelectorAll('#eventKinds .chip').forEach(x=>x.classList.remove('active'));
  b.classList.add('active');
- eventKind=b.dataset.eventKind||'お祭り・催し';
+ eventKind=b.dataset.eventKind||'any';
 });
 document.querySelectorAll('#transport .chip').forEach(b=>b.onclick=()=>{
  const requested=b.dataset.mode;
- if(mood==='food' && foodKind==='居酒屋' && !['auto','public','taxi'].includes(requested)){
+ if(mood==='food' && foodKind==='居酒屋' && !['auto','walk','public','taxi'].includes(requested)){
    transport='auto';
    document.querySelectorAll('#transport .chip').forEach(x=>{
      x.classList.toggle('active', x.dataset.mode==='auto');
@@ -5797,6 +5811,11 @@ function secondaryMoodMatches(ev){
   const text=[ev?.title,ev?.venue,ev?.summary].filter(Boolean).join(' ');
   const has=(...names)=>names.some(n=>cats.has(n));
 
+  if(mood==='onsen' && onsenKind==='any') return true;
+  if(mood==='sightseeing' && sightseeingKind==='any') return true;
+  if(mood==='active' && activeKind==='any') return true;
+  if(mood==='event' && eventKind==='any') return true;
+
   if(mood==='onsen'){
     if(onsenKind==='サウナ') return has('サウナ') || /サウナ/.test(text);
     if(onsenKind==='日帰り風呂') return has('日帰り風呂','風呂','入浴','温浴') || /日帰り|入浴|風呂|温浴/.test(text);
@@ -6026,6 +6045,72 @@ function planStops(plan,ctx){
   return stops;
 }
 
+
+/* v130: バス利用時の乗車・下車地点を 🚏 で地図表示する。
+   座標は既存PLACESに確認済みの地点だけを使い、推測座標は作らない。 */
+const BUS_STOP_PLACE_ALIASES={
+  '上越妙高駅':'上越妙高','高田駅':'高田','直江津駅':'直江津','春日山駅':'春日山',
+  '新井駅':'新井','北新井駅':'北新井','二本木駅':'二本木','関山駅':'関山',
+  '妙高高原駅':'妙高高原','黒姫駅':'黒姫','古間駅':'古間','牟礼駅':'牟礼',
+  '豊野駅':'豊野','三才駅':'三才','北長野駅':'北長野','長野駅':'長野'
+};
+
+function busStopCoord(name){
+  const raw=String(name||'').trim();
+  if(!raw)return null;
+  const clean=raw.replace(/（.*?）/g,'').trim();
+  const noStation=clean.replace(/駅$/,'').trim();
+  const candidates=[raw,clean,BUS_STOP_PLACE_ALIASES[raw],BUS_STOP_PLACE_ALIASES[clean],noStation].filter(Boolean);
+  for(const key of candidates){
+    const p=PLACES?.[key];
+    if(p && Number.isFinite(Number(p.lat)) && Number.isFinite(Number(p.lon))){
+      return {lat:Number(p.lat),lon:Number(p.lon)};
+    }
+  }
+  return null;
+}
+
+function busStopRowsForPlan(plan,ctx){
+  const rows=[];
+  const seen=new Set();
+  const add=(name,role,line)=>{
+    const coord=busStopCoord(name);
+    if(!coord)return;
+    const key=`${name}|${coord.lat.toFixed(6)}|${coord.lon.toFixed(6)}|${role}`;
+    if(seen.has(key))return;
+    seen.add(key);
+    rows.push({name,role,line,...coord});
+  };
+  const addLeg=(leg,from,to)=>{
+    if(!leg || leg.kind!=='bus')return;
+    const line=leg.lineName||leg.n||'バス';
+    add(from,'乗車',line);
+    add(to,'下車',line);
+  };
+  if(plan?.multimodal && plan?.transferHub){
+    addLeg(plan.out,ctx?.origin||origin,plan.transferHub);
+    addLeg(plan.back,plan.transferHub,plan.returnTo||ctx?.returnTo||resolvedReturnStation());
+  }else{
+    addLeg(plan?.out,ctx?.origin||origin,plan?.dest);
+    addLeg(plan?.back,plan?.dest,plan?.returnTo||ctx?.returnTo||resolvedReturnStation());
+  }
+  return rows;
+}
+
+function renderBusStopMarkersOnPlanMap(map,plan,ctx){
+  if(!map || !leafletReady())return;
+  const rows=busStopRowsForPlan(plan,ctx);
+  rows.forEach((s,idx)=>{
+    const icon=L.divIcon({
+      className:'',
+      html:`<div style="width:30px;height:30px;border-radius:999px;display:grid;place-items:center;background:#fff;border:2px solid #2f78c4;box-shadow:0 2px 8px rgba(24,63,102,.22);font-size:18px;line-height:1">🚏</div>`,
+      iconSize:[30,30],iconAnchor:[15,15]
+    });
+    const popup=`<strong>🚏 ${esc(s.name)}</strong><br>${esc(s.role)}：${esc(s.line)}<br><small>※ 収録済み主要停留所の代表地点</small>`;
+    L.marker([s.lat,s.lon],{icon,zIndexOffset:650+idx,interactive:true,riseOnHover:true}).addTo(map).bindPopup(popup);
+  });
+}
+
 async function fetchRouteGeometry(stops,plan){
   if(!stops || stops.length<2)return null;
 
@@ -6208,6 +6293,9 @@ async function renderPlanRouteMap(mapId,plan,ctx){
     const zIndexOffset=Math.max(...group.items.map(({s,i})=>s.kind==='start'?400:s.kind==='return'?350:s.kind==='transfer'?300:250-i));
     L.marker([group.lat,group.lon],{icon,zIndexOffset}).addTo(map).bindPopup(popup);
   });
+
+  // バス利用時は乗車・下車地点を専用の🚏マーカーで表示する。
+  renderBusStopMarkersOnPlanMap(map,plan,ctx);
 
   const geometry=await fetchRouteGeometry(stops,plan);
   if(geometry?.points?.length){
@@ -7936,7 +8024,7 @@ function renderTransitGuide(plan,ctx){
         </div>
       </div>`;
     }).join('')}
-    <div class="transit-guide-note">※ アプリ内の公共交通表示は収録済みの主要駅・主要停留所ベースです。乗り場番号・細かな停留所位置・臨時変更は公式情報で確認してください。</div>
+    <div class="transit-guide-note">※ 🚏は収録済みの主要バス停・乗降地点の代表位置です。🚌はバス移動を表します。乗り場番号・細かな停留所位置・臨時変更は公式情報で確認してください。</div>
   </div>`;
 }
 
@@ -10012,9 +10100,10 @@ async function buildPlans(){
        : AUTO_MODES)
    : (transport==='mobilitycar' ? ['carshare','rentalcar'] : [transport]);
 
- // 「居酒屋」指定時は公共交通・タクシーだけ。
+ // 「居酒屋」指定時は徒歩・公共交通・タクシーのみ。
+ // 高田→高田のような同一駅周辺では徒歩を第一に成立判定できるようにする。
  if(mood==='food' && foodKind==='居酒屋'){
-   requestedModes=['public','taxi'];
+   requestedModes=['walk','public','taxi'];
  }
 
  // 1) Exact requested conditions
