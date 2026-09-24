@@ -1307,7 +1307,7 @@ window.NEXITAIME_GOURMET_ENDPOINT =
 // ▼ NEXITAIMEからひとこと：ここを true / false に変えるだけで即ON/OFFできます
 window.NEXITAIME_AI_SUGGESTION_ENABLED = true;
 </script>
-<script>window.NEXITAIME_BUILD="v131";</script>
+<script>window.NEXITAIME_BUILD="v132";</script>
 
 
 <style id="nexitaime-existing-ai-style">
@@ -5130,7 +5130,150 @@ function publicAccessStationCandidates(ev,fallbackDest){
   return nearest.map(x=>x.name);
 }
 
+
+
+// v132: Real route-7 last-mile access for Kasugayama heritage spots.
+// Source timetable: Kubiki Bus / Joetsu city, effective 2026-03-30.
+const KASUGAYAMA_ROUTE7_LAST_MILE={
+  weekday:{
+    outbound:{
+      '埋蔵文化財センター前':[['09:26','09:31'],['11:01','11:06'],['12:00','12:05'],['13:40','13:45'],['15:40','15:45']],
+      '中屋敷':[['07:36','07:41'],['08:23','08:27'],['09:26','09:33'],['11:01','11:08'],['12:00','12:07'],['13:40','13:47'],['15:40','15:47'],['16:23','16:27'],['17:58','18:02'],['18:59','19:03']]
+    },
+    inbound:{
+      '埋蔵文化財センター前':[['09:22','09:28'],['10:06','10:12'],['11:06','11:12'],['12:31','12:37'],['14:16','14:22']],
+      '中屋敷':[['07:13','07:18'],['07:34','07:39'],['08:29','08:34'],['09:20','09:28'],['10:04','10:12'],['11:04','11:12'],['12:29','12:37'],['14:14','14:22'],['16:54','16:59'],['17:49','17:54']]
+    }
+  },
+  holiday:{
+    outbound:{
+      '埋蔵文化財センター前':[['11:01','11:06'],['13:40','13:45'],['15:40','15:45']],
+      '中屋敷':[['08:23','08:27'],['11:01','11:08'],['13:40','13:47'],['15:40','15:47'],['16:28','16:32']]
+    },
+    inbound:{
+      '埋蔵文化財センター前':[['09:22','09:28'],['10:06','10:12'],['12:31','12:37'],['14:16','14:22'],['15:16','15:22']],
+      '中屋敷':[['07:34','07:39'],['09:20','09:28'],['10:04','10:12'],['12:29','12:37'],['14:14','14:22'],['15:14','15:22'],['17:49','17:54']]
+    }
+  }
+};
+
+function isKasugayamaHeritageEvent(ev){
+  const text=[ev?.title,ev?.venue,ev?.summary,...(Array.isArray(ev?.categories)?ev.categories:[])].filter(Boolean).join(' ');
+  return /春日山神社|春日山城(?:跡)?|上杉謙信公銅像|謙信公銅像|埋蔵文化財センター/.test(text);
+}
+
+function kasugayamaAccessStops(ev){
+  const text=[ev?.title,ev?.venue].filter(Boolean).join(' ');
+  if(/埋蔵文化財センター/.test(text)){
+    return [{name:'埋蔵文化財センター前',walk:1}];
+  }
+  return [
+    {name:'埋蔵文化財センター前',walk:15},
+    {name:'中屋敷',walk:20}
+  ];
+}
+
+function route7Pair(direction,stop,after){
+  const dayKey=isHolidayBusDay(planningDate)?'holiday':'weekday';
+  const rows=KASUGAYAMA_ROUTE7_LAST_MILE?.[dayKey]?.[direction]?.[stop]||[];
+  for(const pair of rows){
+    const dep=mins(pair[0]),arr=mins(pair[1]);
+    if(dep>=after){
+      return {
+        n:'春日山・佐内線（7）',lineName:'春日山・佐内線（7）',routeNumber:'7',
+        dep,arr,kind:'bus',
+        from:direction==='outbound'?'春日山駅前':stop,
+        to:direction==='outbound'?stop:'春日山駅前'
+      };
+    }
+  }
+  return null;
+}
+
+function stationHoldLeg(station,time){
+  return {n:'駅到着済み',lineName:'駅到着済み',kind:'walk',dep:time,arr:time,stationOnly:true,[station]:fmt(time)};
+}
+
+async function evaluateKasugayamaRoute7Access(ev,dest,mode,start,deadline,ctx){
+  if(dest!=='春日山' || !['public','bus'].includes(mode) || !isKasugayamaHeritageEvent(ev))return null;
+  const from=ctx.origin;
+  const backTo=ctx.returnTo;
+
+  const out=(from===dest)
+    ? stationHoldLeg(dest,start)
+    : chooseTransportMode(from,dest,start,mode);
+  if(!out)return null;
+  const stationArrive=out.arr;
+
+  const eventStart=ev.start_time?mins(ev.start_time):null;
+  const eventEnd=ev.end_time?mins(ev.end_time):null;
+  const window=availabilityWindow(ev,planningDate);
+  if(window.closed)return null;
+  const reservation=reservationFeasibility(ev);
+  if(!reservation.ok)return null;
+  const pref=stayPreference(ev);
+
+  for(const access of kasugayamaAccessStops(ev)){
+    const busOut=route7Pair('outbound',access.name,stationArrive);
+    if(!busOut)continue;
+
+    let arrive=busOut.arr+access.walk;
+    if(eventStart!=null && arrive<eventStart)arrive=eventStart;
+    if(window.open!=null && arrive<window.open)arrive=window.open;
+    const cutoffMeta=arrivalCutoffForEvent(ev,window);
+    if(cutoffMeta && arrive>=cutoffMeta.minute)continue;
+
+    let effectiveEnd=eventEnd;
+    if(window.close!=null)effectiveEnd=effectiveEnd==null?window.close:Math.min(effectiveEnd,window.close);
+    const earliestVenueLeave=arrive+pref.min;
+    const targetVenueLeave=arrive+pref.recommended;
+    if(effectiveEnd!=null && earliestVenueLeave>effectiveEnd)continue;
+
+    let busBack=route7Pair('inbound',access.name,targetVenueLeave+access.walk);
+    if(!busBack)busBack=route7Pair('inbound',access.name,earliestVenueLeave+access.walk);
+    if(!busBack)continue;
+
+    const venueLeave=busBack.dep-access.walk;
+    if(effectiveEnd!=null && venueLeave>effectiveEnd)continue;
+    if(afterDarkOutdoorRisk(ev,venueLeave,mode,access.walk))continue;
+    const stay=Math.floor(venueLeave-arrive);
+    if(stay<pref.min)continue;
+    const availability=spotAvailability(ev,arrive,venueLeave,planningDate);
+    if(!availability.ok)continue;
+
+    const back=(backTo===dest)
+      ? stationHoldLeg(dest,busBack.arr)
+      : firstTransitReturnAfter(dest,backTo,busBack.arr,deadline,null,mode);
+    if(!back || back.arr>deadline)continue;
+
+    let transportCost=await estimateTransportCost('public',from,dest,backTo,null,out.kind,back.kind);
+    if(transportCost){
+      transportCost={...transportCost,note:`${transportCost.note||'公共交通の概算'}・春日山・佐内線の運賃は別途確認`};
+    }
+
+    const lastMile={
+      mode:'bus_walk',known:true,minutes:access.walk,walkMinutes:access.walk,
+      station:dest,busStop:access.name,lineName:'春日山・佐内線（7）',
+      outboundBus:busOut,returnBus:busBack,
+      venue:ev?.venue||ev?.title||dest,
+      label:`🚌 ${access.name}＋徒歩`
+    };
+
+    return {
+      ev,dest,returnTo:backTo,mode:'public',modeLabel:'公共交通',modeIcon:'🚌',
+      out,back,stationArrive,arrive,venueLeave,finish:back.arr,spare:deadline-back.arr,
+      stay,feasible:true,transportCost,availability,reservation,
+      returnSafety:{level:'ok',penalty:0,label:''},lastMile,accessStation:dest,
+      reason:`春日山駅から春日山・佐内線（7）で${access.name}へ、下車後徒歩約${access.walk}分。往復の実時刻まで確認した案`
+    };
+  }
+  return null;
+}
+
 async function evaluateTransitAtStation(ev,dest,mode,start,deadline,ctx){
+  const kasugayamaBus=await evaluateKasugayamaRoute7Access(ev,dest,mode,start,deadline,ctx);
+  if(kasugayamaBus)return kasugayamaBus;
+
   const from=ctx.origin;
   const backTo=ctx.returnTo;
   const out=chooseTransportMode(from,dest,start,mode);
@@ -8053,6 +8196,26 @@ function userFacingLegRoute(fromName,toName,leg){
   return `${from} → ${to}`;
 }
 
+
+
+function lastMileOutboundSummary(plan){
+  const lm=plan?.lastMile;
+  if(!lm || !Number.isFinite(Number(lm.minutes)) || Number(lm.minutes)<=0)return '';
+  if(lm.mode==='bus_walk' && lm.outboundBus){
+    return ` → 🚌 ${lm.lineName||'路線バス'} ${fmt(lm.outboundBus.dep)}→${fmt(lm.outboundBus.arr)} 🚏${lm.busStop} → 🚶 ${plan.ev?.venue||plan.ev?.title||'目的地'} 約${lm.minutes}分`;
+  }
+  return ` → 🚶 ${plan.ev?.venue||plan.ev?.title||'目的地'} 約${lm.minutes}分`;
+}
+
+function lastMileReturnSummary(plan){
+  const lm=plan?.lastMile;
+  if(!lm || !Number.isFinite(Number(lm.minutes)) || Number(lm.minutes)<=0)return '';
+  if(lm.mode==='bus_walk' && lm.returnBus){
+    return ` → 🚶 🚏${lm.busStop} 約${lm.minutes}分 → 🚌 ${lm.lineName||'路線バス'} ${fmt(lm.returnBus.dep)}→${fmt(lm.returnBus.arr)} → ${plan.dest}`;
+  }
+  return ` → 🚶 ${plan.dest} 約${lm.minutes}分`;
+}
+
 function userFacingRouteSummary(names){
   const rows=(Array.isArray(names)?names:[])
     .map(x=>String(x||'').trim())
@@ -8129,9 +8292,15 @@ function renderTransitGuide(plan,ctx){
     addTransitLeg(plan.out,ctx.origin,plan.transferHub);
     addTransitLeg(plan.back,plan.transferHub,plan.returnTo||ctx.returnTo);
   }else{
-    addTransitLeg(plan.out,ctx.origin,plan.dest);
+    if(!plan.out?.stationOnly) addTransitLeg(plan.out,ctx.origin,plan.dest);
 
-    if(Number.isFinite(plan.lastMile?.minutes) && plan.lastMile.minutes>0){
+    if(plan.lastMile?.mode==='bus_walk' && plan.lastMile?.outboundBus && plan.lastMile?.returnBus){
+      const lm=plan.lastMile;
+      rows.push({type:'localbus',from:'春日山駅前',to:lm.busStop,dep:fmt(lm.outboundBus.dep),arr:fmt(lm.outboundBus.arr),vehicle:'🚌',line:lm.lineName||'春日山・佐内線（7）'});
+      rows.push({type:'lastmile',from:lm.busStop,to:plan.ev?.venue||plan.ev?.title||'目的地',minutes:lm.minutes,dep:fmt(lm.outboundBus.arr),arr:Number.isFinite(plan.arrive)?fmt(plan.arrive):''});
+      rows.push({type:'lastmile-back',from:plan.ev?.venue||plan.ev?.title||'目的地',to:lm.busStop,minutes:lm.minutes,dep:Number.isFinite(plan.venueLeave)?fmt(plan.venueLeave):'',arr:fmt(lm.returnBus.dep)});
+      rows.push({type:'localbus',from:lm.busStop,to:'春日山駅前',dep:fmt(lm.returnBus.dep),arr:fmt(lm.returnBus.arr),vehicle:'🚌',line:lm.lineName||'春日山・佐内線（7）'});
+    }else if(Number.isFinite(plan.lastMile?.minutes) && plan.lastMile.minutes>0){
       rows.push({
         type:'lastmile',
         from:plan.dest,
@@ -8150,7 +8319,7 @@ function renderTransitGuide(plan,ctx){
       });
     }
 
-    addTransitLeg(plan.back,plan.dest,plan.returnTo||ctx.returnTo);
+    if(!plan.back?.stationOnly) addTransitLeg(plan.back,plan.dest,plan.returnTo||ctx.returnTo);
   }
 
   if(!rows.length)return '';
@@ -10996,9 +11165,9 @@ async function buildPlans(){
            <div class="route-map-note">GoogleマップではS→立ち寄り地点→Gの順で開きます。公共交通を含む複数立ち寄りは、地点順を優先しGoogleマップ側で経路を再計算します。</div>
          </div>
          <div class="timeline">
-           <div class="leg"><div>行き</div><div><strong>${p.modeIcon||''} ${esc(userFacingTransportName(p.out))}</strong><br>${esc(userFacingLegRoute(searchCtx.origin,p.dest,p.out))}${p.lastMile?.minutes?` → 🚶 ${esc(p.ev?.venue||p.ev?.title||'目的地')} 約${p.lastMile.minutes}分`:''}</div><div>${p.out[searchCtx.origin]} → ${Number.isFinite(p.arrive)?fmt(p.arrive):(p.out[p.dest]||'')}</div></div>
+           <div class="leg"><div>行き</div><div><strong>${p.modeIcon||''} ${esc(userFacingTransportName(p.out))}</strong><br>${esc(userFacingLegRoute(searchCtx.origin,p.dest,p.out))}${esc(lastMileOutboundSummary(p))}</div><div>${p.out[searchCtx.origin]} → ${Number.isFinite(p.arrive)?fmt(p.arrive):(p.out[p.dest]||'')}</div></div>
            <div class="leg"><div>滞在</div><div><strong>${esc(p.ev?.venue||p.dest)}周辺</strong><br><span class="stay-guide">目安 ${stayPreference(p.ev).recommended}分</span></div><div>約${p.stay}分</div></div>
-           <div class="leg"><div>帰り</div><div><strong>${p.modeIcon||''} ${esc(userFacingTransportName(p.back))}</strong><br>${esc(p.ev?.venue||p.dest)}${p.lastMile?.minutes?` → 🚶 ${esc(p.dest)} 約${p.lastMile.minutes}分`:''} → ${p.returnTo||origin}</div><div>${Number.isFinite(p.venueLeave)?fmt(p.venueLeave):(p.back[p.dest]||'')} → ${p.back[p.returnTo||origin]}</div></div>
+           <div class="leg"><div>帰り</div><div><strong>${p.modeIcon||''} ${esc(userFacingTransportName(p.back))}</strong><br>${esc(p.ev?.venue||p.dest)}${esc(lastMileReturnSummary(p))} → ${p.returnTo||origin}</div><div>${Number.isFinite(p.venueLeave)?fmt(p.venueLeave):(p.back[p.dest]||'')} → ${p.back[p.returnTo||origin]}</div></div>
          </div>
          <div class="meta" style="margin-top:8px">ルート：${esc(userFacingRouteSummary([
             searchCtx.origin,
