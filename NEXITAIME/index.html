@@ -1307,7 +1307,7 @@ window.NEXITAIME_GOURMET_ENDPOINT =
 // ▼ NEXITAIMEからひとこと：ここを true / false に変えるだけで即ON/OFFできます
 window.NEXITAIME_AI_SUGGESTION_ENABLED = true;
 </script>
-<script>window.NEXITAIME_BUILD="v130";</script>
+<script>window.NEXITAIME_BUILD="v131";</script>
 
 
 <style id="nexitaime-existing-ai-style">
@@ -5289,13 +5289,17 @@ async function evaluateAutoMultimodal(ev,dest,start,deadline,ctx){
     const p=PLACES?.[name];
     return p ? {name,km:haversine(p.lat,p.lon,venuePoint.lat,venuePoint.lon)*1.2} : null;
   }).filter(Boolean).sort((a,b)=>a.km-b.km) : [];
-  const nearestHubKm=hubDistances.length ? hubDistances[0].km : null;
+  const orderedHubs=hubDistances.length ? hubDistances.map(x=>x.name) : multimodalHubs();
 
-  for(const hub of multimodalHubs()){
+  // v131: last-mile hubs are strict nearest-first.
+  // Try the nearest station area first and only fall back to the next-nearest hub
+  // when no realistic multimodal route can be built from the nearer hub.
+  // Important: hub===dest is valid. `dest` is the destination station area, while
+  // the actual venue may still require a taxi/walk from that station (e.g. 春日山).
+  for(const hub of orderedHubs){
     const hubKm=hubDistances.find(x=>x.name===hub)?.km ?? null;
-    // Keep nearby alternatives, but reject clearly unnatural transfer hubs.
-    if(nearestHubKm!=null && hubKm!=null && hubKm>nearestHubKm+2.0) continue;
-    if(hub===from || hub===dest) continue;
+    if(hub===from) continue;
+    const rowsBeforeHub=rows.length;
 
     // 1) Public transport from origin to transfer hub
     const first=chooseTransportMode(from,hub,start,'public');
@@ -5359,6 +5363,10 @@ async function evaluateAutoMultimodal(ev,dest,start,deadline,ctx){
         reason:`${from}から${hub}まで公共交通、${hub}から${dest}は${MODE_LABELS[lastMode]}を使う複合移動案${lastMode==='taxi'?`（${taxiHubMeta(hub).label}）`:''}`
       });
     }
+
+    // Once the nearest viable hub yields at least one valid route, do not let a
+    // farther station win merely because its taxi rank metadata or timetable scores better.
+    if(rows.length>rowsBeforeHub) break;
   }
 
   rows.sort((a,b)=>{
