@@ -1307,7 +1307,7 @@ window.NEXITAIME_GOURMET_ENDPOINT =
 // ▼ NEXITAIMEからひとこと：ここを true / false に変えるだけで即ON/OFFできます
 window.NEXITAIME_AI_SUGGESTION_ENABLED = true;
 </script>
-<script>window.NEXITAIME_BUILD="v129";</script>
+<script>window.NEXITAIME_BUILD="v130";</script>
 
 
 <style id="nexitaime-existing-ai-style">
@@ -9899,15 +9899,20 @@ function planDisplayTitle(p){
   return multi && !/他$/.test(base) ? `${base} 他` : base;
 }
 
-function planComparisonHtml(plans,start,buffer){
-  if(!Array.isArray(plans)||plans.length<2)return '';
-  // 「ざっくり比較」は合計所要時間の短い順に並べる。
-  // 元のおすすめ候補配列は変更せず、比較表示だけをソートする。
-  const displayPlans=[...plans].sort((a,b)=>{
+function plansInComparisonOrder(plans,start){
+  if(!Array.isArray(plans))return [];
+  // ざっくり比較と詳細ルートは、必ず同じ「合計所要時間の短い順」で表示する。
+  // 同時間なら元のおすすめ順を維持する（stable sort）。
+  return [...plans].sort((a,b)=>{
     const aElapsed=(Number.isFinite(a?.finish)&&Number.isFinite(start))?Math.max(0,a.finish-start):Infinity;
     const bElapsed=(Number.isFinite(b?.finish)&&Number.isFinite(start))?Math.max(0,b.finish-start):Infinity;
     return aElapsed-bElapsed;
   });
+}
+
+function planComparisonHtml(plans,start,buffer){
+  if(!Array.isArray(plans)||plans.length<2)return '';
+  const displayPlans=plansInComparisonOrder(plans,start);
   let html=`<div class="plan-compare"><div class="plan-compare-title">ざっくり比較</div><div class="plan-compare-sub">合計時間を中心に、移動・滞在・余裕・料金を見比べられます。</div><div class="plan-compare-list">`;
   displayPlans.forEach((p,i)=>{
     const elapsed=(Number.isFinite(p.finish)&&Number.isFinite(start))?Math.max(0,p.finish-start):null;
@@ -10822,6 +10827,10 @@ async function buildPlans(){
    bindNoResultActions();
    return;
  }
+ // 詳細ルートも「ざっくり比較」と同じ順に揃える。
+ // 以降のカード番号・選択ボタン・共有/お気に入り/詳細開閉もこの順を基準にする。
+ top=plansInComparisonOrder(top,start);
+
  const routeSummary=userFacingRouteSummary([
    searchCtx.origin,
    destinationGroupLabel(searchCtx.destination),
