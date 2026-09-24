@@ -5829,6 +5829,11 @@ function lateNightDiagnosticHtml(){
     Hot Pepper取得 ${Number(d.hpFetched||0)}件 /
     営業時間解析 ${Number(d.hpVerified||0)}件 /
     現在営業判定 ${Number(d.hpOpenNow||0)}件<br>
+    全候補 ${Number(d.candidateTotal||0)}件 →
+    日付/予算/同行者 ${Number(d.afterDateBudgetCompanion||0)}件 →
+    行き先 ${Number(d.afterDestination||0)}件 →
+    気分 ${Number(d.afterMood||0)}件 →
+    2段目 ${Number(d.afterSecondary||0)}件<br>
     最初の28候補：飲食 ${Number(d.firstFood||0)}件 /
     次の28候補：飲食 ${Number(d.restFood||0)}件<br>
     現在営業判定：${names}
@@ -10112,11 +10117,67 @@ function automaticReturnBufferMinutes(freeMinutes=180){
 }
 
 
+
+function explicitSecondarySelectionActive(){
+  if(mood==='food') return foodKind!=='any';
+  if(mood==='onsen') return onsenKind!=='any';
+  if(mood==='sightseeing') return sightseeingKind!=='any';
+  if(mood==='active') return activeKind!=='any';
+  if(mood==='event') return eventKind!=='any';
+  return false;
+}
+
+function prioritizeExplicitSearchCandidates(rows,ctx){
+  const list=Array.isArray(rows)?rows.filter(Boolean):[];
+  if(mood==='any') return list;
+
+  const nearby=new Set(nearbyAreasForOrigin(ctx?.origin||origin));
+  const secondaryActive=explicitSecondarySelectionActive();
+  const when=planningDate||new Date();
+
+  return list
+    .map((ev,i)=>{
+      let score=0;
+
+      // 明示した1段目・2段目の候補を、実ルート評価の先頭へ送る。
+      if(moodMatches(ev,mood)) score+=140;
+      if(secondaryActive && secondaryMoodMatches(ev)) score+=180;
+
+      // 成立可能性の高い候補を先に評価する。
+      if(exactPointForEvent(ev)) score+=90;
+      if(ev?.routing_ready===true) score+=45;
+      if(nearby.has(ev?.area)) score+=35;
+      if(ev?.always_open===true) score+=35;
+
+      try{
+        const w=availabilityWindow(ev,when);
+        if(w?.verified===true && w?.closed!==true) score+=75;
+        if(w?.closed===true) score-=180;
+      }catch(_){}
+
+      // 飲食の明示検索ではライブ飲食候補を後ろに追いやらない。
+      if(['food','cafe'].includes(mood) && ev?.provider==='hotpepper') score+=85;
+
+      // イベントは開催タイミングの重要度も維持。
+      if(mood==='event'){
+        try{
+          const t=eventTimingMeta(ev,when);
+          score+=Math.max(0,Number(t?.score||0))*1.5;
+        }catch(_){}
+      }
+
+      return {ev,i,score};
+    })
+    .sort((a,b)=>b.score-a.score || a.i-b.i)
+    .map(x=>x.ev);
+}
+
 async function scoreEventSetFast(events,modes,start,deadline,ctx,timeoutMs=1400){
   // 候補全体を1本のPromiseで評価すると、最後の数件が遅いだけで
   // 先に成立していた候補まで [] になってしまう。
   // 3件ずつ小分けにして、取れた結果は保持する。
-  const list=Array.isArray(events)?events.filter(Boolean):[];
+  const rawList=Array.isArray(events)?events.filter(Boolean):[];
+  const list=mood!=='any' ? prioritizeExplicitSearchCandidates(rawList,ctx) : rawList;
   if(!list.length)return [];
 
   const collected=[];
@@ -10349,9 +10410,17 @@ async function buildPlans(){
    ? mergeCandidateEvents(EVENTS,hotpepperEvents)
    : EVENTS;
  let events=candidateEvents.filter(ev=>eventIsAvailableAt(ev,planningDate)).filter(budgetAllows).filter(companionAllows);
+ const diag=window.__NEXIT_LATE_DIAG||(window.__NEXIT_LATE_DIAG={});
+ diag.candidateTotal=candidateEvents.length;
+ diag.afterDateBudgetCompanion=events.length;
  if(destinationArea!=='any')events=events.filter(destinationMatchesEvent);
+ diag.afterDestination=events.length;
  if(mood!=='any')events=events.filter(ev=>moodMatches(ev,mood));
+ diag.afterMood=events.length;
  events=events.filter(foodKindMatches).filter(secondaryMoodMatches);
+ diag.afterSecondary=events.length;
+ diag.explicitSecondary=explicitSecondarySelectionActive();
+ diag.explicitMood=mood!=='any';
  // NEXITAIMEは「上越を満喫する」提案を優先。
  // 全国チェーンは候補から外し、地域チェーン・地元店は残す。
  events=events.filter(recommendationChainAllowed);
@@ -10795,6 +10864,9 @@ async function buildPlans(){
    summary.innerHTML=`<h2>この時間では、${esc(selectedModeLabel)}で行けるプランがありません</h2>
      <p><strong>${esc(searchCtx.origin)} → ${esc(destinationGroupLabel(searchCtx.destination))} → ${esc(searchCtx.returnTo)}</strong><br>
      選んだ行き先や移動手段は勝手に変更していません。</p>`;
+   const debugHtml=new URLSearchParams(location.search).get('debug')==='1'
+     ? `${lateNightDiagnosticHtml()}${exclusionSummaryHtml(8)}`
+     : '';
    box.innerHTML=`<div class="plan no-result-actions-wrap">
      <h3>条件を少し変えて、もう一度探す</h3>
      <p>よく使う変更をワンタップで試せます。</p>
@@ -10805,6 +10877,7 @@ async function buildPlans(){
        ${searchCtx.destination!=='any'?'<button type="button" class="retry-action" data-retry-action="autoDestination">📍 行き先をおまかせ</button>':''}
      </div>
      <div class="retry-note">※ 押すと条件を変更して、そのまま再検索します。</div>
+     ${debugHtml}
    </div>`;
    bindNoResultActions();
    return;
