@@ -3215,33 +3215,13 @@ document.getElementById('go').onclick=async()=>{
     const summary=document.getElementById('summary');
     const box=document.getElementById('plans');
 
-    const errName=String(err?.name||'Error');
-    const errMessage=String(err?.message||err||'unknown error');
-    const errStack=String(err?.stack||'')
-      .split('\n')
-      .slice(0,6)
-      .join('\n');
-
-    const safe=v=>String(v||'')
-      .replaceAll('&','&amp;')
-      .replaceAll('<','&lt;')
-      .replaceAll('>','&gt;')
-      .replaceAll('"','&quot;');
-
     if(summary){
       summary.innerHTML=`<h2>検索を完了できませんでした</h2>
         <p>外部サービスの応答または候補計算でエラーが発生しました。もう一度お試しください。</p>`;
     }
 
     if(box){
-      box.innerHTML=`<div class="plan">
-        <h3>デバッグ情報</h3>
-        <div class="note" style="font-size:12px;line-height:1.7">
-          <strong>${safe(errName)}:</strong> ${safe(errMessage)}
-        </div>
-        ${errStack?`<pre style="white-space:pre-wrap;word-break:break-word;background:#f7f9fb;border:1px solid #e4e9ee;border-radius:12px;padding:12px;font-size:11px;line-height:1.55;margin-top:10px">${safe(errStack)}</pre>`:''}
-        <div class="note" style="margin-top:10px">この画面のスクリーンショットを送れば、落ちている箇所を特定できます。</div>
-      </div>`;
+      box.innerHTML='<div class="plan"><p>時間をおいて、もう一度お試しください。</p></div>';
     }
   }
 };
@@ -4409,8 +4389,23 @@ function taxiReturnWaitMinutes(){
   return 8;
 }
 
-async function getModeService(mode){
+async function getModeService(mode,station=null){
   if(!['carshare','rentalcar','taxi','bike'].includes(mode))return {service:null,access:0};
+
+  // A transfer leg must use a real port by the transfer station, never the
+  // user's current position or the original departure station.
+  if(station && mode!=='taxi'){
+    const point=PLACES?.[station];
+    if(!point)return null;
+    const nearest=MOBILITY
+      .filter(s=>s.category===mode && Number.isFinite(Number(s.lat)) && Number.isFinite(Number(s.lon)))
+      .filter(s=>mode!=='bike' || !!(s.verified_at || String(s.source_status||'').includes('verified')))
+      .map(s=>({service:s,km:haversine(point.lat,point.lon,Number(s.lat),Number(s.lon))}))
+      .filter(x=>x.km<=MOBILITY_NEAR_KM)
+      .sort((a,b)=>a.km-b.km)[0];
+    if(!nearest)return null;
+    return {service:nearest.service,access:Math.max(1,Math.ceil(nearest.km/4.5*60))};
+  }
 
   // Taxi can come to the user, so office distance is not used as an access constraint.
   if(mode==='taxi'){
@@ -5024,7 +5019,7 @@ function crowdingHtml(plan){
 }
 
 
-async function evaluateDirectMode(ev,dest,mode,start,deadline,ctx){
+async function evaluateDirectMode(ev,dest,mode,start,deadline,ctx,serviceOverride=null){
   const from=ctx.origin;
   const backTo=ctx.returnTo;
   if(!returnModeAllowed(mode,ctx))return null;
@@ -5054,7 +5049,7 @@ async function evaluateDirectMode(ev,dest,mode,start,deadline,ctx){
     }
   }
 
-  const svc=await getModeService(mode);
+  const svc=serviceOverride || await getModeService(mode);
   if(['carshare','rentalcar','taxi','bike'].includes(mode) && !svc)return null;
 
   const service=svc?.service||null;
@@ -5511,14 +5506,20 @@ async function evaluateTransitMode(ev,dest,mode,start,deadline,ctx){
 function multimodalHubs(){
   // Transfer candidates are intentionally limited to major station areas
   // where the app already has public-transport and mobility data.
-  return ['上越妙高','高田','春日山','直江津'];
+  return ['上越妙高','高田','春日山','直江津','新井','妙高高原'];
 }
 
 function mobilityModesForHub(){
-  return ['carshare','rentalcar','taxi'];
+  return ['carshare','rentalcar','taxi','bike'];
 }
 
-async function evaluateAutoMultimodal(ev,dest,start,deadline,ctx){
+function bikePortOpenAt(service,minute){
+  const at=new Date(planningDate);
+  at.setHours(0,minute,0,0);
+  return isLikelyOpen(service,at);
+}
+
+async function evaluateAutoMultimodal(ev,dest,start,deadline,ctx,hubModes=mobilityModesForHub()){
   const from=ctx.origin;
   const backTo=ctx.returnTo;
   const rows=[];
@@ -5537,28 +5538,34 @@ async function evaluateAutoMultimodal(ev,dest,start,deadline,ctx){
     const hubKm=hubDistances.find(x=>x.name===hub)?.km ?? null;
     // Keep nearby alternatives, but reject clearly unnatural transfer hubs.
     if(nearestHubKm!=null && hubKm!=null && hubKm>nearestHubKm+2.0) continue;
-    if(hub===from || hub===dest) continue;
+    if(hub===from) continue;
 
     // 1) Public transport from origin to transfer hub
     const first=chooseTransportMode(from,hub,start,'public');
     if(!first) continue;
 
-    for(const lastMode of mobilityModesForHub()){
+    for(const lastMode of hubModes){
+      // The area's station is a valid bike transfer: the actual venue can still
+      // require a bicycle ride from that station.
+      if(hub===dest && lastMode!=='bike')continue;
+      if(lastMode==='bike' && alcoholVenueLike(ev))continue;
       if(!returnModeAllowed(lastMode,{origin:hub,returnTo:hub}) && lastMode!=='taxi') continue;
 
       // For carshare/rental car we require a service near the transfer hub.
-      const svc = lastMode==='taxi' ? null : getModeService(lastMode,hub);
+      const svc = lastMode==='taxi' ? null : await getModeService(lastMode,hub);
       if(lastMode!=='taxi' && !svc?.service) continue;
 
       // Taxi waiting itself is accounted for inside evaluateDirectMode.
       // Here we only add a short station-to-rank transfer buffer.
-      const transferBuffer = lastMode==='taxi' ? 3 : (lastMode==='carshare' ? 12 : 18);
+      const transferBuffer = lastMode==='taxi' ? 3 : (lastMode==='bike' ? 5 : (lastMode==='carshare' ? 12 : 18));
       const localStart = first.arr + transferBuffer;
+      if(lastMode==='bike' && !bikePortOpenAt(svc.service,localStart+svc.access))continue;
 
       // Last-mile to destination.
       const localCtx={origin:hub,returnTo:hub};
-      const localOut=await evaluateDirectMode(ev,dest,lastMode,localStart,deadline,localCtx);
+      const localOut=await evaluateDirectMode(ev,dest,lastMode,localStart,deadline,localCtx,svc);
       if(!localOut) continue;
+      if(lastMode==='bike' && !bikePortOpenAt(svc.service,localOut.finish-svc.access))continue;
 
       // localOut currently includes hub -> dest -> hub.
       // After coming back to the hub, use public transport back to requested return point.
@@ -5582,6 +5589,7 @@ async function evaluateAutoMultimodal(ev,dest,start,deadline,ctx){
         lastMode,
         out:first,
         local:localOut,
+        service:localOut.service,
         back:second,
         arrive:localOut.arrive,
         finish:second.arr,
@@ -5626,6 +5634,7 @@ async function evaluateAutoMultimodal(ev,dest,start,deadline,ctx){
 
 async function evaluateMode(ev,dest,mode,start,deadline,ctx){
   if(ev?.routing_ready===false)return null;
+  if(mode==='bike_multimodal') return evaluateAutoMultimodal(ev,dest,start,deadline,ctx,['bike']);
   if(mode==='multimodal') return evaluateAutoMultimodal(ev,dest,start,deadline,ctx);
   if(['train','bus','public'].includes(mode))return evaluateTransitMode(ev,dest,mode,start,deadline,ctx);
   return evaluateDirectMode(ev,dest,mode,start,deadline,ctx);
@@ -6730,9 +6739,6 @@ function itineraryCategoriesCanFollow(previousKind,nextKind){
   const culinary=new Set(['food','cafe']);
   if(culinary.has(previousKind) && culinary.has(nextKind))return false;
 
-  // 温泉の連続は周遊として不自然なので禁止。
-  if(previousKind==='onsen' && nextKind==='onsen')return false;
-
   return true;
 }
 
@@ -6994,8 +7000,6 @@ function buildDynamicVehicleItinerary(plan,candidateEvents=[],freeMinutes=180,ct
       const leave=arrive+stay;
       if(!itineraryCandidateAvailable(ev,arrive,leave))continue;
       const kind=itineraryCategory(ev);
-      // 1ルート内で温泉は1か所まで。間に別スポットを挟んでも温泉ハシゴはしない。
-      if(kind==='onsen' && usedKinds.has('onsen'))continue;
       if(!itineraryCategoriesCanFollow(rows[rows.length-1]?.category||'',kind))continue;
       const score=dynamicRouteCandidateScore(ev,{prevEv,prevPoint:currentPoint,goalPoint,usedKinds,rows,move,stay,freeMinutes});
       if(score>bestScore){
@@ -7179,8 +7183,6 @@ function buildSimpleItinerary(plan,candidateEvents=[],freeMinutes=180){
 
         const kind=itineraryCategory(ev);
         const previousKind=rows[rows.length-1]?.category||'';
-        // 1ルート内で温泉は1か所まで。
-        if(kind==='onsen' && usedKinds.has('onsen')) continue;
         if(!itineraryCategoriesCanFollow(previousKind,kind)) continue;
 
         const prevPoint=rows[rows.length-1]?.point || itineraryPointForEvent(plan.ev,plan.dest);
@@ -7652,6 +7654,7 @@ function autoModesForEvent(ev,dest,modes,ctx,start,deadline){
   // 居酒屋・酒場など飲酒前提になりやすい候補は、
   // 公共交通（電車・バス）またはタクシーだけを許可する。
   if(alcoholVenueLike(ev)){
+    if(transport==='bike')return [];
     const safe=alcoholSafeModes(modes);
     if(safe.length) return safe;
     return ['public','taxi'];
@@ -8131,7 +8134,8 @@ function finalPlanGuard(plan,ctx,start,deadline){
     const actual=plan?.mode;
     if(transport==='public'){
       if(!['public','train','bus'].includes(actual)) reasons.push('指定移動手段と不一致');
-    }else if(actual!==transport){
+    }else if(actual!==transport &&
+             !(transport==='bike' && plan?.multimodal && plan?.lastMode==='bike')){
       reasons.push('指定移動手段と不一致');
     }
   }
@@ -8149,7 +8153,7 @@ function finalPlanGuard(plan,ctx,start,deadline){
     }
   }
 
-  if(plan?.mode==='bike'){
+  if(plan?.mode==='bike' || (plan?.multimodal && plan?.lastMode==='bike')){
     const selectedWeather=weatherAtDate(planningDate||new Date());
     const rain=Number(selectedWeather?.rain||selectedWeather?.precipitation||0);
     const snow=Number(selectedWeather?.snowfall||0);
@@ -8592,6 +8596,17 @@ function bindNoResultActions(){
   document.querySelectorAll('[data-retry-action]').forEach(btn=>{
     btn.addEventListener('click', async ()=>{
       const action=btn.dataset.retryAction;
+      if(action==='verifiedArea'){
+        document.querySelector(`#destinations .chip[data-dest="${btn.dataset.value}"]`)?.click();
+      }
+      if(action==='verifiedMood'){
+        document.querySelector(`#moods .chip[data-mood="${btn.dataset.value}"]`)?.click();
+      }
+      if(action==='verifiedFree30'){
+        const freeEl=document.getElementById('free');
+        if(freeEl)freeEl.value=btn.dataset.value;
+        setFreeTimeMode('manual');
+      }
       if(action==='free30') adjustFreeTime(30);
       if(action==='later30') shiftDepartureMinutes(30);
       if(action==='autoTransport') setTransportChoice('auto');
@@ -8599,6 +8614,76 @@ function bindNoResultActions(){
       await buildPlans();
     });
   });
+}
+
+async function verifiedNoResultAlternatives(candidateEvents,requestedModes,start,deadline,free,ctx){
+  const originalArea=destinationArea, originalMood=mood;
+  const options=[];
+  const evalSmall=async(pool,area,moodChoice,probeDeadline=deadline)=>{
+    destinationArea=area;
+    mood=moodChoice;
+    try{
+      const probeCtx={...ctx,destination:area};
+      const eligible=pool
+        .filter(ev=>eventIsAvailableAt(ev,planningDate))
+        .filter(budgetAllows).filter(companionAllows)
+        .filter(ev=>area==='any' || (DEST_GROUPS[area]?.areas||[]).includes(ev.area))
+        .filter(ev=>moodMatches(ev,moodChoice))
+        .filter(foodKindMatches).filter(secondaryMoodMatches)
+        .filter(recommendationChainAllowed)
+        .slice(0,8);
+      const rows=await scoreEventSetFast(eligible,requestedModes,start,probeDeadline,probeCtx,1200);
+      return filterFinalPlans(rows,probeCtx,start,probeDeadline)
+        .filter(row=>budget==='any' || totalPlanCost(row)==null || totalPlanCost(row)<=Number(budget))
+        .filter(row=>!originOnlyStopBeforeDifferentGoal(row,probeCtx))
+        .reduce((seen,row)=>{
+          seen.add(row.ev?.id||row.ev?.title);
+          return seen;
+        },new Set()).size;
+    }finally{
+      destinationArea=originalArea;
+      mood=originalMood;
+    }
+  };
+  const pool=[...candidateEvents,...FLEX_ACTIVITIES];
+  if(originalArea!=='any'){
+    const otherAreas=Object.keys(DEST_GROUPS).filter(key=>key!==originalArea);
+    const baseStation=areaStation[DEST_GROUPS[originalArea]?.areas?.[0]];
+    const basePoint=PLACES?.[baseStation];
+    otherAreas.sort((a,b)=>{
+      const distance=key=>{
+        const stations=(DEST_GROUPS[key]?.areas||[]).map(area=>PLACES?.[areaStation[area]]).filter(Boolean);
+        return basePoint && stations.length
+          ? Math.min(...stations.map(point=>haversine(basePoint.lat,basePoint.lon,point.lat,point.lon)))
+          : Infinity;
+      };
+      return distance(a)-distance(b);
+    });
+    for(const area of otherAreas.slice(0,4)){
+      const count=await evalSmall(pool,area,originalMood);
+      if(count){
+        options.push({action:'verifiedArea',value:area,label:`📍 ${destinationGroupLabel(area)}なら${count}案あります`});
+        break;
+      }
+    }
+  }
+  if(originalMood!=='any'){
+    const labels={sightseeing:'観光',food:'食事',onsen:'温泉',event:'イベント',active:'体を動かす',rain:'雨でも楽しむ'};
+    for(const alternative of ['sightseeing','food','onsen','event','active','rain'].filter(x=>x!==originalMood)){
+      const count=await evalSmall(pool,originalArea,alternative);
+      if(count){
+        options.push({action:'verifiedMood',value:alternative,label:`✨ ${labels[alternative]}なら${count}案あります`});
+        break;
+      }
+    }
+  }
+  if(free<360){
+    const nextFree=Math.min(360,free+30);
+    const extraDeadline=start+nextFree-automaticReturnBufferMinutes(nextFree);
+    const count=await evalSmall(pool,originalArea,originalMood,extraDeadline);
+    if(count)options.push({action:'verifiedFree30',value:String(nextFree),label:`⏱️ ＋30分なら${count}案あります`});
+  }
+  return options.slice(0,3);
 }
 
 
@@ -10151,7 +10236,7 @@ async function buildPlans(){
    ? (['food','cafe'].includes(mood)
        ? ['carshare','public','taxi','walk','bike']
        : AUTO_MODES)
-   : (transport==='mobilitycar' ? ['carshare','rentalcar'] : [transport]);
+   : (transport==='mobilitycar' ? ['carshare','rentalcar'] : (transport==='bike' ? ['bike','bike_multimodal'] : [transport]));
 
  // 「居酒屋」指定時は公共交通・タクシーだけ。
  if(mood==='food' && foodKind==='居酒屋'){
@@ -10530,6 +10615,9 @@ async function buildPlans(){
  if(!top.length){
    try{ trackNexitaime('search_result',{resultCount:0}); }catch(_){}
    if(adjustPanel) adjustPanel.hidden=true;
+   const alternatives=await verifiedNoResultAlternatives(candidateEvents,requestedModes,start,deadline,free,searchCtx);
+   const alternativeButtons=alternatives.map(item=>`<button type="button" class="retry-action" data-retry-action="${esc(item.action)}" data-value="${esc(item.value)}">${esc(item.label)}</button>`).join('');
+   const lateAlternative=alternatives.slice(0,1).map(item=>`<button type="button" class="retry-action" data-retry-action="${esc(item.action)}" data-value="${esc(item.value)}">${esc(item.label)}</button>`).join('');
 
    const planHour=planningDate.getHours();
    const lateNight=planHour>=21 || planHour<5;
@@ -10557,8 +10645,10 @@ async function buildPlans(){
              <span class="tomorrow-search-arrow">›</span>
            </button>
          </div>
+         ${lateAlternative?`<div class="retry-actions" style="margin-top:12px">${lateAlternative}</div>`:''}
        </div>`;
      bindTomorrowSearchButtons();
+     bindNoResultActions();
      return;
    }
 
@@ -10567,14 +10657,18 @@ async function buildPlans(){
    summary.innerHTML=`<h2>この時間では、${esc(selectedModeLabel)}で行けるプランがありません</h2>
      <p><strong>${esc(searchCtx.origin)} → ${esc(destinationGroupLabel(searchCtx.destination))} → ${esc(searchCtx.returnTo)}</strong><br>
      選んだ行き先や移動手段は勝手に変更していません。</p>`;
+   const fallbackButtons=[
+     !alternatives.some(x=>x.action==='verifiedFree30') ? '<button type="button" class="retry-action" data-retry-action="free30">⏱️ 空き時間を＋30分</button>' : '',
+     '<button type="button" class="retry-action" data-retry-action="later30">🕒 出発を30分後に</button>',
+     transport!=='auto' ? '<button type="button" class="retry-action" data-retry-action="autoTransport">🚦 移動手段をおまかせ</button>' : '',
+     searchCtx.destination!=='any' && !alternatives.some(x=>x.action==='verifiedArea') ? '<button type="button" class="retry-action" data-retry-action="autoDestination">📍 行き先をおまかせ</button>' : ''
+   ].filter(Boolean);
    box.innerHTML=`<div class="plan no-result-actions-wrap">
-     <h3>条件を少し変えて、もう一度探す</h3>
-     <p>よく使う変更をワンタップで試せます。</p>
+     <h3>次の一手</h3>
+     <p>押した条件だけを変更して、もう一度探します。</p>
      <div class="retry-actions">
-       <button type="button" class="retry-action" data-retry-action="free30">⏱️ 空き時間を＋30分</button>
-       <button type="button" class="retry-action" data-retry-action="later30">🕒 出発を30分後に</button>
-       ${transport!=='auto'?'<button type="button" class="retry-action" data-retry-action="autoTransport">🚦 移動手段をおまかせ</button>':''}
-       ${searchCtx.destination!=='any'?'<button type="button" class="retry-action" data-retry-action="autoDestination">📍 行き先をおまかせ</button>':''}
+       ${alternativeButtons}
+       ${fallbackButtons.slice(0,Math.max(0,3-alternatives.length)).join('')}
      </div>
      <div class="retry-note">※ 押すと条件を変更して、そのまま再検索します。</div>
    </div>`;
@@ -10674,7 +10768,7 @@ async function buildPlans(){
    const reasonText=esc(recommendationReasonParts(p).join('・')||[p.reason,p.weatherReason,companionReason(p.ev)].filter(Boolean).join('・')||'時間内に収まるため');
    const confidenceHtml=informationConfidenceHtml(p.ev);
 
-   return `<div class="plan" data-plan-card="${idx}">${p.multimodal?`<div class="multimodal-badge">🔀 おまかせ複合移動：公共交通＋${esc(MODE_LABELS[p.lastMode]||p.lastMode)}</div>`:''}
+   return `<div class="plan" data-plan-card="${idx}">${p.multimodal?`<div class="multimodal-badge">${p.lastMode==='bike'?`${p.out?.kind==='bus'?'🚌':'🚃'} → 🚲 → ${p.back?.kind==='bus'?'🚌':'🚃'} 公共交通＋レンタル自転車（同じ拠点に返却）`:`🔀 おまかせ複合移動：公共交通＋${esc(MODE_LABELS[p.lastMode]||p.lastMode)}`}</div>`:''}
      ${rank}
      ${recommendationHtml}
      <div class="meta" style="font-weight:900;margin-bottom:6px">${p.modeIcon||''} ${esc(p.modeLabel||'')}</div>
