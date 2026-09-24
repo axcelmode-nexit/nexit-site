@@ -6846,9 +6846,6 @@ const ITINERARY_SPOTS=[
   {area:'kasugayama',name:'春日山城跡',stay:35},
   {area:'kasugayama',name:'林泉寺',stay:20},
 
-  {area:'kasugayama',name:'上杉謙信公銅像',stay:5},
-  {area:'kasugayama',name:'春日山神社',stay:20},
-  {area:'kasugayama',name:'春日山城跡',stay:35},
   {area:'takada',name:'高田城址公園',stay:25},
   {area:'takada',name:'高田の雁木・町家',stay:25},
   {area:'naoetsu',name:'直江津海岸・港周辺',stay:20},
@@ -6922,10 +6919,24 @@ function itineraryCandidateAvailable(ev, arrive, leave){
     const kind=itineraryCategory(ev);
     if(['food','cafe'].includes(kind) && availability?.verified!==true) return false;
 
+    // Add-on spots follow the same night-safety rule as the main recommendation.
+    // "24h accessible" does not mean it is appropriate to recommend at night.
+    if(afterDarkOutdoorRisk(ev,leave,'walk',0)) return false;
+
     return true;
   }catch(_){
     return false;
   }
+}
+
+function legacyItinerarySpotAvailableAtNight(s,leave){
+  const ev={
+    title:s?.name||'',
+    venue:s?.name||'',
+    categories:['観光','散策'],
+    indoor:false
+  };
+  return !afterDarkOutdoorRisk(ev,leave,'walk',0);
 }
 
 function mixedCandidatePool(plan, candidateEvents){
@@ -7280,11 +7291,21 @@ function buildOptimizedItinerary(plan,candidateEvents=[],freeMinutes=180,ctx={})
 
 function buildSimpleItinerary(plan,candidateEvents=[],freeMinutes=180){
   const area=plan.ev?.area;
-  const legacyPool=ITINERARY_SPOTS.filter(s=>s.area===area);
+  const legacyPool=ITINERARY_SPOTS
+    .filter(s=>s.area===area)
+    .filter((s,i,a)=>a.findIndex(x=>x.name===s.name)===i);
   if(!Number.isFinite(plan.stay) || plan.stay<30)return null;
 
   const isTimedEvent=!!(plan.ev?.start_date || plan.ev?.source);
   const mixedMode=(mood==='any');
+
+  // 明示的に「ごはん／カフェ」を選んだ場合は、その店を主目的に固定する。
+  // 従来は plan.stay（食事滞在時間）の中へ観光スポットを差し込んでしまい、
+  // 食事中と観光が同時刻になる矛盾が起きていたため、周遊を自動挿入しない。
+  // おまかせでは従来どおり複数カテゴリの周遊を許可する。
+  if(['food','cafe'].includes(mood)){
+    return null;
+  }
 
   // 徒歩・公共交通の短時間周遊でも、帰着余裕を残しすぎない。
   // 90〜120分のおまかせでは約12分だけ安全余裕を残し、
@@ -7443,6 +7464,10 @@ function buildSimpleItinerary(plan,candidateEvents=[],freeMinutes=180){
       if(remain<s.stay+move) continue;
 
       t+=move;
+      if(!legacyItinerarySpotAvailableAtNight(s,t+s.stay)){
+        t-=move;
+        continue;
+      }
       rows.push({
         ...s,arrive:t,leave:t+s.stay,move,kind:'spot',
         category:'sightseeing',categoryLabel:'🏯 観光',
@@ -7516,6 +7541,10 @@ function buildSimpleItinerary(plan,candidateEvents=[],freeMinutes=180){
     if(move==null)continue;
     if(remain < s.stay+move)continue;
     t+=move;
+    if(!legacyItinerarySpotAvailableAtNight(s,t+s.stay)){
+      t-=move;
+      continue;
+    }
     rows.push({...s,arrive:t,leave:t+s.stay,move,kind:'spot',category:'sightseeing',categoryLabel:'🏯 観光',point:nextPoint});
     t+=s.stay;
     remain-=s.stay+move;
