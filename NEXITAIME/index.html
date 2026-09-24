@@ -1307,7 +1307,7 @@ window.NEXITAIME_GOURMET_ENDPOINT =
 // ▼ NEXITAIMEからひとこと：ここを true / false に変えるだけで即ON/OFFできます
 window.NEXITAIME_AI_SUGGESTION_ENABLED = true;
 </script>
-<script>window.NEXITAIME_BUILD="v135";</script>
+<script>window.NEXITAIME_BUILD="v137";</script>
 
 
 <style id="nexitaime-existing-ai-style">
@@ -2826,7 +2826,7 @@ document.querySelectorAll('#origins .chip').forEach(b=>b.onclick=async ()=>{
  await renderMobility();
  initMobilityMap();
  if(p && mobilityMap){
-   mobilityMap.setView([p.lat,p.lon],14,{animate:true});
+   mobilityMap.setView([p.lat,p.lon],mobilityMapStationZoom(origin),{animate:true});
    requestAnimationFrame(()=>mobilityMap.invalidateSize({pan:false}));
  }
 });
@@ -3806,6 +3806,16 @@ function retryMobilityMap(){
 const MOBILITY_MAP_DEFAULT_CENTER={lat:37.122,lon:138.242};
 const MOBILITY_MAP_DEFAULT_ZOOM=12;
 const MOBILITY_MAP_BASE_ZOOM=14;
+const MOBILITY_MAP_STATION_ZOOM={
+  '上越妙高':15,
+  '高田':14,
+  '直江津':15,
+  '妙高高原':14
+};
+
+function mobilityMapStationZoom(name){
+  return MOBILITY_MAP_STATION_ZOOM[name] || MOBILITY_MAP_BASE_ZOOM;
+}
 
 function mobilityMapBaseView(){
   if(currentPos && Number.isFinite(currentPos.lat) && Number.isFinite(currentPos.lon)){
@@ -3813,7 +3823,7 @@ function mobilityMapBaseView(){
   }
   const p=PLACES?.[origin];
   if(p && Number.isFinite(p.lat) && Number.isFinite(p.lon)){
-    return {lat:p.lat,lon:p.lon,zoom:MOBILITY_MAP_BASE_ZOOM};
+    return {lat:p.lat,lon:p.lon,zoom:mobilityMapStationZoom(origin)};
   }
   return {...MOBILITY_MAP_DEFAULT_CENTER,zoom:MOBILITY_MAP_DEFAULT_ZOOM};
 }
