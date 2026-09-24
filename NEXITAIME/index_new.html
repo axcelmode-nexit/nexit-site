@@ -1307,7 +1307,7 @@ window.NEXITAIME_GOURMET_ENDPOINT =
 // ▼ NEXITAIMEからひとこと：ここを true / false に変えるだけで即ON/OFFできます
 window.NEXITAIME_AI_SUGGESTION_ENABLED = true;
 </script>
-<script>window.NEXITAIME_BUILD="v127-cutover";</script>
+<script>window.NEXITAIME_BUILD="v129";</script>
 
 
 <style id="nexitaime-existing-ai-style">
@@ -6900,6 +6900,9 @@ function itineraryCategoriesCanFollow(previousKind,nextKind){
   const culinary=new Set(['food','cafe']);
   if(culinary.has(previousKind) && culinary.has(nextKind))return false;
 
+  // One plan must never chain one hot-spring/sauna stop directly into another.
+  if(previousKind==='onsen' && nextKind==='onsen')return false;
+
   return true;
 }
 
@@ -6937,6 +6940,60 @@ function legacyItinerarySpotAvailableAtNight(s,leave){
     indoor:false
   };
   return !afterDarkOutdoorRisk(ev,leave,'walk',0);
+}
+
+
+
+// v129: final itinerary safety / identity helpers.
+// Use multiple signals so one physical place cannot appear twice under slightly different labels.
+function normalizedSpotIdentityName(value){
+  return String(value||'')
+    .normalize('NFKC')
+    .toLowerCase()
+    .replace(/[\s\u3000・･,，.。:：;；()（）\[\]【】「」『』\-‐‑–—_]/g,'')
+    .replace(/(?:周辺|エリア|付近)$/,'');
+}
+
+function itineraryIdentityPoint(row){
+  if(row?.point && Number.isFinite(Number(row.point.lat)) && Number.isFinite(Number(row.point.lon))){
+    return {lat:Number(row.point.lat),lon:Number(row.point.lon)};
+  }
+  const ev=row?.sourceEv;
+  return ev ? exactPointForEvent(ev) : null;
+}
+
+function samePhysicalItinerarySpot(a,b){
+  if(!a || !b)return false;
+  const aid=String(a?.sourceEv?.id||'').trim();
+  const bid=String(b?.sourceEv?.id||'').trim();
+  if(aid && bid && aid===bid)return true;
+
+  const an=normalizedSpotIdentityName(a?.sourceEv?.title||a?.sourceEv?.venue||a?.name);
+  const bn=normalizedSpotIdentityName(b?.sourceEv?.title||b?.sourceEv?.venue||b?.name);
+  if(an && bn && (an===bn || (an.length>=6 && bn.length>=6 && (an.includes(bn)||bn.includes(an)))))return true;
+
+  const ap=itineraryIdentityPoint(a), bp=itineraryIdentityPoint(b);
+  if(ap && bp && haversine(ap.lat,ap.lon,bp.lat,bp.lon)<=0.06)return true;
+  return false;
+}
+
+function itineraryRowOutdoorRisk(row,plan){
+  if(!row)return false;
+  const ev=row.sourceEv || {
+    title:row.name||'', venue:row.name||'',
+    categories:[row.categoryLabel||'',row.category||'観光','散策'],
+    indoor:false
+  };
+  return afterDarkOutdoorRisk(
+    ev,
+    Number(row.leave),
+    itineraryLocalMode(plan),
+    Number(plan?.lastMile?.minutes||0)
+  );
+}
+
+function explicitPrimaryMoodSelected(){
+  return mood!=='any' && mood!=='rain';
 }
 
 function mixedCandidatePool(plan, candidateEvents){
@@ -7512,7 +7569,15 @@ function buildSimpleItinerary(plan,candidateEvents=[],freeMinutes=180){
     return rows.length?rows:null;
   }
 
-  // Specific moods keep the existing focused itinerary behavior.
+  // v129: an explicitly selected category is the main purpose.
+  // Do not silently fill the primary venue's stay window with unrelated sightseeing.
+  // A future focused add-on builder may add nearby auxiliary stops for long windows, but only
+  // after it can guarantee the primary activity remains dominant.
+  if(explicitPrimaryMoodSelected()){
+    return null;
+  }
+
+  // Specific non-primary constraints (currently rain) keep the existing focused itinerary behavior.
   if(isTimedEvent){
     const eventStay=Math.min(
       Math.max(30, Number(plan.ev?.recommended_stay_min)||45),
@@ -8528,6 +8593,20 @@ function finalPlanGuard(plan,ctx,start,deadline){
   }
 
   const itinerary=Array.isArray(plan?.itinerary)?plan.itinerary:[];
+
+  // v129: final duplicate guard. IDs alone are not enough because the same attraction
+  // can enter from legacy/catalog data under a different label. Check canonicalized name
+  // and a tight coordinate radius as well.
+  for(let i=0;i<itinerary.length;i++){
+    for(let j=0;j<i;j++){
+      if(samePhysicalItinerarySpot(itinerary[i],itinerary[j])){
+        reasons.push('同一スポットが周遊内で重複');
+        break;
+      }
+    }
+    if(reasons.includes('同一スポットが周遊内で重複'))break;
+  }
+
   let prev=null;
   for(const row of itinerary){
     const rArr=Number(row?.arrive);
@@ -8541,6 +8620,10 @@ function finalPlanGuard(plan,ctx,start,deadline){
     }
     if(rStay<=0 || rLeave<rArr){
       reasons.push('周遊内の滞在時間不正');
+      break;
+    }
+    if(itineraryRowOutdoorRisk(row,plan)){
+      reasons.push('日没後の屋外スポット');
       break;
     }
     if(prev){
@@ -8621,6 +8704,17 @@ function finalPlanGuard(plan,ctx,start,deadline){
       : (finite(plan?.venueLeave) && !plan?.dynamicRoute
           ? Number(plan.venueLeave)
           : mainArrive+Math.max(0,stay||0));
+
+    // Explicit category = primary purpose. The main recommendation itself must still
+    // satisfy the selected category after every rescue/fallback path.
+    if(explicitPrimaryMoodSelected() && !moodMatches(plan.ev,mood)){
+      reasons.push('指定カテゴリが主目的になっていない');
+    }
+
+    // Main destination follows the same after-dark safety rule as auxiliary stops.
+    if(afterDarkOutdoorRisk(plan.ev,mainLeave,plan?.mode,Number(plan?.lastMile?.minutes||0))){
+      reasons.push('日没後の屋外スポット');
+    }
 
     const av=spotAvailability(plan.ev,mainArrive,mainLeave,planningDate);
     if(av?.ok===false) reasons.push('営業時間条件不成立');
