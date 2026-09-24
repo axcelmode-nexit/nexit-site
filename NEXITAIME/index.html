@@ -5547,6 +5547,11 @@ function lateNightDiagnosticHtml(){
     Hot Pepper取得 ${Number(d.hpFetched||0)}件 /
     営業時間解析 ${Number(d.hpVerified||0)}件 /
     現在営業判定 ${Number(d.hpOpenNow||0)}件<br>
+    全候補 ${Number(d.candidateTotal||0)}件 →
+    日付/予算/同行者 ${Number(d.afterDateBudgetCompanion||0)}件 →
+    行き先 ${Number(d.afterDestination||0)}件 →
+    気分 ${Number(d.afterMood||0)}件 →
+    2段目 ${Number(d.afterSecondary||0)}件<br>
     最初の28候補：飲食 ${Number(d.firstFood||0)}件 /
     次の28候補：飲食 ${Number(d.restFood||0)}件<br>
     現在営業判定：${names}
@@ -10069,9 +10074,15 @@ async function buildPlans(){
    ? mergeCandidateEvents(EVENTS,hotpepperEvents)
    : EVENTS;
  let events=candidateEvents.filter(ev=>eventIsAvailableAt(ev,planningDate)).filter(budgetAllows).filter(companionAllows);
+ const diag=window.__NEXIT_LATE_DIAG||(window.__NEXIT_LATE_DIAG={});
+ diag.candidateTotal=candidateEvents.length;
+ diag.afterDateBudgetCompanion=events.length;
  if(destinationArea!=='any')events=events.filter(destinationMatchesEvent);
+ diag.afterDestination=events.length;
  if(mood!=='any')events=events.filter(ev=>moodMatches(ev,mood));
+ diag.afterMood=events.length;
  events=events.filter(foodKindMatches).filter(secondaryMoodMatches);
+ diag.afterSecondary=events.length;
  // NEXITAIMEは「上越を満喫する」提案を優先。
  // 全国チェーンは候補から外し、地域チェーン・地元店は残す。
  events=events.filter(recommendationChainAllowed);
@@ -10541,6 +10552,9 @@ async function buildPlans(){
    summary.innerHTML=`<h2>この時間では、${esc(selectedModeLabel)}で行けるプランがありません</h2>
      <p><strong>${esc(searchCtx.origin)} → ${esc(destinationGroupLabel(searchCtx.destination))} → ${esc(searchCtx.returnTo)}</strong><br>
      選んだ行き先や移動手段は勝手に変更していません。</p>`;
+   const debugHtml=new URLSearchParams(location.search).get('debug')==='1'
+     ? `${lateNightDiagnosticHtml()}${exclusionSummaryHtml(8)}`
+     : '';
    box.innerHTML=`<div class="plan no-result-actions-wrap">
      <h3>条件を少し変えて、もう一度探す</h3>
      <p>よく使う変更をワンタップで試せます。</p>
@@ -10551,6 +10565,7 @@ async function buildPlans(){
        ${searchCtx.destination!=='any'?'<button type="button" class="retry-action" data-retry-action="autoDestination">📍 行き先をおまかせ</button>':''}
      </div>
      <div class="retry-note">※ 押すと条件を変更して、そのまま再検索します。</div>
+     ${debugHtml}
    </div>`;
    bindNoResultActions();
    return;
