@@ -252,7 +252,7 @@ img{display:block;max-width:100%}
   .contact-section h2{font-size:34px}
 }
 
-/* v3 mobile product-card corrections */
+/* v4: mobile cards use dedicated visual-only artwork */
 .product-image picture{
   display:block;
   width:100%;
@@ -260,48 +260,40 @@ img{display:block;max-width:100%}
 }
 
 @media(max-width:680px){
-  .section-head h2{
-    font-size:clamp(34px,10.5vw,46px);
-    line-height:1.16;
-  }
-
-  .product-grid{
-    gap:26px;
-  }
-
   .product-card{
-    border-radius:24px;
     overflow:hidden;
+    border-radius:24px;
   }
 
   .product-image,
   .product-wide .product-image{
-    aspect-ratio:auto;
-    background:#071b31;
+    aspect-ratio:5 / 3;
+    background:#081b30;
   }
 
   .product-image picture{
-    height:auto;
+    width:100%;
+    height:100%;
   }
 
   .product-image img{
     width:100%;
-    height:auto;
-    object-fit:contain;
+    height:100%;
+    object-fit:cover;
     object-position:center;
   }
 
   .product-body{
-    padding:26px 24px 30px;
+    padding:24px 24px 28px;
   }
 
   .product-body h3{
-    font-size:23px;
+    font-size:22px;
     line-height:1.35;
   }
 
   .product-body p{
     font-size:16px;
-    line-height:1.8;
+    line-height:1.75;
   }
 }
