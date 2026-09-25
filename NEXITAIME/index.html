@@ -1307,7 +1307,7 @@ window.NEXITAIME_GOURMET_ENDPOINT =
 // ▼ NEXITAIMEからひとこと：ここを true / false に変えるだけで即ON/OFFできます
 window.NEXITAIME_AI_SUGGESTION_ENABLED = true;
 </script>
-<script>window.NEXITAIME_BUILD="v139";</script>
+<script>window.NEXITAIME_BUILD="v140";</script>
 
 
 <style id="nexitaime-existing-ai-style">
@@ -2397,6 +2397,7 @@ function officialCatalogStats(){
 function nonfoodHoursAuditStats(){const all=EXTRA_NONFOOD_SPOTS||[];const counts={total:all.length,officialHours:0,alwaysOpen:0,daylight:0,appointment:0,schedule:0,seasonalCheck:0,other:0};for(const x of all){if(x.hours_audit_status==='official_hours_registered')counts.officialHours++;else if(x.hours_audit_status==='always_open_model')counts.alwaysOpen++;else if(x.hours_audit_status==='daylight_model')counts.daylight++;else if(x.hours_audit_status==='appointment_required')counts.appointment++;else if(x.hours_audit_status==='schedule_required')counts.schedule++;else if(x.hours_audit_status==='seasonal_confirmation_required')counts.seasonalCheck++;else counts.other++;}return counts;}
 
 
+// v140: mobility marker audit rechecked 2026-09-25. Previously corrected FURUSATTO bicycle and Joetsu-Myoko east-side Times CAR coordinates are retained; no other clear coordinate displacement was found in the bundled verified rows.
 // v104: current Times CAR stations in Joetsu (verified 2026-09-20), with bundled map reference coordinates.
 // Vehicle availability is dynamic; always confirm in the official Times CAR app/site.
 const CURRENT_TIMES_CAR_STATIONS=[
@@ -2404,7 +2405,7 @@ const CURRENT_TIMES_CAR_STATIONS=[
   // Coordinates are map reference points for the verified station/address and are used for display/distance only.
   {id:'times_furusatto_p1',name:'フルサット第１駐車場',category:'carshare',provider:'Times CAR',area:'上越妙高',address:'新潟県上越市大和5-1',lat:37.080483,lon:138.247365,location_source:'verified_address_map_reference',hours:'空車は公式で確認',url:'https://share.timescar.jp/view/station/detail.jsp?scd=OV68',verified_at:'2026-09-20',source_status:'official_station_verified'},
   {id:'times_toyoko_joetsumyoko',name:'東横イン上越妙高駅西口',category:'carshare',provider:'Times CAR',area:'上越妙高',address:'新潟県上越市大和5-2',lat:37.0815632,lon:138.2468651,location_source:'verified_address_map_reference',hours:'空車は公式で確認',url:'https://share.timescar.jp/view/sp/station/detail.jsp?scd=KG85',verified_at:'2026-09-20',source_status:'official_station_verified'},
-  {id:'times_joetsumyoko_east',name:'上越妙高駅前',category:'carshare',provider:'Times CAR',area:'上越妙高',address:'新潟県上越市大和2-1-5',lat:37.08187,lon:138.2493035,location_source:'verified_times_yahoo_map_reference',hours:'空車は公式で確認',url:'https://share.timescar.jp/view/sp/station/detail.jsp?scd=HF03',verified_at:'2026-09-25',source_status:'official_station_verified'},
+  {id:'times_joetsumyoko_east',name:'上越妙高駅前',category:'carshare',provider:'Times CAR',area:'上越妙高',address:'新潟県上越市大和2-1',lat:37.08187,lon:138.2493035,location_source:'verified_times_yahoo_map_reference',hours:'空車は公式で確認',url:'https://share.timescar.jp/view/sp/station/detail.jsp?scd=HF03',verified_at:'2026-09-25',source_status:'official_station_verified'},
   {id:'times_leparc_naoetsu_1',name:'ル・パルク直江津第１駐車場',category:'carshare',provider:'Times CAR',area:'直江津',address:'新潟県上越市西本町4-3-3',lat:37.1727693,lon:138.2410939,location_source:'verified_address_map_reference',hours:'空車は公式で確認',url:'https://share.timescar.jp/',verified_at:'2026-09-20',source_status:'current_station_verified'},
   {id:'times_naoetsu_1',name:'直江津駅第１',category:'carshare',provider:'Times CAR',area:'直江津',address:'新潟県上越市東町3',lat:37.1709,lon:138.2428,location_source:'address_map_reference',hours:'空車は公式で確認',url:'https://share.timescar.jp/view/station/detail.jsp?scd=OV67',verified_at:'2026-09-20',source_status:'official_station_verified'}
 ];
