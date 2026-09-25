@@ -154,31 +154,41 @@ img{display:block;max-width:100%}
 
 .product-grid{
   display:grid;
-  grid-template-columns:repeat(2,1fr);
+  grid-template-columns:repeat(2,minmax(0,1fr));
   gap:22px;
 }
 .product-card{
+  min-width:0;
   overflow:hidden;
   border-radius:24px;
   background:#fff;
   border:1px solid var(--line);
   box-shadow:var(--shadow);
 }
+/* Let each desktop/mobile artwork determine its own height without cropping. */
 .product-image{
-  background:#0b2139;
-  aspect-ratio:16/7;
+  width:100%;
+  padding:0;
+  background:var(--white);
+  border-radius:23px 23px 0 0;
   overflow:hidden;
 }
-.product-image img{
+.product-image picture{
+  display:block;
   width:100%;
-  height:100%;
-  object-fit:cover;
+  height:auto;
+}
+.product-image img{
+  display:block;
+  width:100%;
+  max-width:100%;
+  height:auto;
+  object-fit:contain;
 }
 .product-body{padding:26px}
 .product-body h3{margin:7px 0 10px;font-size:25px}
 .product-body p{margin:0;color:var(--muted);line-height:1.75}
 .product-wide{grid-column:1/-1}
-.product-wide .product-image{aspect-ratio:16/5}
 
 .contact-section{
   max-width:1180px;
@@ -223,7 +233,6 @@ img{display:block;max-width:100%}
   .architecture-cards{grid-template-columns:repeat(2,1fr)}
   .product-grid{grid-template-columns:1fr}
   .product-wide{grid-column:auto}
-  .product-wide .product-image{aspect-ratio:16/7}
   .footer{grid-template-columns:1fr;text-align:center}
   .footer>div{align-items:center}
   .footer nav{justify-content:center;flex-wrap:wrap}
@@ -244,54 +253,21 @@ img{display:block;max-width:100%}
   .before-after{grid-template-columns:1fr}
   .arrow{transform:rotate(90deg);justify-self:center}
   .architecture-cards{grid-template-columns:1fr}
-  .product-image,
-  .product-wide .product-image{aspect-ratio:16/9}
   .product-body{padding:22px}
   .product-body h3{font-size:22px}
   .contact-section{margin:0 16px 72px;padding:36px 24px;flex-direction:column;align-items:flex-start}
   .contact-section h2{font-size:34px}
 }
 
-/* v4: mobile cards use dedicated visual-only artwork */
-.product-image picture{
-  display:block;
-  width:100%;
-  height:100%;
-}
-
+/* Mobile typography; image sizing is shared at every viewport width. */
 @media(max-width:680px){
-  .product-card{
-    overflow:hidden;
-    border-radius:24px;
-  }
-
-  .product-image,
-  .product-wide .product-image{
-    aspect-ratio:5 / 3;
-    background:#081b30;
-  }
-
-  .product-image picture{
-    width:100%;
-    height:100%;
-  }
-
-  .product-image img{
-    width:100%;
-    height:100%;
-    object-fit:cover;
-    object-position:center;
-  }
-
   .product-body{
     padding:24px 24px 28px;
   }
-
   .product-body h3{
     font-size:22px;
     line-height:1.35;
   }
-
   .product-body p{
     font-size:16px;
     line-height:1.75;
