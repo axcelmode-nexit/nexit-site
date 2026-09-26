@@ -45,9 +45,6 @@
 
   <div class="hero-visual" id="heroVisual">
     <img id="heroCoreImage" src="assets/nexus-core-bg.png" alt="NEXUS Core">
-    <button class="parallax-enable" id="parallaxEnable" type="button" aria-label="スマホを傾けてNEXUS Coreを見る">
-      傾けて見る
-    </button>
   </div>
 </section>
 
@@ -212,98 +209,46 @@
 </footer>
 
 
+
+
 <script>
 (() => {
+  const hero = document.querySelector('.hero');
   const visual = document.getElementById('heroVisual');
   const image = document.getElementById('heroCoreImage');
-  const enableButton = document.getElementById('parallaxEnable');
 
-  if (!visual || !image) return;
+  if (!hero || !visual || !image) return;
 
-  const isCoarsePointer = window.matchMedia('(pointer: coarse)').matches;
-  const landscapeQuery = window.matchMedia('(orientation: landscape)');
+  let ticking = false;
 
-  let enabled = false;
-  let rafId = null;
-  let gammaNow = 0;
-  let betaNow = 45;
+  function updateParallax() {
+    ticking = false;
 
-  const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
+    const rect = hero.getBoundingClientRect();
+    const vh = window.innerHeight || document.documentElement.clientHeight;
 
-  function applyTransform() {
-    rafId = null;
+    if (rect.bottom < 0 || rect.top > vh) return;
 
-    if (landscapeQuery.matches) {
-      image.style.transform = 'none';
-      return;
+    const heroCenter = rect.top + rect.height / 2;
+    const viewportCenter = vh / 2;
+    const offset = viewportCenter - heroCenter;
+
+    // Move the artwork more slowly than the page itself.
+    const y = Math.max(-80, Math.min(80, offset * 0.24));
+    image.style.transform = `translate3d(0, ${y}px, 0)`;
+  }
+
+  function requestUpdate() {
+    if (!ticking) {
+      ticking = true;
+      requestAnimationFrame(updateParallax);
     }
-
-    const overflowX = Math.max(0, image.getBoundingClientRect().width - visual.clientWidth);
-    const overflowY = Math.max(0, image.getBoundingClientRect().height - visual.clientHeight);
-
-    // Reach the actual edges of the enlarged image.
-    const xNorm = clamp(gammaNow / 22, -1, 1);
-    const yNorm = clamp((betaNow - 45) / 28, -1, 1);
-
-    const x = -xNorm * (overflowX / 2);
-    const y = -yNorm * Math.min(overflowY / 2, 18);
-
-    image.style.transform = `translate3d(${x}px, ${y}px, 0)`;
   }
 
-  function onOrientation(event) {
-    if (!enabled || landscapeQuery.matches) return;
-
-    gammaNow = Number.isFinite(event.gamma) ? event.gamma : 0;
-    betaNow = Number.isFinite(event.beta) ? event.beta : 45;
-
-    if (!rafId) rafId = requestAnimationFrame(applyTransform);
-  }
-
-  function activateParallax() {
-    if (enabled) return;
-    enabled = true;
-    document.body.classList.add('parallax-active');
-    enableButton?.classList.add('is-hidden');
-    window.addEventListener('deviceorientation', onOrientation, { passive: true });
-  }
-
-  async function requestAndActivate() {
-    try {
-      if (
-        typeof DeviceOrientationEvent !== 'undefined' &&
-        typeof DeviceOrientationEvent.requestPermission === 'function'
-      ) {
-        const permission = await DeviceOrientationEvent.requestPermission();
-        if (permission !== 'granted') return;
-      }
-      activateParallax();
-    } catch (_) {}
-  }
-
-  if (isCoarsePointer) {
-    if (
-      typeof DeviceOrientationEvent !== 'undefined' &&
-      typeof DeviceOrientationEvent.requestPermission === 'function'
-    ) {
-      enableButton?.addEventListener('click', requestAndActivate, { once: true });
-    } else {
-      activateParallax();
-    }
-  } else if (enableButton) {
-    enableButton.hidden = true;
-  }
-
-  const reset = () => {
-    gammaNow = 0;
-    betaNow = 45;
-    image.style.transform = 'none';
-  };
-
-  landscapeQuery.addEventListener?.('change', reset);
-  window.addEventListener('resize', reset, { passive: true });
+  updateParallax();
+  window.addEventListener('scroll', requestUpdate, { passive: true });
+  window.addEventListener('resize', requestUpdate, { passive: true });
 })();
 </script>
-
 </body>
 </html>
