@@ -3520,6 +3520,137 @@
   .nexitaime-preview-link{width:min(320px,82vw);}
 }
 </style>
+
+<style id="nexit-products-style">
+  .nexit-products{
+    padding:96px 7vw;
+    background:
+      radial-gradient(circle at 12% 18%, rgba(215,25,32,.08), transparent 30%),
+      linear-gradient(180deg,#050505,#080808);
+    border-bottom:1px solid var(--line);
+  }
+  .nexit-products-inner{
+    max-width:1180px;
+    margin:0 auto;
+  }
+  .nexit-products-head{
+    margin-bottom:34px;
+  }
+  .nexit-products-label{
+    margin:0 0 12px;
+    color:var(--red);
+    font-size:12px;
+    font-weight:900;
+    letter-spacing:.20em;
+  }
+  .nexit-products-title{
+    margin:0;
+    font-size:clamp(28px,4vw,46px);
+    line-height:1.35;
+    letter-spacing:.03em;
+  }
+  .nexit-products-grid{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:18px;
+  }
+  .nexit-product-card{
+    position:relative;
+    min-height:250px;
+    padding:34px 32px 30px;
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+    border:1px solid rgba(255,255,255,.15);
+    background:
+      linear-gradient(135deg,rgba(255,255,255,.055),rgba(255,255,255,.015));
+    transition:transform .28s cubic-bezier(.16,1,.3,1),
+               border-color .28s ease,
+               background .28s ease;
+  }
+  .nexit-product-card::before{
+    content:"";
+    position:absolute;
+    left:0;
+    top:0;
+    width:58px;
+    height:2px;
+    background:var(--red);
+    transition:width .30s cubic-bezier(.16,1,.3,1);
+  }
+  .nexit-product-card::after{
+    content:"";
+    position:absolute;
+    right:-70px;
+    bottom:-90px;
+    width:220px;
+    height:220px;
+    border:1px solid rgba(215,25,32,.18);
+    border-radius:50%;
+    pointer-events:none;
+  }
+  .nexit-product-card:hover{
+    transform:translateY(-5px);
+    border-color:rgba(255,255,255,.36);
+    background:
+      linear-gradient(135deg,rgba(255,255,255,.075),rgba(215,25,32,.035));
+  }
+  .nexit-product-card:hover::before{width:100%;}
+  .nexit-product-kicker{
+    position:relative;
+    z-index:1;
+    margin-bottom:16px;
+    color:var(--muted);
+    font-size:11px;
+    font-weight:900;
+    letter-spacing:.18em;
+  }
+  .nexit-product-card h3{
+    position:relative;
+    z-index:1;
+    margin:0 0 14px;
+    font-size:clamp(28px,3.4vw,44px);
+    line-height:1;
+    letter-spacing:.02em;
+  }
+  .nexit-product-card p{
+    position:relative;
+    z-index:1;
+    max-width:520px;
+    margin:0;
+    color:#d9d9d9;
+    font-size:14px;
+    line-height:1.9;
+  }
+  .nexit-product-link{
+    position:relative;
+    z-index:1;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:20px;
+    margin-top:auto;
+    padding-top:28px;
+    color:#fff;
+    font-size:12px;
+    font-weight:900;
+    letter-spacing:.14em;
+  }
+  .nexit-product-link span:last-child{
+    color:var(--red);
+    font-size:24px;
+    transition:transform .25s ease;
+  }
+  .nexit-product-card:hover .nexit-product-link span:last-child{
+    transform:translateX(5px);
+  }
+  @media(max-width:980px){
+    .nexit-products{padding:78px 6vw;}
+    .nexit-products-grid{grid-template-columns:1fr;}
+    .nexit-product-card{min-height:230px;padding:30px 26px 26px;}
+  }
+</style>
+
 </head>
 <body class="motion-ready">
 <div class="site">
@@ -3738,6 +3869,29 @@ AXCEL MODE NEXITでは、大手企業・上場企業を含む法人向けのシ�
 </div>
 </section>
 
+<section class="nexit-products" id="products" aria-labelledby="nexitProductsTitle">
+  <div class="nexit-products-inner">
+    <div class="nexit-products-head">
+      <p class="nexit-products-label">OUR PRODUCTS</p>
+      <h2 class="nexit-products-title" id="nexitProductsTitle">NEXITから生まれるプロダクト。</h2>
+    </div>
+    <div class="nexit-products-grid">
+      <a class="nexit-product-card" href="https://axcelmode-nexit.jp/nexus" aria-label="NEXUSを開く">
+        <div class="nexit-product-kicker">BUSINESS OS</div>
+        <h3>NEXUS</h3>
+        <p>業務をつなぎ、人と仕事を前へ進める。これからの働き方を支えるBusiness OS。</p>
+        <div class="nexit-product-link"><span>VIEW PRODUCT</span><span>→</span></div>
+      </a>
+      <a class="nexit-product-card" href="https://axcelmode-nexit.jp/mamorun" aria-label="MAMORUNを開く">
+        <div class="nexit-product-kicker">CARE PLATFORM</div>
+        <h3>MAMORUN</h3>
+        <p>病児保育から始まる、ケアの現場を支えるプロダクト。日々の運営をもっとわかりやすく。</p>
+        <div class="nexit-product-link"><span>VIEW PRODUCT</span><span>→</span></div>
+      </a>
+    </div>
+  </div>
+</section>
+
 <section class="message" id="message">
 <div class="two-col">
 <div class="section-title"><div class="bar"></div><h2>MESSAGE</h2><p>代表メッセージ</p></div>
@@ -3894,6 +4048,8 @@ const __PARALLAX_ENABLED__ =
       ['.nexitaime-promo-points', 2, false],
       ['.nexitaime-promo-cta', 3, false],
       ['.nexitaime-screen-showcase', 2, false],
+      ['.nexit-products-head', 0, false],
+      ['.nexit-product-card', 1, true],
       ['.news-item', 1, true]
     ];
 
