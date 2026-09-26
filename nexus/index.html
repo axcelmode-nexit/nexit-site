@@ -225,10 +225,10 @@
 
   let enabled = false;
   let rafId = null;
-  let nextX = 0;
-  let nextY = 0;
+  let gammaNow = 0;
+  let betaNow = 45;
 
-  const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+  const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
 
   function applyTransform() {
     rafId = null;
@@ -238,17 +238,24 @@
       return;
     }
 
-    image.style.transform = `translate3d(${nextX}%, ${nextY}%, 0)`;
+    const overflowX = Math.max(0, image.getBoundingClientRect().width - visual.clientWidth);
+    const overflowY = Math.max(0, image.getBoundingClientRect().height - visual.clientHeight);
+
+    // Reach the actual edges of the enlarged image.
+    const xNorm = clamp(gammaNow / 22, -1, 1);
+    const yNorm = clamp((betaNow - 45) / 28, -1, 1);
+
+    const x = -xNorm * (overflowX / 2);
+    const y = -yNorm * Math.min(overflowY / 2, 18);
+
+    image.style.transform = `translate3d(${x}px, ${y}px, 0)`;
   }
 
   function onOrientation(event) {
     if (!enabled || landscapeQuery.matches) return;
 
-    const gamma = Number.isFinite(event.gamma) ? event.gamma : 0;
-    const beta = Number.isFinite(event.beta) ? event.beta : 0;
-
-    nextX = clamp(-gamma / 3.2, -9, 9);
-    nextY = clamp(-(beta - 45) / 12, -3, 3);
+    gammaNow = Number.isFinite(event.gamma) ? event.gamma : 0;
+    betaNow = Number.isFinite(event.beta) ? event.beta : 45;
 
     if (!rafId) rafId = requestAnimationFrame(applyTransform);
   }
@@ -257,7 +264,7 @@
     if (enabled) return;
     enabled = true;
     document.body.classList.add('parallax-active');
-    if (enableButton) enableButton.classList.add('is-hidden');
+    enableButton?.classList.add('is-hidden');
     window.addEventListener('deviceorientation', onOrientation, { passive: true });
   }
 
@@ -279,9 +286,7 @@
       typeof DeviceOrientationEvent !== 'undefined' &&
       typeof DeviceOrientationEvent.requestPermission === 'function'
     ) {
-      if (enableButton) {
-        enableButton.addEventListener('click', requestAndActivate, { once: true });
-      }
+      enableButton?.addEventListener('click', requestAndActivate, { once: true });
     } else {
       activateParallax();
     }
@@ -289,11 +294,14 @@
     enableButton.hidden = true;
   }
 
-  if (landscapeQuery.addEventListener) {
-    landscapeQuery.addEventListener('change', () => {
-      image.style.transform = 'none';
-    });
-  }
+  const reset = () => {
+    gammaNow = 0;
+    betaNow = 45;
+    image.style.transform = 'none';
+  };
+
+  landscapeQuery.addEventListener?.('change', reset);
+  window.addEventListener('resize', reset, { passive: true });
 })();
 </script>
 
