@@ -3651,6 +3651,125 @@
   }
 </style>
 
+
+<style id="hero-fireworks-style">
+  .hero-fireworks{
+    position:absolute;
+    inset:0;
+    z-index:1;
+    overflow:hidden;
+    pointer-events:none;
+  }
+
+  .hero-firework{
+    position:absolute;
+    left:var(--x);
+    top:var(--y);
+    width:1px;
+    height:1px;
+    opacity:1;
+  }
+
+  .hero-firework .rocket{
+    position:absolute;
+    left:-1px;
+    top:34px;
+    width:2px;
+    height:28px;
+    border-radius:999px;
+    background:linear-gradient(180deg,rgba(255,255,255,0),rgba(255,255,255,.82),rgba(215,25,32,.58));
+    box-shadow:0 0 7px rgba(255,255,255,.35),0 0 11px rgba(215,25,32,.28);
+    transform-origin:center bottom;
+    animation:heroFireworkRocket .66s cubic-bezier(.18,.78,.22,1) forwards;
+  }
+
+  .hero-firework .spark{
+    position:absolute;
+    left:0;
+    top:0;
+    width:3px;
+    height:3px;
+    margin:-1.5px 0 0 -1.5px;
+    border-radius:50%;
+    opacity:0;
+    background:var(--spark-color,rgba(255,255,255,.96));
+    box-shadow:
+      0 0 5px var(--spark-color,rgba(255,255,255,.88)),
+      0 0 11px rgba(215,25,32,.22);
+    transform:translate(0,0) scale(.45);
+    animation:heroFireworkSpark var(--spark-dur,1.35s) cubic-bezier(.12,.72,.18,1) .58s forwards;
+  }
+
+  .hero-firework::before{
+    content:"";
+    position:absolute;
+    left:0;
+    top:0;
+    width:7px;
+    height:7px;
+    margin:-3.5px 0 0 -3.5px;
+    border-radius:50%;
+    opacity:0;
+    background:rgba(255,255,255,.72);
+    box-shadow:
+      0 0 16px rgba(255,255,255,.62),
+      0 0 34px rgba(215,25,32,.25);
+    animation:heroFireworkFlash .48s ease-out .56s forwards;
+  }
+
+  @keyframes heroFireworkRocket{
+    0%{
+      opacity:0;
+      transform:translateY(46px) scaleY(.65);
+    }
+    18%{opacity:.72;}
+    100%{
+      opacity:0;
+      transform:translateY(0) scaleY(.18);
+    }
+  }
+
+  @keyframes heroFireworkFlash{
+    0%{opacity:0;transform:scale(.35);}
+    35%{opacity:.75;transform:scale(1.25);}
+    100%{opacity:0;transform:scale(2.1);}
+  }
+
+  @keyframes heroFireworkSpark{
+    0%{
+      opacity:0;
+      transform:translate(0,0) scale(.4);
+      filter:blur(.2px);
+    }
+    12%{opacity:.92;}
+    60%{
+      opacity:.72;
+      transform:translate(var(--dx),var(--dy)) scale(1);
+      filter:blur(0);
+    }
+    100%{
+      opacity:0;
+      transform:translate(
+        calc(var(--dx) * 1.12),
+        calc(var(--dy) * 1.12 + 10px)
+      ) scale(.45);
+      filter:blur(.6px);
+    }
+  }
+
+  @media(max-width:767px){
+    .hero-firework .spark{
+      width:2.4px;
+      height:2.4px;
+      margin:-1.2px 0 0 -1.2px;
+    }
+  }
+
+  @media(prefers-reduced-motion:reduce){
+    .hero-fireworks{display:none!important;}
+  }
+</style>
+
 </head>
 <body class="motion-ready">
 <div class="site">
@@ -3674,6 +3793,7 @@
 <section class="hero" id="top">
 <div aria-hidden="true" class="hero-bg"></div>
 <div aria-hidden="true" class="hero-mist"></div>
+<div aria-hidden="true" class="hero-fireworks" id="heroFireworks"></div>
 <div class="hero-content">
 <h1 aria-label="挑戦を、確かな前進に。" class="catch animated-catch">
 <span style="--i:1">挑</span><span style="--i:2">戦</span><span style="--i:3">を</span><span style="--i:4">、</span><br/>
@@ -3878,7 +3998,7 @@ AXCEL MODE NEXITでは、大手企業・上場企業を含む法人向けのシ�
     <div class="nexit-products-grid">
       <a class="nexit-product-card" href="https://axcelmode-nexit.jp/nexus" aria-label="NEXUSを開く">
         <div class="nexit-product-kicker">BUSINESS OS</div>
-        <h3>NEXUS × NEXIT</h3>
+        <h3>NEXUS</h3>
         <p>業務をつなぎ、人と仕事を前へ進める。これからの働き方を支えるBusiness OS。</p>
         <div class="nexit-product-link"><span>VIEW PRODUCT</span><span>→</span></div>
       </a>
@@ -5108,6 +5228,105 @@ aiChatForm.addEventListener("submit",async(e)=>{
     const delay = Math.max(0, CUTOVER_AT - Date.now());
     setTimeout(applyOfficeOpen, delay + 100);
   }
+})();
+</script>
+
+
+<script>
+(function(){
+  const layer = document.getElementById("heroFireworks");
+  if(!layer) return;
+
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if(reduceMotion) return;
+
+  // New Year limited effect: active only from January 1 through January 3.
+  const now = new Date();
+  const isNewYear = now.getMonth() === 0 && now.getDate() >= 1 && now.getDate() <= 3;
+  if(!isNewYear) return;
+
+  let timer = null;
+
+  function createBurst(){
+    const burst = document.createElement("div");
+    burst.className = "hero-firework";
+
+    const mobile = window.matchMedia("(max-width: 767px)").matches;
+
+    const x = mobile
+      ? 56 + Math.random() * 34
+      : 58 + Math.random() * 31;
+
+    const y = mobile
+      ? 20 + Math.random() * 27
+      : 18 + Math.random() * 30;
+
+    burst.style.setProperty("--x", x.toFixed(2) + "%");
+    burst.style.setProperty("--y", y.toFixed(2) + "%");
+
+    const rocket = document.createElement("span");
+    rocket.className = "rocket";
+    burst.appendChild(rocket);
+
+    const count = mobile
+      ? 15 + Math.floor(Math.random() * 7)
+      : 18 + Math.floor(Math.random() * 9);
+
+    const radius = mobile
+      ? 26 + Math.random() * 18
+      : 34 + Math.random() * 28;
+
+    const colors = [
+      "rgba(255,255,255,.96)",
+      "rgba(255,245,245,.94)",
+      "rgba(255,118,118,.90)",
+      "rgba(215,25,32,.88)"
+    ];
+
+    for(let i=0;i<count;i++){
+      const spark = document.createElement("span");
+      spark.className = "spark";
+
+      const angle = (Math.PI * 2 * i / count) + (Math.random() - .5) * .16;
+      const distance = radius * (.72 + Math.random() * .36);
+
+      const dx = Math.cos(angle) * distance;
+      const dy = Math.sin(angle) * distance;
+
+      spark.style.setProperty("--dx", dx.toFixed(1) + "px");
+      spark.style.setProperty("--dy", dy.toFixed(1) + "px");
+      spark.style.setProperty("--spark-dur", (1.15 + Math.random() * .48).toFixed(2) + "s");
+      spark.style.setProperty("--spark-color", colors[Math.floor(Math.random() * colors.length)]);
+
+      burst.appendChild(spark);
+    }
+
+    layer.appendChild(burst);
+    setTimeout(()=>burst.remove(), 2400);
+  }
+
+  function scheduleNext(){
+    const wait = 8000 + Math.random() * 7000;
+    timer = setTimeout(()=>{
+      createBurst();
+
+      if(Math.random() < .28){
+        setTimeout(createBurst, 520 + Math.random() * 700);
+      }
+
+      scheduleNext();
+    }, wait);
+  }
+
+  // Avoid firing immediately on first paint.
+  timer = setTimeout(()=>{
+    createBurst();
+    scheduleNext();
+  }, 6500 + Math.random() * 4500);
+
+  window.addEventListener("pagehide",()=>{
+    if(timer) clearTimeout(timer);
+  },{once:true});
 })();
 </script>
 
