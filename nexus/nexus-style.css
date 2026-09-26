@@ -289,7 +289,8 @@ img{display:block;max-width:100%}
 .hero-visual{
   position:relative;
   overflow:hidden;
-  background:#061627;
+  background:transparent;
+  box-shadow:none;
   isolation:isolate;
 }
 
@@ -312,5 +313,51 @@ img{display:block;max-width:100%}
     transform:none !important;
     opacity:1 !important;
   }
+}
+
+
+/* v13: remove visible black frame around zoomed-out hero image */
+.hero-visual{
+  background:
+    radial-gradient(circle at 50% 45%, rgba(32,188,209,.08), transparent 58%),
+    linear-gradient(180deg, rgba(247,250,252,.96), rgba(240,246,250,.96));
+  border:1px solid rgba(174,199,216,.32);
+}
+
+.hero-visual img{
+  border-radius:24px;
+}
+
+@media(max-width:680px){
+  .hero-visual{
+    border-radius:22px;
+  }
+
+  .hero-visual img{
+    border-radius:18px;
+  }
+}
+
+
+/* v14: soften the hero artwork edges so it blends into the page */
+.hero-visual img{
+  -webkit-mask-image:
+    radial-gradient(
+      ellipse at center,
+      #000 66%,
+      rgba(0,0,0,.92) 76%,
+      rgba(0,0,0,.58) 86%,
+      rgba(0,0,0,.20) 94%,
+      transparent 100%
+    );
+  mask-image:
+    radial-gradient(
+      ellipse at center,
+      #000 66%,
+      rgba(0,0,0,.92) 76%,
+      rgba(0,0,0,.58) 86%,
+      rgba(0,0,0,.20) 94%,
+      transparent 100%
+    );
 }
 
