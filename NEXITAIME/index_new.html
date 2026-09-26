@@ -1307,7 +1307,7 @@ window.NEXITAIME_GOURMET_ENDPOINT =
 // ▼ NEXITAIMEからひとこと：ここを true / false に変えるだけで即ON/OFFできます
 window.NEXITAIME_AI_SUGGESTION_ENABLED = true;
 </script>
-<script>window.NEXITAIME_BUILD="v142";</script>
+<script>window.NEXITAIME_BUILD="v143";</script>
 
 
 <style id="nexitaime-existing-ai-style">
@@ -4524,12 +4524,44 @@ function resolvedReturnStation(ctx=null){
   return returnTarget==='same' ? origin : returnTarget;
 }
 
-function returnModeAllowed(mode,ctx=null){
+function rentalCarOneWayAllowed(service,from,backTo){
+  if(from===backTo)return true;
+  if(!service)return false;
+
+  // Different drop-off locations are allowed only when one-way support has been
+  // explicitly verified in the mobility data. Unknown/unchecked rental-car rows
+  // must never be proposed as if a one-way return were possible.
+  const verified=
+    service.one_way_verified===true ||
+    service.oneWayVerified===true ||
+    service.dropoff_verified===true ||
+    service.dropoffSupported===true;
+  if(!verified)return false;
+
+  // Optional destination allow-list. If supplied, the selected return point must
+  // be one of the verified drop-off destinations; otherwise the verified flag
+  // means general one-way support for this service.
+  const targets=[
+    ...(Array.isArray(service.one_way_return_points)?service.one_way_return_points:[]),
+    ...(Array.isArray(service.oneWayReturnPoints)?service.oneWayReturnPoints:[]),
+    ...(Array.isArray(service.dropoff_locations)?service.dropoff_locations:[]),
+    ...(Array.isArray(service.dropoffLocations)?service.dropoffLocations:[])
+  ].map(x=>String(x||'').trim()).filter(Boolean);
+  return targets.length ? targets.includes(String(backTo||'').trim()) : true;
+}
+
+function returnModeAllowed(mode,ctx=null,service=null){
   const backTo=resolvedReturnStation(ctx);
   const from=ctx?.origin || origin;
-  // Carshare and rental bicycle generally require return to the original station.
-  // Without verified one-way availability, do not propose them for a different return point.
+  // Carshare and rental bicycle require return to the original station unless
+  // verified one-way operation is explicitly modeled in the future.
   if(backTo!==from && ['carshare','bike'].includes(mode)) return false;
+  // Rental cars may use a different return point only when that service has
+  // verified one-way/drop-off support. Before service selection, defer the check.
+  if(backTo!==from && mode==='rentalcar'){
+    if(!service)return true;
+    return rentalCarOneWayAllowed(service,from,backTo);
+  }
   return true;
 }
 
@@ -5150,6 +5182,9 @@ async function evaluateDirectMode(ev,dest,mode,start,deadline,ctx){
   if(['carshare','rentalcar','taxi','bike'].includes(mode) && !svc)return null;
 
   const service=svc?.service||null;
+  // v143: A rental car can return to a different place only when one-way/drop-off
+  // support is explicitly verified for the selected service.
+  if(!returnModeAllowed(mode,ctx,service))return null;
   const servicePoint=(service && Number.isFinite(Number(service.lat)) && Number.isFinite(Number(service.lon)))
     ? {lat:Number(service.lat),lon:Number(service.lon)}
     : null;
@@ -5255,7 +5290,7 @@ async function evaluateDirectMode(ev,dest,mode,start,deadline,ctx){
     modeReason += `（${hub.label}・往路待ち約${taxiOutWait}分、復路配車待ち約${taxiBackWait}分を見込み）`;
   }
   if(mode==='bike') modeReason += '（貸出・返却の準備時間込み）';
-  if(backTo!==from && mode==='rentalcar') modeReason += '（乗り捨て可否・料金は要確認）';
+  if(backTo!==from && mode==='rentalcar') modeReason += '（乗り捨て対応確認済み・料金は要確認）';
 
   const transportCost=await estimateTransportCost(mode,from,dest,backTo,service);
 
