@@ -43,8 +43,11 @@
     </div>
   </div>
 
-  <div class="hero-visual">
-    <img src="assets/nexus-core-bg.png" alt="NEXUS Core">
+  <div class="hero-visual" id="heroVisual">
+    <img id="heroCoreImage" src="assets/nexus-core-bg.png" alt="NEXUS Core">
+    <button class="parallax-enable" id="parallaxEnable" type="button" aria-label="スマホを傾けてNEXUS Coreを見る">
+      傾けて見る
+    </button>
   </div>
 </section>
 
@@ -207,6 +210,92 @@
   </nav>
   <small>© Axcel Mode Nexit Inc. All Rights Reserved.</small>
 </footer>
+
+
+<script>
+(() => {
+  const visual = document.getElementById('heroVisual');
+  const image = document.getElementById('heroCoreImage');
+  const enableButton = document.getElementById('parallaxEnable');
+
+  if (!visual || !image) return;
+
+  const isCoarsePointer = window.matchMedia('(pointer: coarse)').matches;
+  const landscapeQuery = window.matchMedia('(orientation: landscape)');
+
+  let enabled = false;
+  let rafId = null;
+  let nextX = 0;
+  let nextY = 0;
+
+  const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+
+  function applyTransform() {
+    rafId = null;
+
+    if (landscapeQuery.matches) {
+      image.style.transform = 'none';
+      return;
+    }
+
+    image.style.transform = `translate3d(${nextX}%, ${nextY}%, 0)`;
+  }
+
+  function onOrientation(event) {
+    if (!enabled || landscapeQuery.matches) return;
+
+    const gamma = Number.isFinite(event.gamma) ? event.gamma : 0;
+    const beta = Number.isFinite(event.beta) ? event.beta : 0;
+
+    nextX = clamp(-gamma / 3.2, -9, 9);
+    nextY = clamp(-(beta - 45) / 12, -3, 3);
+
+    if (!rafId) rafId = requestAnimationFrame(applyTransform);
+  }
+
+  function activateParallax() {
+    if (enabled) return;
+    enabled = true;
+    document.body.classList.add('parallax-active');
+    if (enableButton) enableButton.classList.add('is-hidden');
+    window.addEventListener('deviceorientation', onOrientation, { passive: true });
+  }
+
+  async function requestAndActivate() {
+    try {
+      if (
+        typeof DeviceOrientationEvent !== 'undefined' &&
+        typeof DeviceOrientationEvent.requestPermission === 'function'
+      ) {
+        const permission = await DeviceOrientationEvent.requestPermission();
+        if (permission !== 'granted') return;
+      }
+      activateParallax();
+    } catch (_) {}
+  }
+
+  if (isCoarsePointer) {
+    if (
+      typeof DeviceOrientationEvent !== 'undefined' &&
+      typeof DeviceOrientationEvent.requestPermission === 'function'
+    ) {
+      if (enableButton) {
+        enableButton.addEventListener('click', requestAndActivate, { once: true });
+      }
+    } else {
+      activateParallax();
+    }
+  } else if (enableButton) {
+    enableButton.hidden = true;
+  }
+
+  if (landscapeQuery.addEventListener) {
+    landscapeQuery.addEventListener('change', () => {
+      image.style.transform = 'none';
+    });
+  }
+})();
+</script>
 
 </body>
 </html>
