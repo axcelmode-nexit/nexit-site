@@ -316,25 +316,25 @@ img{display:block;max-width:100%}
 }
 
 
-/* v13: remove visible black frame around zoomed-out hero image */
+/* v15: remove visible frame line around hero image */
 .hero-visual{
-  background:
-    radial-gradient(circle at 50% 45%, rgba(32,188,209,.08), transparent 58%),
-    linear-gradient(180deg, rgba(247,250,252,.96), rgba(240,246,250,.96));
-  border:1px solid rgba(174,199,216,.32);
+  background:transparent;
+  border:none;
+  border-radius:0;
+  box-shadow:none;
 }
 
 .hero-visual img{
-  border-radius:24px;
+  border-radius:0;
 }
 
 @media(max-width:680px){
   .hero-visual{
-    border-radius:22px;
+    border-radius:0;
   }
 
   .hero-visual img{
-    border-radius:18px;
+    border-radius:0;
   }
 }
 
@@ -344,19 +344,19 @@ img{display:block;max-width:100%}
   -webkit-mask-image:
     radial-gradient(
       ellipse at center,
-      #000 66%,
-      rgba(0,0,0,.92) 76%,
-      rgba(0,0,0,.58) 86%,
-      rgba(0,0,0,.20) 94%,
+      #000 78%,
+      rgba(0,0,0,.95) 86%,
+      rgba(0,0,0,.55) 93%,
+      rgba(0,0,0,.18) 97%,
       transparent 100%
     );
   mask-image:
     radial-gradient(
       ellipse at center,
-      #000 66%,
-      rgba(0,0,0,.92) 76%,
-      rgba(0,0,0,.58) 86%,
-      rgba(0,0,0,.20) 94%,
+      #000 78%,
+      rgba(0,0,0,.95) 86%,
+      rgba(0,0,0,.55) 93%,
+      rgba(0,0,0,.18) 97%,
       transparent 100%
     );
 }
