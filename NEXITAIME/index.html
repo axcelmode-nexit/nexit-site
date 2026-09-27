@@ -1314,7 +1314,7 @@ window.NEXITAIME_GOURMET_ENDPOINT =
 // ▼ NEXITAIMEからひとこと：ここを true / false に変えるだけで即ON/OFFできます
 window.NEXITAIME_AI_SUGGESTION_ENABLED = true;
 </script>
-<script>window.NEXITAIME_BUILD="v146";</script>
+<script>window.NEXITAIME_BUILD="v147";</script>
 
 
 <style id="nexitaime-existing-ai-style">
@@ -7145,8 +7145,7 @@ function itineraryCategoriesCanFollow(previousKind,nextKind){
   if(!previousKind || !nextKind)return true;
 
   // Avoid unnatural back-to-back eating stops.
-  // Cafe -> meal and meal -> cafe are allowed later in a longer itinerary
-  // only when another kind of activity is placed between them.
+  // A cafe can still appear later in a longer outing, but never directly after a meal/cafe.
   const culinary=new Set(['food','cafe']);
   if(culinary.has(previousKind) && culinary.has(nextKind))return false;
 
@@ -7154,6 +7153,17 @@ function itineraryCategoriesCanFollow(previousKind,nextKind){
   if(previousKind==='onsen' && nextKind==='onsen')return false;
 
   return true;
+}
+
+function itineraryFoodCount(rows=[]){
+  return (rows||[]).filter(row=>row?.category==='food').length;
+}
+
+function itineraryAllowsAnotherFood(rows=[],nextKind=''){
+  // v147: one proper meal per itinerary. A cafe/sweets stop is a separate category
+  // and may still be suggested later when the route has another activity in between.
+  if(nextKind!=='food')return true;
+  return itineraryFoodCount(rows)===0;
 }
 
 function itineraryCandidateAvailable(ev, arrive, leave){
@@ -7450,7 +7460,9 @@ function buildDynamicVehicleItinerary(plan,candidateEvents=[],freeMinutes=180,ct
   const rows=[{
     name:plan.ev?.title||plan.ev?.venue||plan.dest,
     stay:primaryStay,arrive:plan.arrive,leave:plan.arrive+primaryStay,move:0,
-    kind:(plan.ev?.start_date||plan.ev?.source)?'event':'spot',
+    // Only true event records should drive the event header. A normal facility
+    // with a source field (e.g. ミュゼ雪小町 / official_catalog) is not an event.
+    kind:primaryKind==='event'?'event':'spot',
     category:primaryKind,categoryLabel:itineraryCategoryLabel(primaryKind),
     sourceEv:plan.ev,point:firstPoint
   }];
@@ -7483,6 +7495,7 @@ function buildDynamicVehicleItinerary(plan,candidateEvents=[],freeMinutes=180,ct
       if(!itineraryCandidateAvailable(ev,arrive,leave))continue;
       const kind=itineraryCategory(ev);
       if(!itineraryCategoriesCanFollow(rows[rows.length-1]?.category||'',kind))continue;
+      if(!itineraryAllowsAnotherFood(rows,kind))continue;
       const score=dynamicRouteCandidateScore(ev,{prevEv,prevPoint:currentPoint,goalPoint,usedKinds,rows,move,stay,freeMinutes});
       if(score>bestScore){
         bestScore=score;
@@ -7679,6 +7692,7 @@ function buildSimpleItinerary(plan,candidateEvents=[],freeMinutes=180){
         const kind=itineraryCategory(ev);
         const previousKind=rows[rows.length-1]?.category||'';
         if(!itineraryCategoriesCanFollow(previousKind,kind)) continue;
+        if(!itineraryAllowsAnotherFood(rows,kind)) continue;
 
         const prevPoint=rows[rows.length-1]?.point || itineraryPointForEvent(plan.ev,plan.dest);
         const nextPoint=exactPointForEvent(ev);
