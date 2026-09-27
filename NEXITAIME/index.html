@@ -1314,7 +1314,7 @@ window.NEXITAIME_GOURMET_ENDPOINT =
 // ▼ NEXITAIMEからひとこと：ここを true / false に変えるだけで即ON/OFFできます
 window.NEXITAIME_AI_SUGGESTION_ENABLED = true;
 </script>
-<script>window.NEXITAIME_BUILD="v144";</script>
+<script>window.NEXITAIME_BUILD="v145";</script>
 
 
 <style id="nexitaime-existing-ai-style">
@@ -7321,7 +7321,7 @@ function buildSimpleItinerary(plan,candidateEvents=[],freeMinutes=180){
     .filter((s,i,a)=>a.findIndex(x=>x.name===s.name)===i);
   if(!Number.isFinite(plan.stay) || plan.stay<30)return null;
 
-  const isTimedEvent=!!(plan.ev?.start_date || plan.ev?.source);
+  const isTimedEvent=itineraryCategory(plan.ev)==='event' || !!(plan.ev?.start_time && (plan.ev?.start_date || plan.ev?.end_time));
   const mixedMode=(mood==='any');
 
   // 明示的に「ごはん／カフェ」を選んだ場合は、その店を主目的に固定する。
@@ -7378,6 +7378,9 @@ function buildSimpleItinerary(plan,candidateEvents=[],freeMinutes=180){
     let targetStops=1;
     if(freeMinutes>=90) targetStops=2;
     if(freeMinutes>=150) targetStops=3;
+    // v145: for longer recommendation windows, keep searching for another
+    // realistic stop instead of leaving a large unexplained idle block.
+    if(freeMinutes>=210) targetStops=4;
 
     const candidates=mixedCandidatePool(plan,candidateEvents);
     const usedKinds=new Set([primaryKind]);
@@ -8676,6 +8679,26 @@ function finalPlanGuard(plan,ctx,start,deadline){
       }
     }
     prev=row;
+  }
+
+  // v145: recommendation itineraries must not hide a long idle period before the return leg.
+  // The itinerary builder has already searched nearby candidates. If more than 60 minutes
+  // still remain unexplained, drop this plan rather than telling the user to wait around.
+  if(mood==='any' && itinerary.length>=2){
+    const itineraryEnd=Math.max(...itinerary.map(r=>Number(r?.leave)).filter(Number.isFinite));
+    let usableUntil=null;
+    if(['public','train','bus'].includes(plan?.mode) && finite(plan?.back?.dep)){
+      const lastMile=Math.max(0,Number(plan?.lastMile?.minutes||0));
+      usableUntil=Number(plan.back.dep)-lastMile;
+    }else if(finite(plan?.venueLeave)){
+      usableUntil=Number(plan.venueLeave);
+    }
+    if(finite(itineraryEnd) && finite(usableUntil)){
+      const unexplainedGap=Math.max(0,Number(usableUntil)-Number(itineraryEnd));
+      if(unexplainedGap>60){
+        reasons.push('周遊後の空き時間が長すぎる');
+      }
+    }
   }
 
   if(plan?.ev && finite(arrive)){
