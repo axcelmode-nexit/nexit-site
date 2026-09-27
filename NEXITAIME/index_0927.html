@@ -1394,13 +1394,6 @@ footer a{color:inherit;font-weight:900}
 window.NEXITAIME_ANALYTICS_ENDPOINT =
   "https://axcelmode-nexit-ai.pages.dev/api/nexitaime-analytics";
 </script>
-<script id="nexitaime-catalog-config">
-// v127 cutover: Shadow v2.3 catalog first (FURUSATTO Instagram + cocola discovery), legacy JSON as per-type fallback.
-window.NEXITAIME_CATALOG_ENDPOINT =
-  "https://nexitaime-data-sync.axcel-mode-nexit.workers.dev/api/catalog";
-window.NEXITAIME_CATALOG_PREFERRED = true;
-window.NEXITAIME_CATALOG_TIMEOUT_MS = 3500;
-</script>
 
 
 <style id="analytics-privacy-style">
@@ -2315,11 +2308,11 @@ window.NEXITAIME_CATALOG_TIMEOUT_MS = 3500;
 <a href="https://www.joetsubusloca.jp/" rel="noopener" target="_blank">🚌 上越バスロケ</a>
 <a href="https://www.city.joetsu.niigata.jp/soshiki/kotsu/bus-jikoku.html" rel="noopener" target="_blank">🗓 上越市 総合時刻表</a>
 </div>
-<div class="note">鉄道は妙高はねうまライン公開時刻表を利用。バスは上越大通り線・佐渡汽船連絡バス・教育大学線・春日山／佐内線・山麓線の主要区間をアプリ内判定します。運休・遅延・臨時変更は上の公式運行情報を優先してください。イベント・飲食店・観光・移動サービスは自動更新カタログを優先し、取得できない場合だけ既存データへ自動で切り替えます。受付締切・予約条件・帰路成立性も候補判定に反映します。</div>
+<div class="note">鉄道は妙高はねうまライン公開時刻表を利用。バスは上越大通り線・佐渡汽船連絡バス・教育大学線・春日山／佐内線・山麓線の主要区間をアプリ内判定します。運休・遅延・臨時変更は上の公式運行情報を優先してください。イベントは events_auto.json があれば自動更新データを優先します。受付締切・予約条件・帰路成立性も候補判定に反映します。</div>
 </section>
 
 <div class="hotpepper-credit">Powered by <a href="https://webservice.recruit.co.jp/" target="_blank" rel="noopener">ホットペッパーグルメ Webサービス</a></div>
-<footer data-build="v127-cutover">NEXITAIME 〜上越版〜 · Powered by 
+<footer data-build="v128">NEXITAIME 〜上越版〜 · Powered by 
 <a href="https://axcelmode-nexit.jp/" target="_blank" rel="noopener">AXCEL MODE NEXIT</a> · Beta1.0
 <section class="operator-card" aria-label="運営会社">
   <div class="operator-card-inner">
@@ -2538,65 +2531,11 @@ function debugTimelyEventState(rows=[]){
 
 function mergeManualTimelyEvents(rows=[]){
   const base=Array.isArray(rows)?rows:[];
-  const sameEvent=(a,b)=>{
-    const an=normalizeShopName(a?.title||a?.venue);
-    const bn=normalizeShopName(b?.title||b?.venue);
-    if(!an||!bn)return false;
-    const nameMatch=an===bn || (Math.min(an.length,bn.length)>=8 && (an.includes(bn)||bn.includes(an)));
-    if(!nameMatch)return false;
-    const ad=String(a?.start_date||'');
-    const bd=String(b?.start_date||'');
-    if(ad&&bd&&ad!==bd)return false;
-    const av=normalizeShopName(a?.venue||'');
-    const bv=normalizeShopName(b?.venue||'');
-    return !av||!bv||av===bv||av.includes(bv)||bv.includes(av);
-  };
-  const apiOrLegacy=base.map(x=>({...x}));
-  const additions=[];
-  for(const manual of MANUAL_TIMELY_EVENTS){
-    const existing=apiOrLegacy.find(x=>sameEvent(manual,x));
-    if(existing){
-      // Prefer live catalog timing/source, but never let missing catalog fields erase
-      // verified hand-entered routing/detail data.
-      const merged={...manual,...existing};
-      merged.categories=[...new Set([...(manual.categories||[]),...(existing.categories||[])])];
-
-      // Catalog may know the newest date/time but still lack coordinates/address.
-      // Preserve the verified manual fallback whenever the live value is missing/unusable.
-      for(const field of [
-        'address','lat','lon','stay_minutes',
-        'family_friendly','couple_friendly','solo_friendly',
-        'indoor','estimated_cost_yen'
-      ]){
-        const v=existing?.[field];
-        const missing =
-          v==null ||
-          v==='' ||
-          (['lat','lon'].includes(field) && !Number.isFinite(Number(v)));
-        if(missing && manual?.[field]!=null) merged[field]=manual[field];
-      }
-
-      // Keep live timing only when it is actually present.
-      for(const field of ['start_date','end_date','start_time','end_time']){
-        if(!existing?.[field] && manual?.[field]) merged[field]=manual[field];
-      }
-
-      // If valid coordinates exist after merge, the event is routable.
-      if(Number.isFinite(Number(merged.lat)) && Number.isFinite(Number(merged.lon))){
-        merged.routing_ready=true;
-      }else if(manual.routing_ready){
-        merged.routing_ready=true;
-        merged.lat=manual.lat;
-        merged.lon=manual.lon;
-      }
-
-      // Keep a useful official/manual URL if the catalog row has no URL.
-      if(!existing?.url && manual?.url) merged.url=manual.url;
-
-      Object.assign(existing,merged);
-    }else additions.push({...manual});
-  }
-  return [...additions,...apiOrLegacy];
+  const manualKeys=new Set(MANUAL_TIMELY_EVENTS.map(x=>normalizeShopName(x?.title||x?.venue)).filter(Boolean));
+  return [
+    ...MANUAL_TIMELY_EVENTS.map(x=>({...x})),
+    ...base.filter(x=>!manualKeys.has(normalizeShopName(x?.title||x?.venue)))
+  ];
 }
 
 let EVENTS=[], RESTAURANTS=[], TRAIN={up:[],down:[]}, SHINANO={up:[],down:[]}, BUS={trips:[]}, BUS_MAIN={weekday:{},holiday:{}}, BUS_EXT={routes:[]}, PLACES={}, MOBILITY=[], origin='', destinationArea='any', returnTarget='same', timingMode='now', planningDate=new Date(), mood='any', foodKind='any', onsenKind='any', sightseeingKind='any', activeKind='any', eventKind='any', transport='auto', budget='any', companion='any', currentPos=null, weather=null, weatherForecast=null, mobilityMap=null, mobilityMarkers=[], currentPosMarker=null, nearestService=null, freeTimeMode='auto';
@@ -2813,239 +2752,19 @@ function classicRouteBoostForEvent(ev){
 }
 
 
-function legacyFetch(url, fallback){
-  return fetch(url,{cache:'no-store'})
-    .then(r=>r.ok?r.json():Promise.reject(new Error(`HTTP ${r.status}`)))
-    .catch(()=>fallback);
-}
-
-function legacyEventsFetch(){
-  return fetch('./events_auto.json',{cache:'no-store'})
-    .then(r=>r.ok?r.json():Promise.reject())
-    .catch(()=>legacyFetch('./events.json',[]));
-}
-
-function catalogDateParts(value){
-  if(!value)return {date:null,time:null};
-  const d=new Date(value);
-  if(Number.isNaN(d.getTime())){
-    const raw=String(value);
-    const m=raw.match(/^(\d{4}-\d{2}-\d{2})(?:[T\s](\d{2}:\d{2}))?/);
-    return {date:m?.[1]||null,time:m?.[2]||null};
-  }
-  const fmt=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Tokyo',year:'numeric',month:'2-digit',day:'2-digit'});
-  const tFmt=new Intl.DateTimeFormat('ja-JP',{timeZone:'Asia/Tokyo',hour:'2-digit',minute:'2-digit',hour12:false});
-  return {date:fmt.format(d),time:tFmt.format(d)};
-}
-
-function catalogAreaCode(value){
-  const v=String(value||'').trim();
-  if(!v)return null;
-  const low=v.toLowerCase();
-  if(/myoko|妙高|赤倉|池の平|杉野沢|燕温泉|関温泉/.test(low))return 'myoko_kogen';
-  if(/上越妙高|joetsu.?myoko/.test(low))return 'joetsumyoko';
-  if(/高田|takada/.test(low))return 'takada';
-  if(/直江津|naoetsu/.test(low))return 'naoetsu';
-  if(/春日山|kasugayama/.test(low))return 'kasugayama';
-  if(/名立|nadachi/.test(low))return 'nadachi';
-  if(/大潟|ogata|柿崎|kakizaki/.test(low))return 'ogata';
-  if(/安塚|yasuzuka/.test(low))return 'yasuzuka';
-  if(/浦川原|uragawara/.test(low))return 'uragawara';
-  if(/大島|oshima/.test(low))return 'oshima';
-  if(/牧|maki/.test(low))return 'maki';
-  if(/板倉|itakura/.test(low))return 'itakura';
-  if(/清里|kiyosato/.test(low))return 'kiyosato';
-  if(/頸城|kubiki/.test(low))return 'kubiki';
-  if(/吉川|yoshikawa/.test(low))return 'yoshikawa';
-  if(/三和|sanwa/.test(low))return 'sanwa';
-  return v;
-}
-
-function catalogPriceYen(price){
-  if(price==null)return null;
-  if(typeof price==='number' && Number.isFinite(price))return price;
-  if(typeof price==='string'){
-    const nums=[...price.matchAll(/([0-9][0-9,]*)\s*円/g)].map(m=>Number(m[1].replaceAll(',',''))).filter(Number.isFinite);
-    return nums.length?Math.min(...nums):null;
-  }
-  if(typeof price==='object'){
-    for(const key of ['yen','amount','value','min','minimum','adult']){
-      const n=Number(price?.[key]);
-      if(Number.isFinite(n))return n;
-    }
-    for(const val of Object.values(price)){
-      const n=catalogPriceYen(val);
-      if(n!=null)return n;
-    }
-  }
-  return null;
-}
-
-function catalogCategories(row){
-  const values=[
-    row?.category,row?.categories,row?.tags,row?.event_category,row?.event_tags,
-    row?.data?.category,row?.data?.categories,row?.data?.tags,row?.data?.event_category,row?.data?.event_tags
-  ].filter(v=>v!=null);
-  const raw=values.flatMap(v=>Array.isArray(v)?v:String(v).split(/[、,／/|]/)).map(v=>String(v).trim()).filter(Boolean);
-  const base=row?.entity_type==='restaurant'?['食']:
-    row?.entity_type==='event'?['イベント']:
-    row?.entity_type==='place'?['観光']:[];
-  return [...new Set([...base,...raw])];
-}
-
-function catalogRowToCandidate(row){
-  const start=catalogDateParts(row?.start_at);
-  const finish=catalogDateParts(row?.end_at);
-  const type=row?.entity_type;
-  const title=String(row?.name||row?.title||row?.data?.name||row?.data?.title||'').trim();
-  const summary=row?.summary||row?.description||row?.data?.summary||row?.data?.description||'';
-  const url=row?.official_url||row?.source_url||row?.data?.official_url||row?.data?.source_url||'';
-  const out={
-    id:`catalog-${row?.id||title}`,
-    title,
-    venue:row?.venue||row?.data?.venue||title,
-    area:catalogAreaCode(row?.area||row?.data?.area),
-    area_name:row?.area||row?.data?.area||'',
-    categories:catalogCategories(row),
-    summary,
-    address:row?.address||null,
-    lat:Number.isFinite(Number(row?.lat))?Number(row.lat):null,
-    lon:Number.isFinite(Number(row?.lon))?Number(row.lon):null,
-    phone:row?.phone||null,
-    url,
-    opening_hours:row?.opening_hours||null,
-    estimated_cost_yen:catalogPriceYen(row?.price),
-    verified_at:row?.verified_at||null,
-    source:'catalog_api',
-    source_name:row?.source_name||row?.data?.source_name||'NEXITAIME自動更新カタログ',
-    catalog_id:row?.id||null,
-    catalog_confidence:row?.confidence??null,
-    catalog_status:row?.status||'active',
-    routing_ready:Number.isFinite(Number(row?.lat))&&Number.isFinite(Number(row?.lon)),
-    stay_minutes:{min:30,recommended:type==='restaurant'?60:type==='event'?60:45,max:type==='restaurant'?90:120}
-  };
-  if(type==='event'){
-    out.start_date=start.date;
-    out.end_date=finish.date||start.date;
-    if(start.time)out.start_time=start.time;
-    if(finish.time)out.end_time=finish.time;
-    const eventText=[title,summary,...(out.categories||[])].join(' ');
-    if(/親子|子ども|こども|キッズ|ファミリー|家族/.test(eventText))out.family_friendly=true;
-    out.primary_category='event';
-  }
-  if(type==='restaurant'){
-    out.primary_category='food';
-    out.indoor=true;
-  }
-  return out;
-}
-
-function catalogRowToMobility(row){
-  return {
-    id:`catalog-${row?.id||row?.name||''}`,
-    name:row?.name||'',
-    category:row?.category||row?.data?.category||'other',
-    provider:row?.data?.provider||'',
-    area:row?.area||'',
-    address:row?.address||'',
-    lat:Number.isFinite(Number(row?.lat))?Number(row.lat):null,
-    lon:Number.isFinite(Number(row?.lon))?Number(row.lon):null,
-    phone:row?.phone||null,
-    url:row?.official_url||row?.source_url||'',
-    opening_hours:row?.opening_hours||null,
-    price:row?.price||null,
-    verified_at:row?.verified_at||null,
-    source_status:'catalog_active',
-    catalog_id:row?.id||null
-  };
-}
-
-function mergeCatalogCandidates(staticRows=[], catalogRows=[]){
-  const rows=Array.isArray(staticRows)?staticRows.map(x=>({...x})):[];
-  const byName=new Map();
-  const byUrl=new Map();
-  rows.forEach((row,idx)=>{
-    const name=normalizeShopName(row?.venue||row?.title||row?.name);
-    if(name && !byName.has(name))byName.set(name,idx);
-    const u=String(row?.url||'').trim();
-    if(u && !byUrl.has(u))byUrl.set(u,idx);
-  });
-
-  for(const apiRow of catalogRows||[]){
-    const candidate=apiRow?.entity_type==='mobility'?catalogRowToMobility(apiRow):catalogRowToCandidate(apiRow);
-    const name=normalizeShopName(candidate?.venue||candidate?.title||candidate?.name);
-    const u=String(candidate?.url||'').trim();
-    const idx=(u&&byUrl.has(u))?byUrl.get(u):(name&&byName.has(name)?byName.get(name):-1);
-    if(idx>=0){
-      const prior=rows[idx];
-      const preservedCategories=prior?.categories||[];
-      const merged={...prior,...candidate};
-      if(preservedCategories.length || candidate.categories?.length){
-        merged.categories=[...new Set([...(preservedCategories||[]),...(candidate.categories||[])])];
-      }
-      // Keep the richer hand-audited fields when the catalog does not provide them.
-      for(const field of ['stay_minutes','family_friendly','couple_friendly','solo_friendly','indoor','always_open','daylight_only','seasonal','closed_weekdays','seasonal_hours','hours_note','schedule_required','schedule_note']){
-        if(candidate[field]==null && prior[field]!=null)merged[field]=prior[field];
-      }
-      rows[idx]=merged;
-    }else{
-      rows.push(candidate);
-      const newIdx=rows.length-1;
-      if(name)byName.set(name,newIdx);
-      if(u)byUrl.set(u,newIdx);
-    }
-  }
-  return rows;
-}
-
-async function fetchCatalogType(type){
-  if(window.NEXITAIME_CATALOG_PREFERRED===false)return {ok:false,items:[]};
-  const endpoint=String(window.NEXITAIME_CATALOG_ENDPOINT||'').trim();
-  if(!endpoint)return {ok:false,items:[]};
-  const controller=new AbortController();
-  const timer=setTimeout(()=>controller.abort(),Number(window.NEXITAIME_CATALOG_TIMEOUT_MS||3500));
-  try{
-    const url=new URL(endpoint);
-    url.searchParams.set('type',type);
-    url.searchParams.set('status','active');
-    url.searchParams.set('limit','500');
-    const r=await fetch(url.toString(),{cache:'no-store',signal:controller.signal,headers:{Accept:'application/json'}});
-    if(!r.ok)throw new Error(`catalog ${type}: HTTP ${r.status}`);
-    const data=await r.json();
-    if(!data?.ok || !Array.isArray(data?.items))throw new Error(`catalog ${type}: invalid response`);
-    return {ok:true,items:data.items};
-  }catch(err){
-    console.warn('[NEXITAIME] catalog fallback',type,err?.message||err);
-    return {ok:false,items:[]};
-  }finally{
-    clearTimeout(timer);
-  }
-}
 
 Promise.all([
- legacyEventsFetch(),
- legacyFetch('./restaurants.json',[]),
- legacyFetch('./spots.json',[]),
- legacyFetch('./train_timetable.json',{up:[],down:[]}),
- legacyFetch('./north_shinano_timetable.json',{up:[],down:[]}),
- legacyFetch('./bus_timetable.json',{trips:[]}),
- legacyFetch('./bus_mainline.json',{weekday:{},holiday:{}}),
- legacyFetch('./bus_extended.json',{routes:[]}),
- legacyFetch('./places.json',{}),
- legacyFetch('./mobility_services.json',[]),
- fetchCatalogType('event'),
- fetchCatalogType('restaurant'),
- fetchCatalogType('place'),
- fetchCatalogType('mobility')
- ]).then(async ([legacyE,legacyR,legacyS,t,shinanoData,b,bm,bx,p,legacyM,catE,catR,catS,catM])=>{
-  const e=mergeManualTimelyEvents(catE.ok?mergeCatalogCandidates(legacyE,catE.items):legacyE);
-  const r=catR.ok?mergeCatalogCandidates(legacyR,catR.items):legacyR;
-  const s=catS.ok?mergeCatalogCandidates(legacyS,catS.items):legacyS;
-  const m=catM.ok?mergeCatalogCandidates(legacyM,catM.items):legacyM;
-  window.NEXITAIME_CATALOG_STATE={
-    event:catE.ok,restaurant:catR.ok,place:catS.ok,mobility:catM.ok,
-    fetched_at:new Date().toISOString()
-  };
+ fetch('./events_auto.json',{cache:'no-store'}).then(r=>r.ok?r.json():Promise.reject()).catch(()=>fetch('./events.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>[])),
+ fetch('./restaurants.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>[]),
+ fetch('./spots.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>[]),
+ fetch('./train_timetable.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>({up:[],down:[]})),
+ fetch('./north_shinano_timetable.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>({up:[],down:[]})),
+ fetch('./bus_timetable.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>({trips:[]})),
+ fetch('./bus_mainline.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>({weekday:{},holiday:{}})),
+ fetch('./bus_extended.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>({routes:[]})),
+ fetch('./places.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>({})),
+ fetch('./mobility_services.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>[])
+ ]).then(async ([e,r,s,t,shinanoData,b,bm,bx,p,m])=>{
   RESTAURANTS=Array.isArray(r)?r:[];
   const SPOTS=Array.isArray(s)?s:[];
   const seenSpotNames=new Set(SPOTS.map(x=>String(x?.title||x?.venue||'').trim()).filter(Boolean));
@@ -3061,8 +2780,7 @@ Promise.all([
     }
     return true;
   });
-  EVENTS=[...(Array.isArray(e)?e:[]),...RESTAURANTS,...SPOTS,...EXTRA_SPOTS];
-  debugTimelyEventState(EVENTS);
+  EVENTS=[...mergeManualTimelyEvents(Array.isArray(e)?e:[]),...RESTAURANTS,...SPOTS,...EXTRA_SPOTS];
   applyOfficialAddressOverrides(EVENTS);
   await enrichOfficialAddressCoordinates(EVENTS);
   TRAIN=t;SHINANO=shinanoData||{up:[],down:[]};BUS=b;BUS_MAIN=bm;BUS_EXT=bx;PLACES=p;
@@ -9255,7 +8973,8 @@ function setDestinationChoice(value){
 function adjustFreeTime(delta){
   const el=document.getElementById('free');
   const current=Number(el.value)||120;
-  el.value=Math.min(720, Math.max(30, current+delta));
+  el.value=Math.min(360, Math.max(60, current+delta));
+  setFreeTimeMode('manual');
 }
 
 function shiftDepartureMinutes(delta){
@@ -10809,7 +10528,7 @@ async function buildPlans(){
  await ensureClassicRoutesLoaded();
  const freeControl=document.getElementById('free');
  const isAutoFree=freeTimeMode==='auto';
- const free=isAutoFree?resolveAutoFreeMinutes():(Number(freeControl?.value)||180);
+ let free=isAutoFree?resolveAutoFreeMinutes():(Number(freeControl?.value)||180);
  try{ trackNexitaime('search_start',{freeMinutes:free,freeMode:isAutoFree?'auto':'manual',classicRouteId:LAST_CLASSIC_ROUTE?.id||null,buffer:Number(document.getElementById('buffer')?.value)||15}); }catch(_){}
  let buffer=Math.max(5,Number(document.getElementById('buffer').value)||10);
  const now=new Date();
@@ -10855,7 +10574,8 @@ async function buildPlans(){
    returnTo:returnTarget==='same' ? origin : returnTarget
  };
 
- const start=planningDate.getHours()*60+planningDate.getMinutes(), hardEnd=start+free, deadline=hardEnd-buffer;
+ const start=planningDate.getHours()*60+planningDate.getMinutes();
+ let hardEnd=start+free, deadline=hardEnd-buffer;
  summary.innerHTML=`<h2>おすすめを探しています…</h2><p>${isAutoFree?'時間別のプランを比較しながら、':''}移動時間・営業時間・時刻表・必要な戻り余裕を判定しています。</p>`;
  const searchWatchdog=setTimeout(()=>{
    if(summary.textContent.includes('再検索中') || summary.textContent.includes('おすすめを探しています')){
@@ -11024,13 +10744,39 @@ async function buildPlans(){
 
  // 3) Explicit mood selections are strict.
  // Never relax 温泉/観光/イベント/体験など into an unrelated category just to fill results.
- // If exact catalog candidates are unavailable, only same-mood flexible activities may be used.
+ // If exact candidates are unavailable, only same-mood flexible activities may be used.
  if(!scored.length){
    let flex=FLEX_ACTIVITIES.filter(budgetAllows).filter(companionAllows);
    if(searchCtx.destination!=='any') flex=flex.filter(destinationMatchesEvent);
    if(mood!=='any') flex=flex.filter(ev=>moodMatches(ev,mood)).filter(secondaryMoodMatches);
    scored=await scoreEventSetFast(flex,requestedModes,start,deadline,searchCtx);
    if(scored.length) relaxationLevel=3;
+ }
+
+ // おまかせ時間では「候補なし」を極力避ける。
+ // 明示された気分カテゴリは崩さず、同カテゴリのまま時間枠だけを段階的に広げて再判定する。
+ if(isAutoFree && !scored.length){
+   const rescuePool=events.length?events:(()=>{
+     let rows=candidateEvents.filter(ev=>eventIsAvailableAt(ev,planningDate)).filter(budgetAllows).filter(companionAllows);
+     if(searchCtx.destination!=='any') rows=rows.filter(destinationMatchesEvent);
+     if(mood!=='any') rows=rows.filter(ev=>moodMatches(ev,mood));
+     return rows.filter(foodKindMatches).filter(secondaryMoodMatches).filter(recommendationChainAllowed);
+   })();
+   const baseFree=free;
+   // 救済検索は1回だけ。直列4回の外部API待ちを廃止する。
+   const rescueFree=Math.min(480,baseFree+120);
+   const rescueBuffer=automaticReturnBufferMinutes(rescueFree);
+   const rescueDeadline=start+rescueFree-rescueBuffer;
+   const retry=await scoreEventSetFast(rescuePool.slice(0,12),requestedModes,start,rescueDeadline,searchCtx,1200);
+   if(retry.length){
+     free=rescueFree;
+     buffer=rescueBuffer;
+     hardEnd=start+free;
+     deadline=rescueDeadline;
+     if(bufferEl) bufferEl.value=String(buffer);
+     scored=retry;
+     relaxationLevel=4;
+   }
  }
 
  scored=sortCandidates(scored);
@@ -11120,7 +10866,7 @@ async function buildPlans(){
      let rows=candidateEvents.filter(ev=>eventIsAvailableAt(ev,planningDate)).filter(budgetAllows).filter(companionAllows);
      if(searchCtx.destination!=='any') rows=rows.filter(destinationMatchesEvent);
      if(mood!=='any') rows=rows.filter(ev=>moodMatches(ev,mood));
-     return rows.filter(foodKindMatches).filter(secondaryMoodMatches).filter(recommendationChainAllowed);
+     return rows.filter(foodKindMatches).filter(secondaryMoodMatches);
    })();
    const durationPool=fastAutoCandidatePool(rawDurationPool,searchCtx,10);
 
@@ -11422,6 +11168,8 @@ async function buildPlans(){
    }
  }else if(relaxationLevel===2){
    summary.innerHTML=`<h2>気分条件を広げると${top.length}案あります</h2><p><strong>${routeSummary}</strong><br>出発地・行き先・帰着先はそのままです。</p>`;
+ }else if(relaxationLevel===4){
+   summary.innerHTML=`<h2>おまかせで${top.length}案見つけました</h2><p><strong>${routeSummary}</strong><br>気分や行き先は変えず、成立するよう時間を約${free}分に自動調整しました。</p>`;
  }else{
    summary.innerHTML=`<h2>そのエリアでできることを${top.length}案見つけました</h2><p><strong>${routeSummary}</strong><br>指定エリアは変えず、時間調整しやすい候補を提案しています。</p>`;
  }
