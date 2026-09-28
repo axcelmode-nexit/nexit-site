@@ -3852,6 +3852,54 @@
   .security-policy-sign{text-align:left;}
 }
 
+.security-action-badge{
+  display:grid;
+  grid-template-columns:minmax(180px,240px) minmax(0,1fr);
+  gap:32px;
+  align-items:center;
+  margin:34px 0 46px;
+  padding:28px 30px;
+  border:1px solid var(--line);
+  background:rgba(255,255,255,.025);
+}
+.security-action-badge-logo{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-height:190px;
+  padding:18px;
+  background:#fff;
+}
+.security-action-badge-logo img{
+  display:block;
+  width:100%;
+  max-width:205px;
+  height:auto;
+}
+.security-action-badge-copy .eyebrow{
+  margin:0 0 10px;
+  color:var(--red);
+  font-size:11px;
+  font-weight:900;
+  letter-spacing:.18em;
+}
+.security-action-badge-copy h3{
+  margin:0 0 14px;
+  font-size:clamp(22px,2.6vw,32px);
+  line-height:1.45;
+}
+.security-action-badge-copy p{
+  margin:0;
+  color:#d8d8d8;
+  font-size:14px;
+  line-height:1.95;
+}
+@media(max-width:767px){
+  .security-action-badge{grid-template-columns:1fr;gap:22px;padding:22px;}
+  .security-action-badge-logo{min-height:0;}
+  .security-action-badge-logo img{max-width:180px;}
+}
+
 </style>
 
 </head>
@@ -4145,6 +4193,7 @@ AXCEL MODE NEXITでは、大手企業・上場企業を含む法人向けのシ�
 <div class="two-col">
 <div class="section-title"><div class="bar"></div><h2>NEWS</h2><p>お知らせ</p></div>
 <div class="news-list">
+<div class="news-item"><time>2026.09.28</time><p><a href="#security-policy">情報セキュリティ基本方針を公開し、SECURITY ACTION 二つ星を宣言しました。</a></p></div>
 <div class="news-item"><time>2026.09.19</time><p><a href="https://axcelmode-nexit.jp/NEXITAIME/index.html">NEXITAIME 〜上越版〜 Beta1.0を公開しました。</a></p></div>
 <div class="news-item" id="officeOpenNews"><time>2026.08.17</time><p>上越妙高駅西口・フルサットにオフィスを開設しました。</p></div>
 <div class="news-item"><time>2026.06.18</time><p>コーポレートサイトを公開しました。</p></div>
@@ -4196,6 +4245,16 @@ AXCEL MODE NEXITでは、大手企業・上場企業を含む法人向けのシ�
         株式会社アクセル・モード・ネクストは、お客様および取引先からお預かりする情報ならびに当社が保有する情報資産を、重要な経営資源の一つと認識しています。<br/>
         当社は、情報資産を事故・災害・犯罪その他の脅威から保護し、お客様および社会からの信頼に応えるため、以下の方針に基づき情報セキュリティの確保に取り組みます。
       </p>
+    </div>
+    <div class="security-action-badge" aria-label="SECURITY ACTION 二つ星 自己宣言">
+      <div class="security-action-badge-logo">
+        <img src="security_action_futatsuboshi-large_color.png" alt="SECURITY ACTION 二つ星 セキュリティ対策自己宣言"/>
+      </div>
+      <div class="security-action-badge-copy">
+        <p class="eyebrow">SECURITY ACTION ★★</p>
+        <h3>SECURITY ACTION 二つ星を宣言しています。</h3>
+        <p>株式会社アクセル・モード・ネクストは、情報セキュリティ対策に継続的に取り組むことを自己宣言しています。</p>
+      </div>
     </div>
     <div class="security-policy-grid">
       <article class="security-policy-item">
