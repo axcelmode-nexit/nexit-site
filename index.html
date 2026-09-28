@@ -3768,6 +3768,90 @@
   @media(prefers-reduced-motion:reduce){
     .hero-fireworks{display:none!important;}
   }
+
+
+/* SECURITY ACTION / Information Security Policy */
+.nexit-products-grid:has(.nexit-product-card:only-child){
+  grid-template-columns:minmax(0,760px);
+  justify-content:start;
+}
+.security-policy{
+  background:
+    radial-gradient(circle at 88% 12%, rgba(215,25,32,.10), transparent 30%),
+    linear-gradient(180deg,#070707,#040404);
+}
+.security-policy-wrap{
+  max-width:1100px;
+  margin:0 auto;
+}
+.security-policy-head{
+  margin-bottom:52px;
+}
+.security-policy-label{
+  margin:0 0 14px;
+  color:var(--red);
+  font-size:12px;
+  font-weight:900;
+  letter-spacing:.20em;
+}
+.security-policy h2{
+  margin:0 0 18px;
+  font-size:clamp(30px,4vw,48px);
+  letter-spacing:.06em;
+}
+.security-policy-intro{
+  max-width:900px;
+  margin:0;
+  color:#e5e5e5;
+  font-size:15px;
+  line-height:2;
+  font-weight:700;
+}
+.security-policy-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:1px;
+  background:var(--line);
+  border:1px solid var(--line);
+}
+.security-policy-item{
+  background:#080808;
+  padding:30px 28px;
+}
+.security-policy-item .num{
+  display:block;
+  margin-bottom:12px;
+  color:var(--red);
+  font-size:12px;
+  font-weight:900;
+  letter-spacing:.18em;
+}
+.security-policy-item h3{
+  margin:0 0 12px;
+  font-size:18px;
+  line-height:1.6;
+}
+.security-policy-item p{
+  margin:0;
+  color:#d4d4d4;
+  font-size:14px;
+  line-height:1.95;
+}
+.security-policy-sign{
+  margin-top:34px;
+  padding-top:24px;
+  border-top:1px solid var(--line);
+  color:#d8d8d8;
+  font-size:13px;
+  line-height:2;
+  text-align:right;
+}
+@media(max-width:767px){
+  .security-policy-grid{grid-template-columns:1fr;}
+  .security-policy-item{padding:26px 22px;}
+  .security-policy-sign{text-align:left;}
+}
+
 </style>
 
 </head>
@@ -4002,12 +4086,6 @@ AXCEL MODE NEXITでは、大手企業・上場企業を含む法人向けのシ�
         <p>業務をつなぎ、人と仕事を前へ進める。これからの働き方を支えるBusiness OS。</p>
         <div class="nexit-product-link"><span>VIEW PRODUCT</span><span>→</span></div>
       </a>
-      <a class="nexit-product-card" href="https://axcelmode-nexit.jp/mamorun" aria-label="MAMORUNを開く">
-        <div class="nexit-product-kicker">CARE PLATFORM</div>
-        <h3>MAMORUN</h3>
-        <p>病児保育から始まる、ケアの現場を支えるプロダクト。日々の運営をもっとわかりやすく。</p>
-        <div class="nexit-product-link"><span>VIEW PRODUCT</span><span>→</span></div>
-      </a>
     </div>
   </div>
 </section>
@@ -4108,6 +4186,54 @@ AXCEL MODE NEXITでは、大手企業・上場企業を含む法人向けのシ�
 </div>
 </div>
 </section>
+
+<section class="security-policy" id="security-policy" aria-labelledby="securityPolicyTitle">
+  <div class="security-policy-wrap">
+    <div class="security-policy-head">
+      <p class="security-policy-label">INFORMATION SECURITY POLICY</p>
+      <h2 id="securityPolicyTitle">情報セキュリティ基本方針</h2>
+      <p class="security-policy-intro">
+        株式会社アクセル・モード・ネクストは、お客様および取引先からお預かりする情報ならびに当社が保有する情報資産を、重要な経営資源の一つと認識しています。<br/>
+        当社は、情報資産を事故・災害・犯罪その他の脅威から保護し、お客様および社会からの信頼に応えるため、以下の方針に基づき情報セキュリティの確保に取り組みます。
+      </p>
+    </div>
+    <div class="security-policy-grid">
+      <article class="security-policy-item">
+        <span class="num">01</span><h3>経営者の責任</h3>
+        <p>当社は、経営者主導のもと、組織的かつ継続的に情報セキュリティの維持・向上に取り組みます。</p>
+      </article>
+      <article class="security-policy-item">
+        <span class="num">02</span><h3>社内体制の整備</h3>
+        <p>当社は、情報セキュリティ対策を適切に実施するための社内体制を整備し、必要なルールおよび手順を定めます。</p>
+      </article>
+      <article class="security-policy-item">
+        <span class="num">03</span><h3>従業員の取り組み</h3>
+        <p>当社の役員および従業員は、情報セキュリティの重要性を認識し、必要な知識・技能を習得するとともに、定められたルールを遵守します。</p>
+      </article>
+      <article class="security-policy-item">
+        <span class="num">04</span><h3>法令・契約上の要求事項の遵守</h3>
+        <p>当社は、情報セキュリティに関係する法令、規則、契約上の義務その他の社会的規範を遵守します。</p>
+      </article>
+      <article class="security-policy-item">
+        <span class="num">05</span><h3>情報資産の適切な管理</h3>
+        <p>当社は、情報資産への不正アクセス、紛失、漏えい、改ざん、破壊などを防止するため、適切な技術的・組織的・物理的対策を講じます。</p>
+      </article>
+      <article class="security-policy-item">
+        <span class="num">06</span><h3>事故等への対応</h3>
+        <p>当社は、情報セキュリティに関する事故またはその兆候が発生した場合、被害を最小限に抑えるため迅速に対応するとともに、原因を分析し、再発防止に取り組みます。</p>
+      </article>
+      <article class="security-policy-item">
+        <span class="num">07</span><h3>継続的な改善</h3>
+        <p>当社は、情報セキュリティに関する取り組みを定期的に確認・見直し、社会環境や技術の変化に応じて継続的に改善します。</p>
+      </article>
+    </div>
+    <p class="security-policy-sign">
+      制定日：2026年9月28日<br/>
+      株式会社アクセル・モード・ネクスト<br/>
+      代表取締役　𠮷田 臣男
+    </p>
+  </div>
+</section>
 </main>
 <footer class="footer">
 <div class="footer-top">
@@ -4125,6 +4251,7 @@ AXCEL MODE NEXITでは、大手企業・上場企業を含む法人向けのシ�
 <a href="#office">OFFICE</a>
 <a href="#company">COMPANY</a>
 <a href="#contact">CONTACT</a><a href="recruit.html">RECRUIT</a>
+<a href="#security-policy">SECURITY POLICY</a>
 
 </div>
 </footer>
