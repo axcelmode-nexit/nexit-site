@@ -4054,6 +4054,45 @@
   @media(prefers-reduced-motion:reduce){
     .news-archive,.news-archive .news-item,.news-toggle-mark{transition:none!important;}
   }
+
+/* =========================================================
+   N yellow-flash fix
+   At is-n-white, switch immediately from the red-filtered N
+   to the original white N.png, then animate only a white glow.
+   No hue/sepia/saturate interpolation is used in this phase.
+   ========================================================= */
+.race-stage.is-n-white .race-n{
+  opacity:1 !important;
+  animation:raceNWhiteNoYellow .46s cubic-bezier(.16,1,.3,1) forwards !important;
+}
+
+@keyframes raceNWhiteNoYellow{
+  0%{
+    opacity:1;
+    transform:translateY(0) scale(1);
+    filter:none;
+  }
+  18%{
+    opacity:1;
+    transform:translateY(0) scale(1.018);
+    filter:
+      drop-shadow(0 0 10px rgba(255,255,255,.58))
+      drop-shadow(0 0 22px rgba(255,255,255,.26));
+  }
+  55%{
+    opacity:1;
+    transform:translateY(0) scale(1.04);
+    filter:
+      drop-shadow(0 0 20px rgba(255,255,255,.90))
+      drop-shadow(0 0 40px rgba(255,255,255,.42));
+  }
+  100%{
+    opacity:1;
+    transform:translateY(0) scale(1);
+    filter:drop-shadow(0 0 10px rgba(255,255,255,.24));
+  }
+}
+
 </style>
 </head>
 <body class="motion-ready">
