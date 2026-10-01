@@ -4086,6 +4086,32 @@
 }
 
 </style>
+
+<style id="nexit-product-reveal-style">
+  .nexit-product-visual-link.reveal-on-scroll{
+    opacity:0;
+    transform:translateY(24px);
+    transition:
+      opacity .8s ease,
+      transform .8s cubic-bezier(.16,1,.3,1),
+      filter .35s ease;
+    will-change:opacity,transform;
+  }
+
+  .nexit-product-visual-link.reveal-on-scroll.is-visible{
+    opacity:1;
+    transform:translateY(0);
+  }
+
+  @media(prefers-reduced-motion:reduce){
+    .nexit-product-visual-link.reveal-on-scroll{
+      opacity:1;
+      transform:none;
+      transition:none;
+    }
+  }
+</style>
+
 </head>
 <body class="motion-ready">
 <div class="site">
@@ -4313,7 +4339,7 @@ AXCEL MODE NEXITでは、大手企業・上場企業を含む法人向けのシ�
     </div>
 
     <div class="nexit-product-showcase image-only">
-      <a class="nexit-product-visual-link" href="https://axcelmode-nexit.jp/nexus" aria-label="NEXUS製品ページを開く">
+      <a class="nexit-product-visual-link reveal-on-scroll" href="https://axcelmode-nexit.jp/nexus" aria-label="NEXUS製品ページを開く">
         <span class="nexit-product-visual-glow" aria-hidden="true"></span>
         <img src="product-nexus.jpg" alt="NEXUS Business OS 製品イメージ"/>
       </a>
@@ -5731,5 +5757,69 @@ aiChatForm.addEventListener("submit",async(e)=>{
   });
 })();
 </script>
+
+<script id="nexit-product-reveal-script">
+(function(){
+  const el = document.querySelector('.nexit-product-visual-link.reveal-on-scroll');
+  if(!el) return;
+
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(reduceMotion){
+    el.classList.add('is-visible');
+    return;
+  }
+
+  if(!('IntersectionObserver' in window)){
+    el.classList.add('is-visible');
+    return;
+  }
+
+  const io = new IntersectionObserver((entries, observer)=>{
+    for(const entry of entries){
+      if(entry.isIntersecting){
+        entry.target.classList.add('is-visible');
+        observer.unobserve(entry.target);
+      }
+    }
+  },{
+    threshold:0.16,
+    rootMargin:'0px 0px -8% 0px'
+  });
+
+  io.observe(el);
+})();
+</script>
+
+
+<style id="nexit-pure-white-final-flash">
+  /* Final flash: pure white only.
+     Remove all inherited red/color filters and use only white glow. */
+  .race-stage.is-nexit-flash .race-n,
+  .race-stage.is-nexit-flash .race-exit{
+    opacity:1 !important;
+    animation:raceNexitPureWhiteFlash .92s cubic-bezier(.16,1,.3,1) forwards !important;
+    filter:none !important;
+  }
+
+  @keyframes raceNexitPureWhiteFlash{
+    0%{
+      transform:translateX(0) scale(1);
+      filter:none;
+    }
+    42%{
+      transform:translateX(0) scale(1.025);
+      filter:
+        brightness(1.14)
+        drop-shadow(0 0 16px rgba(255,255,255,.96))
+        drop-shadow(0 0 34px rgba(255,255,255,.70))
+        drop-shadow(0 0 56px rgba(255,255,255,.34));
+    }
+    100%{
+      transform:translateX(0) scale(1);
+      filter:none;
+    }
+  }
+</style>
+
 </body>
 </html>
