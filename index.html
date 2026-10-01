@@ -4055,41 +4055,33 @@
     .news-archive,.news-archive .news-item,.news-toggle-mark{transition:none!important;}
   }
 
+
+
 /* =========================================================
-   N yellow-flash fix
-   At is-n-white, switch immediately from the red-filtered N
-   to the original white N.png, then animate only a white glow.
-   No hue/sepia/saturate interpolation is used in this phase.
+   Simplified final logo sequence
+   Red N complete -> one full NEXIT white flash -> final logo
+   No separate N-only white/glow phase.
    ========================================================= */
-.race-stage.is-n-white .race-n{
+.race-stage.is-nexit-flash .race-n,
+.race-stage.is-nexit-flash .race-exit{
   opacity:1 !important;
-  animation:raceNWhiteNoYellow .46s cubic-bezier(.16,1,.3,1) forwards !important;
+  animation:raceNexitSingleFlash .92s cubic-bezier(.16,1,.3,1) forwards !important;
 }
 
-@keyframes raceNWhiteNoYellow{
+@keyframes raceNexitSingleFlash{
   0%{
-    opacity:1;
-    transform:translateY(0) scale(1);
+    transform:translateX(0) scale(1);
     filter:none;
   }
-  18%{
-    opacity:1;
-    transform:translateY(0) scale(1.018);
+  42%{
+    transform:translateX(0) scale(1.025);
     filter:
-      drop-shadow(0 0 10px rgba(255,255,255,.58))
-      drop-shadow(0 0 22px rgba(255,255,255,.26));
-  }
-  55%{
-    opacity:1;
-    transform:translateY(0) scale(1.04);
-    filter:
-      drop-shadow(0 0 20px rgba(255,255,255,.90))
-      drop-shadow(0 0 40px rgba(255,255,255,.42));
+      drop-shadow(0 0 18px rgba(255,255,255,.86))
+      drop-shadow(0 0 42px rgba(255,255,255,.50));
   }
   100%{
-    opacity:1;
-    transform:translateY(0) scale(1);
-    filter:drop-shadow(0 0 10px rgba(255,255,255,.24));
+    transform:translateX(0) scale(1);
+    filter:drop-shadow(0 0 8px rgba(255,255,255,.20));
   }
 }
 
@@ -5563,8 +5555,7 @@ aiChatForm.addEventListener("submit",async(e)=>{
       if(generator)generator.classList.add("is-leaving");
     },4050);
     setTimeout(clearGenerator,4310);
-    setTimeout(()=>stage.classList.add("is-n-white"),4780);
-    setTimeout(()=>stage.classList.add("is-nexit-flash"),5100);
+    setTimeout(()=>stage.classList.add("is-nexit-flash"),4780);
     setTimeout(()=>stage.classList.add("is-final"),5900);
     setTimeout(()=>{if(tagline)tagline.classList.add("is-visible")},6200);
 
