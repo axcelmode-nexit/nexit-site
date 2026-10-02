@@ -3767,22 +3767,14 @@
     content:"";
     position:absolute;
     inset:-10% -6%;
-    background:radial-gradient(circle at 42% 50%, rgba(215,25,32,.20), transparent 54%),
-               radial-gradient(circle at 64% 50%, rgba(255,255,255,.10), transparent 42%);
+    background:radial-gradient(circle at 42% 50%, rgba(215,25,32,.14), transparent 54%),
+               radial-gradient(circle at 64% 50%, rgba(255,255,255,.06), transparent 42%);
     filter:blur(22px);
-    opacity:.88;
+    opacity:.72;
     pointer-events:none;
     z-index:0;
   }
-  .hero-logo-video::after{
-    content:"";
-    position:absolute;
-    inset:0;
-    background:linear-gradient(90deg, rgba(0,0,0,.66) 0%, rgba(0,0,0,0) 12%, rgba(0,0,0,0) 88%, rgba(0,0,0,.58) 100%),
-               linear-gradient(180deg, rgba(0,0,0,.35) 0%, rgba(0,0,0,0) 18%, rgba(0,0,0,0) 82%, rgba(0,0,0,.40) 100%);
-    pointer-events:none;
-    z-index:2;
-  }
+  .hero-logo-video::after{display:none;}
   .hero-logo-video__media{
     position:relative;
     z-index:1;
@@ -3790,8 +3782,12 @@
     width:100%;
     aspect-ratio:16 / 9;
     object-fit:cover;
-    background:#000;
-    box-shadow:0 24px 70px rgba(0,0,0,.42);
+    background:transparent;
+    mix-blend-mode:screen;
+    box-shadow:none;
+  }
+  .hero-logo-video{
+    background:transparent;
   }
   @media(max-width:980px){
     .hero-logo-video{
@@ -3808,6 +3804,9 @@
       inset:-8% -4%;
       filter:blur(16px);
     }
+  }
+  @supports not (mix-blend-mode:screen){
+    .hero-logo-video__media{opacity:.92;}
   }
 </style>
 
