@@ -1314,7 +1314,7 @@ window.NEXITAIME_GOURMET_ENDPOINT =
 // ▼ NEXITAIMEからひとこと：ここを true / false に変えるだけで即ON/OFFできます
 window.NEXITAIME_AI_SUGGESTION_ENABLED = true;
 </script>
-<script>window.NEXITAIME_BUILD="v152";</script>
+<script>window.NEXITAIME_BUILD="v153";</script>
 
 
 <style id="nexitaime-existing-ai-style">
@@ -4238,22 +4238,30 @@ async function walkingMinutesToService(s){
   return Math.max(1,Math.ceil(km/4.5*60));
 }
 
-async function getNearestService(rows){
+async function getNearestService(rows,anchor=null){
   if(!rows.length)return null;
-  // Real nearest/walking calculations must use actual coordinates. Directory-only
-  // same-area fallbacks are intentionally excluded here.
+  // Route evaluation must use the selected route origin/hub, not a stale GPS point.
+  // Map/list display can still omit `anchor` and use currentPos as before.
   rows=rows.filter(s=>Number.isFinite(Number(s?.lat)) && Number.isFinite(Number(s?.lon)));
   if(!rows.length)return null;
+  let anchorPoint=null;
+  if(typeof anchor==='string' && PLACES?.[anchor]) anchorPoint=PLACES[anchor];
+  else if(anchor && Number.isFinite(Number(anchor.lat)) && Number.isFinite(Number(anchor.lon))){
+    anchorPoint={lat:Number(anchor.lat),lon:Number(anchor.lon)};
+  }
   let ranked=rows.map(s=>{
     let d;
-    if(currentPos)d=haversine(currentPos.lat,currentPos.lon,s.lat,s.lon);
+    if(anchorPoint)d=haversine(anchorPoint.lat,anchorPoint.lon,s.lat,s.lon);
+    else if(currentPos)d=haversine(currentPos.lat,currentPos.lon,s.lat,s.lon);
     else if(PLACES[origin])d=haversine(PLACES[origin].lat,PLACES[origin].lon,s.lat,s.lon);
     else d=999;
     return {s,d};
   }).sort((a,b)=>a.d-b.d);
   const best=ranked[0];
   if(!best)return null;
-  const walk=currentPos ? await walkingMinutesToService(best.s) : Math.max(1,Math.ceil(best.d/4.5*60));
+  const walk=anchorPoint
+    ? Math.max(1,Math.ceil(best.d/4.5*60))
+    : (currentPos ? await walkingMinutesToService(best.s) : Math.max(1,Math.ceil(best.d/4.5*60)));
   return {...best.s,distanceKm:best.d,walkMinutes:walk};
 }
 
@@ -4553,20 +4561,20 @@ function taxiReturnWaitMinutes(){
   return 8;
 }
 
-async function getModeService(mode){
+async function getModeService(mode,originOverride=null){
   if(!['carshare','rentalcar','taxi','bike'].includes(mode))return {service:null,access:0};
 
   // Taxi can come to the user, so office distance is not used as an access constraint.
   if(mode==='taxi'){
     const rows=MOBILITY.filter(s=>serviceCategoryForMode(mode).includes(s.category) && isLikelyOpen(s,planningDate||new Date()));
     if(!rows.length)return null;
-    const service=await getNearestService(rows);
+    const service=await getNearestService(rows,originOverride);
     return service?{service,access:0}:null;
   }
 
   const rows=mobilityRowsForMode(mode,{includeExtended:false});
   if(!rows.length)return null;
-  const service=await getNearestService(rows);
+  const service=await getNearestService(rows,originOverride);
   if(!service || service.distanceKm>MOBILITY_NEAR_KM)return null;
   return {service,access:service.walkMinutes||0};
 }
@@ -5230,7 +5238,7 @@ async function evaluateDirectMode(ev,dest,mode,start,deadline,ctx){
     }
   }
 
-  const svc=await getModeService(mode);
+  const svc=await getModeService(mode,from);
   if(['carshare','rentalcar','taxi','bike'].includes(mode) && !svc)return null;
 
   const service=svc?.service||null;
@@ -5890,7 +5898,7 @@ async function evaluateAutoMultimodal(ev,dest,start,deadline,ctx){
       if(!returnModeAllowed(lastMode,{origin:hub,returnTo:hub}) && lastMode!=='taxi') continue;
 
       // For carshare/rental car we require a service near the transfer hub.
-      const svc = lastMode==='taxi' ? null : getModeService(lastMode,hub);
+      const svc = lastMode==='taxi' ? null : await getModeService(lastMode,hub);
       if(lastMode!=='taxi' && !svc?.service) continue;
 
       // Taxi waiting itself is accounted for inside evaluateDirectMode.
@@ -10758,7 +10766,9 @@ async function scoreEventSetFast(events,modes,start,deadline,ctx,timeoutMs=1400)
 
   const collected=[];
   const batchSize=3;
-  const batchTimeout=Math.max(1200,Math.min(2200,Number(timeoutMs)||1400));
+  const batchTimeout = mood==='event'
+    ? Math.max(3200,Math.min(4500,Number(timeoutMs)||3600))
+    : Math.max(1200,Math.min(2200,Number(timeoutMs)||1400));
 
   for(let i=0;i<list.length;i+=batchSize){
     const batch=list.slice(i,i+batchSize);
@@ -11199,7 +11209,7 @@ async function buildPlans(){
    const durationCandidates=await Promise.all(autoDurationChoices().map(async duration=>{
      const dBuffer=automaticReturnBufferMinutes(duration);
      const dDeadline=start+duration-dBuffer;
-     let rows=await scoreEventSetFast(durationPool,requestedModes,start,dDeadline,searchCtx,1100);
+     let rows=await scoreEventSetFast(durationPool,requestedModes,start,dDeadline,searchCtx,mood==='event'?3600:1100);
      rows=sortCandidates(rows);
      if(budget!=='any'){
        const maxBudget=Number(budget);
