@@ -1314,7 +1314,7 @@ window.NEXITAIME_GOURMET_ENDPOINT =
 // ▼ NEXITAIMEからひとこと：ここを true / false に変えるだけで即ON/OFFできます
 window.NEXITAIME_AI_SUGGESTION_ENABLED = true;
 </script>
-<script>window.NEXITAIME_BUILD="v151";</script>
+<script>window.NEXITAIME_BUILD="v152";</script>
 
 
 <style id="nexitaime-existing-ai-style">
@@ -2524,6 +2524,8 @@ const MANUAL_TIMELY_EVENTS=[
     area_name:'能生・糸魚川',
     categories:['イベント','催し','グルメ','グルメイベント','海鮮','お祭り・催し'],
     primary_category:'event',
+    drop_in_event:true,
+    featured_program_time:'13:00',
     summary:'能水商店の「あんこうバーガー」10,000食突破を記念した3日間イベント。新作「あんこうバーガープレミアム」、海洋高校生による迫力の吊るし切りショー（毎日13:00〜）、ガラポン抽選会、オリジナルグッズ販売、チラシ提示またはInstagramフォロー＋対象投稿提示で特典あり。',
     start_date:'2026-10-10',
     end_date:'2026-10-12',
@@ -5369,6 +5371,18 @@ async function evaluateDirectMode(ev,dest,mode,start,deadline,ctx){
 function eventStayProfile(ev){
   const kind=canonicalCategory(ev);
   if(kind!=='event')return null;
+
+  // v152: A drop-in event can include a timed sub-program without making the
+  // whole opening window a mandatory fixed-duration performance.
+  if(ev?.drop_in_event===true){
+    const explicit=ev?.stay_minutes||{};
+    return {
+      min:Number(explicit.min)||30,
+      recommended:Number(explicit.recommended)||60,
+      max:Number(explicit.max)||90,
+      source:'drop_in_event'
+    };
+  }
 
   const text=[ev?.title,ev?.venue,ev?.summary,...(ev?.categories||[])]
     .filter(Boolean).join(' ');
