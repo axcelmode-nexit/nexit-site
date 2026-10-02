@@ -1314,7 +1314,7 @@ window.NEXITAIME_GOURMET_ENDPOINT =
 // ▼ NEXITAIMEからひとこと：ここを true / false に変えるだけで即ON/OFFできます
 window.NEXITAIME_AI_SUGGESTION_ENABLED = true;
 </script>
-<script>window.NEXITAIME_BUILD="v148";</script>
+<script>window.NEXITAIME_BUILD="v149";</script>
 
 
 <style id="nexitaime-existing-ai-style">
@@ -6134,7 +6134,7 @@ function lateNightDiagnosticHtml(){
   const names=(d.hpOpenNames||[]).map(esc).join('、')||'なし';
   const hpReq=(d.requests||[]).map(x=>`${esc(x.kind)}:${Number(x.count||0)}${x.status==='error'?'(失敗)':''}`).join(' / ')||'なし';
   return `<div class="exclusion-summary" style="margin-top:10px">
-    <strong>診断：夜間候補</strong><br>
+    <strong>診断：${timingMode==='custom' ? `${fmt(planningDate.getHours()*60+planningDate.getMinutes())} 指定` : '今すぐ'}</strong><br>
     Hot Pepper取得 ${Number(d.hpFetched||0)}件 /
     営業時間解析 ${Number(d.hpVerified||0)}件 /
     現在営業判定 ${Number(d.hpOpenNow||0)}件<br>
@@ -8195,7 +8195,7 @@ function alcoholVenueLike(ev){
     ev?.title,ev?.venue,ev?.summary,ev?.genre,ev?.genre_name,
     ev?.catch,ev?.provider,ev?.name,cats
   ].filter(Boolean).join(' ');
-  return /居酒屋|酒場|炉端|焼鳥|やきとり|焼き鳥|バー|BAR|ビアホール|ダイニングバー|ワインバー|立ち飲み|スナック/i.test(text);
+  return /居酒屋|酒場|炉端|焼鳥|やきとり|焼き鳥|バー(?!ガー)|\bBAR\b|ビアホール|ダイニングバー|ワインバー|立ち飲み|スナック/i.test(text);
 }
 
 function alcoholSafeModes(modes){
