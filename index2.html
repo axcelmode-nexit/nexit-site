@@ -4196,7 +4196,7 @@
 <span style="--i:15">確</span><span style="--i:16">か</span><span style="--i:17">な</span><span style="--i:18">前</span><span style="--i:19">進</span><span style="--i:20">に</span><span style="--i:21">。</span>
 </h1>
 <div class="hero-logo-video" aria-label="AXCEL MODE NEXIT ロゴアニメーション">
-<img class="hero-logo-video__media" src="NEXIT-logo-transparent.webp" alt="AXCEL MODE NEXIT ロゴアニメーション"/>
+<img class="hero-logo-video__media" src="NEXIT-logo-cinematic-transparent.webp" alt="AXCEL MODE NEXIT ロゴアニメーション"/>
 </div>
 <p class="lead tagline">上越から、次の未来へ。</p>
 <a class="btn" href="recruit.html">RECRUIT <span>→</span></a>
@@ -5832,6 +5832,24 @@ aiChatForm.addEventListener("submit",async(e)=>{
   });
 
   io.observe(el);
+})();
+</script>
+
+
+<script id="hero-tagline-video-sync">
+(function(){
+  const tagline = document.querySelector(".hero-content .lead.tagline");
+  if(!tagline) return;
+
+  const reveal = () => tagline.classList.add("is-visible");
+
+  if(window.matchMedia("(prefers-reduced-motion: reduce)").matches){
+    reveal();
+    return;
+  }
+
+  // The logo formation is substantially complete by this point.
+  window.setTimeout(reveal, 5600);
 })();
 </script>
 
