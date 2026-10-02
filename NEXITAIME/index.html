@@ -1314,7 +1314,7 @@ window.NEXITAIME_GOURMET_ENDPOINT =
 // ▼ NEXITAIMEからひとこと：ここを true / false に変えるだけで即ON/OFFできます
 window.NEXITAIME_AI_SUGGESTION_ENABLED = true;
 </script>
-<script>window.NEXITAIME_BUILD="v153";</script>
+<script>window.NEXITAIME_BUILD="v154";</script>
 
 
 <style id="nexitaime-existing-ai-style">
@@ -4837,7 +4837,11 @@ function eventParticipationPolicy(ev){
   add(ev?.meeting_deadline,'集合締切');
 
   const fixedByType=/講演|講座|セミナー|トーク|説明会|上映|映画|演奏|コンサート|ライブ|ステージ|公演|ショー|式典/.test(text);
-  const fixedStart=(ev?.fixed_start===true || fixedByType) && ev?.late_entry_allowed!==true;
+  // Drop-in events can contain a timed sub-program (e.g. a 13:00 show) without
+  // making the entire event a fixed-start program. Only explicit fixed_start may
+  // turn a drop-in event into a start-time cutoff.
+  const inferredFixedStart=ev?.drop_in_event!==true && fixedByType;
+  const fixedStart=(ev?.fixed_start===true || inferredFixedStart) && ev?.late_entry_allowed!==true;
   if(fixedStart && ev?.start_time)add(ev.start_time,'開始時刻');
 
   candidates.sort((a,b)=>a.minute-b.minute);
