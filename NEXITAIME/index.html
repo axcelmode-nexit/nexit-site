@@ -1314,7 +1314,7 @@ window.NEXITAIME_GOURMET_ENDPOINT =
 // ▼ NEXITAIMEからひとこと：ここを true / false に変えるだけで即ON/OFFできます
 window.NEXITAIME_AI_SUGGESTION_ENABLED = true;
 </script>
-<script>window.NEXITAIME_BUILD="v150";</script>
+<script>window.NEXITAIME_BUILD="v151";</script>
 
 
 <style id="nexitaime-existing-ai-style">
@@ -2806,6 +2806,20 @@ function autoDurationPlanUtilization(plan,duration,buffer){
 
 function autoDurationPlanFits(plan,duration,buffer){
   const u=autoDurationPlanUtilization(plan,duration,buffer);
+
+  // v151: When the user explicitly asks for an event, a feasible dated event must not
+  // disappear just because the trial auto-duration window is longer than the actual trip.
+  // The UI later derives the displayed offer length from plan.finish-start, so accepting
+  // the feasible event here will still show the realistic shorter duration rather than
+  // misleadingly labelling it as a 240/300-minute plan.
+  const explicitEventSearch = mood==='event';
+  const primaryEvent = plan?.ev?.primary_category==='event';
+  const eventCats = Array.isArray(plan?.ev?.categories) ? plan.ev.categories.map(String) : [];
+  const eventLike = primaryEvent || eventCats.some(c=>/イベント|催し|祭り/.test(c));
+  if(explicitEventSearch && eventLike){
+    return true;
+  }
+
   // 「時間おまかせ」の時間帯ラベルは、その時間をちゃんと使える案だけ表示する。
   // 長時間枠なのに半分近く余る案を「たっぷり300分」などとして出さない。
   const maxSpare=duration<=90 ? 30 : duration<=180 ? 40 : 60;
